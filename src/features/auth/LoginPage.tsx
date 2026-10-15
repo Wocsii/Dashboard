@@ -48,12 +48,10 @@ export function LoginPage() {
   return (
     <SkyFrame>
       <main className="grid h-full place-items-center p-6">
-        <Card className="relative w-full max-w-md overflow-visible px-8 pt-28 pb-8 text-center animate-rise" tone="ivory">
-          <img
-            src={themeConfig.assets.hero}
-            alt=""
-            className="absolute -top-24 left-1/2 h-48 -translate-x-1/2 drop-shadow-xl"
-          />
+        <div className="flex w-full max-w-md flex-col items-center animate-rise">
+        {/* El personaje va encima de la tarjeta (no solapado): sus trazos blancos se leen sobre el cielo */}
+        <img src={themeConfig.assets.hero} alt="" className="character-outline relative z-10 -mb-3 h-44" />
+        <Card className="w-full px-8 pt-10 pb-8 text-center" tone="ivory">
           <h1 className="font-display text-5xl leading-none">{themeConfig.greeting}</h1>
           <p className="mt-3 text-sm text-ink-soft">Entra en {themeConfig.appName} para ver tu día.</p>
           <Button onClick={login} className="mt-8 w-full" size="md" variant="light">
@@ -73,6 +71,7 @@ export function LoginPage() {
             </p>
           )}
         </Card>
+        </div>
       </main>
     </SkyFrame>
   )

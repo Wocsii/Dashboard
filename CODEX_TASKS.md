@@ -16,7 +16,7 @@
 | # | Tarea | ¿Bloquea? | Estado |
 |---|---|---|---|
 | C1 | Propuesta visual y captura comparativa con la referencia | **Sí: hacerla antes de dar por definitivo el diseño del Inicio** | ✅ `docs/design/visual-review.md`, `comparison-home.png` |
-| C2 | Ilustración del chico rubio estilo coreano | No (hay placeholder) | ✅ `avatar-boy.webp`, `hero-boy.webp` |
+| C2 | Ilustración del chico rubio estilo coreano | No (hay placeholder) | ✅ hecha · **sustituida** por el personaje propio (flor amarilla, `personaje-*.webp`) |
 | C3 | Fondo de cielo y colinas | No (hay placeholder) | ✅ `sky-hills.webp`, `sky-hills-1920.webp` |
 | C4 | Hoja decorativa de la tarjeta amarilla | No | ✅ `leaf.webp` |
 | C5 | Iconos de la extensión | Antes de publicar la extensión | ✅ `extension/icons/*.png` |
@@ -37,6 +37,8 @@
 - **Validación:** se ven ambas imágenes lado a lado y la lista de diferencias es accionable (archivo y propiedad a cambiar).
 
 ## C2 · Ilustración del chico rubio (estilo ilustración coreana)
+
+> **Sustituida:** la propietaria cambió el personaje por su propia ilustración (flor amarilla, `docs/reference/personaje-original.jpg`), recortada en `public/assets/generated/personaje-avatar.webp` y `personaje-hero.webp`. Esta tarea queda solo como histórico.
 
 - **Estilo:** ilustración suave tipo webtoon o manhwa, un chico joven **rubio** con flequillo ligero, jersey crema, expresión tranquila y amable. Paleta pastel coherente con los tokens (`--color-sky-*`, `--color-sun`, `--color-blush`). Sin texto ni logotipos. Personaje original.
 - **Archivos a crear en `public/assets/generated/`:**

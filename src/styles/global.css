@@ -20,6 +20,11 @@
   /* Scroll discreto dentro de la ventana de cielo */
   .soft-scroll { scrollbar-width: thin; scrollbar-color: rgb(40 70 110 / 0.25) transparent; }
 
+  /* Contorno sutil para ilustraciones con trazos blancos (el personaje) sobre fondos claros */
+  .character-outline {
+    filter: drop-shadow(0 0 1px rgb(40 70 110 / 0.45)) drop-shadow(0 8px 14px rgb(40 70 110 / 0.18));
+  }
+
   /* Etiqueta pequeña gris + valor negro, como en la referencia */
   .label { font-size: 0.6875rem; color: var(--color-muted); letter-spacing: 0.01em; }
 }

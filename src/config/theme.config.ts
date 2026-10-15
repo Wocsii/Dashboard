@@ -18,8 +18,9 @@ export const themeConfig = {
   assets: {
     background: '/assets/generated/sky-hills.webp', // 2560×1440
     backgroundSmall: '/assets/generated/sky-hills-1920.webp', // ≤ 900px de ancho
-    avatar: '/assets/generated/avatar-boy.webp',
-    hero: '/assets/generated/hero-boy.webp',
+    // Personaje: flor amarilla (original en docs/reference/personaje-original.jpg)
+    avatar: '/assets/generated/personaje-avatar.webp', // 512×512, fondo rosa, recorte circular
+    hero: '/assets/generated/personaje-hero.webp', // cuerpo entero, fondo transparente
     leaf: '/assets/generated/leaf.webp',
   },
 

@@ -111,7 +111,7 @@ export function FocusPage() {
               {tasks.filter((t) => t.status !== 'done').map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
             </Select>
           </div>
-          <img src={themeConfig.assets.hero} alt="" className="pointer-events-none absolute -right-6 -bottom-10 hidden h-56 opacity-90 xl:block" />
+          <img src={themeConfig.assets.hero} alt="" className="character-outline pointer-events-none absolute top-6 right-6 hidden h-36 min-[1400px]:block" />
         </Card>
 
         <div className="flex flex-col gap-5">

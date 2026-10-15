@@ -42,7 +42,7 @@ bottom: [],
 
 ```ts
 // src/config/theme.config.ts
-avatar: '/assets/generated/avatar-boy.webp',
+avatar: '/assets/generated/personaje-avatar.webp',
 ```
 
 ## Componentes base
