@@ -5,6 +5,7 @@ import { dashboardLayout, type WidgetId } from '@/config/dashboard.layout'
 import { themeConfig } from '@/config/theme.config'
 import { formatLong, partOfDay } from '@/lib/dates'
 import { useQuickActions } from '../quick-actions'
+import { useProfile } from '../settings/hooks'
 import { widgetRegistry } from './widgets/registry'
 
 function Column({ ids, className }: { ids: WidgetId[]; className?: string }) {
@@ -20,15 +21,17 @@ function Column({ ids, className }: { ids: WidgetId[]; className?: string }) {
 
 export function DashboardPage() {
   const { newTask, newProject, newNote, newEvent } = useQuickActions()
+  const { data: profile } = useProfile()
+  const name = profile?.display_name?.trim()
   const now = new Date()
   return (
     <>
       {/* Cabecera: avatar + saludo serif · título centrado · acciones rápidas */}
       <header className="grid items-center gap-4 border-b border-ink/5 pb-5 lg:grid-cols-[1fr_auto_1fr]">
-        <div className="flex items-center gap-4">
-          <img src={themeConfig.assets.avatar} alt="" className="size-14 rounded-full object-cover shadow-pill ring-2 ring-white" />
-          <div>
-            <h1 className="font-display text-5xl leading-[0.9] tracking-tight">{themeConfig.greeting}</h1>
+        <div className="flex min-w-0 items-center gap-4">
+          <img src={themeConfig.assets.avatar} alt="" className="size-14 shrink-0 rounded-full object-cover shadow-pill ring-2 ring-white" />
+          <div className="min-w-0">
+            <h1 className="font-display text-5xl leading-[0.9] break-words tracking-tight">{name ? `¡Buenas, ${name}!` : themeConfig.greeting}</h1>
             <p className="mt-1.5 text-xs text-ink-soft">
               {formatLong(now)} · {themeConfig.subtitles[partOfDay(now)]}
             </p>

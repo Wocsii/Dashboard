@@ -7,7 +7,7 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('el inicio muestra saludo, productividad y widgets', async ({ page }) => {
-  await expect(page.getByRole('heading', { name: '¡Buenas!' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '¡Buenas, Demo!' })).toBeVisible()
   await expect(page.getByText('Productividad de hoy')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Para hoy' })).toBeVisible()
   await expect(page.getByText('Proyectos activos')).toBeVisible()
@@ -117,4 +117,15 @@ test('los filtros de próximos eventos están en Ajustes y el origen de Inicio s
   await expect(filters.getByText('Selecciona al menos uno para ver eventos en Inicio.')).toBeVisible()
   await page.getByRole('link', { name:'Inicio',exact:true }).click()
   await expect(page.getByText(/No hay eventos en los próximos 3 días/)).toBeVisible()
+})
+
+
+test('el saludo utiliza el nombre guardado en Ajustes y lo conserva al recargar', async ({ page }) => {
+  await page.getByRole('navigation', { name:'Navegación principal' }).getByRole('link', { name:'Ajustes',exact:true }).click()
+  await page.getByLabel('Nombre', { exact:true }).fill('Manuela')
+  await page.getByLabel('Nombre', { exact:true }).blur()
+  await page.getByRole('link', { name:'Inicio',exact:true }).click()
+  await expect(page.getByRole('heading', { name:'¡Buenas, Manuela!',exact:true })).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole('heading', { name:'¡Buenas, Manuela!',exact:true })).toBeVisible()
 })
