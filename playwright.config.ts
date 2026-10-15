@@ -14,7 +14,7 @@ export default defineConfig({
     command: 'npx vite --port 4173 --strictPort',
     port: 4173,
     reuseExistingServer: false,
-    env: { VITE_SUPABASE_URL: '', VITE_SUPABASE_PUBLISHABLE_KEY: '' },
+    env: { VITE_SUPABASE_URL: '', VITE_SUPABASE_PUBLISHABLE_KEY: '', VITE_SPOTIFY_CLIENT_ID: '0'.repeat(32) },
   },
   projects: [
     { name: 'desktop', testIgnore: /extension/, use: { ...devices['Desktop Chrome'], channel: 'chrome', viewport: { width: 1440, height: 900 } } },

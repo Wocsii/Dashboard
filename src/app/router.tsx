@@ -6,6 +6,8 @@ import { Providers } from './Providers'
 // El Inicio va en el bundle principal (es lo que se ve al abrir la pestaña);
 // el resto de secciones se cargan bajo demanda.
 export const router = createBrowserRouter([
+  { path: 'spotify/connect', lazy: async () => ({ Component: (await import('@/features/spotify/SpotifyCallbackPage')).SpotifyCallbackPage }) },
+  { path: 'spotify/callback', lazy: async () => ({ Component: (await import('@/features/spotify/SpotifyCallbackPage')).SpotifyCallbackPage }) },
   {
     element: <Providers />,
     children: [
