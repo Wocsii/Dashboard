@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/calendario')
+  await page.goto('/calendario/visual')
   await page.evaluate(() => localStorage.clear())
   await page.reload()
 })
@@ -68,7 +68,7 @@ test('calendario: vistas, días completos recurrentes y navegación móvil', asy
 test('el acceso rápido del inicio abre el formulario integrado', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Evento', exact: true }).click()
-  await expect(page).toHaveURL(/calendario\?nuevo=1/)
+  await expect(page).toHaveURL(/calendario\/visual\?nuevo=1/)
   await expect(page.getByRole('dialog')).toBeVisible()
 })
 
@@ -85,4 +85,29 @@ test('arrastrar un bloque guarda el nuevo horario sin cambiar su duración', asy
   await expect(event).toHaveAccessibleName(/10:00–11:00/)
   await page.reload()
   await expect(event).toHaveAccessibleName(/10:00–11:00/)
+})
+
+test('la portada mantiene la lista original y abre el calendario visual por separado', async ({ page }) => {
+  await page.goto('/calendario')
+  await expect(page.getByRole('heading', { name:'Calendario',exact:true })).toBeVisible()
+  await expect(page.getByRole('radiogroup', { name:'Rango',exact:true })).toBeVisible()
+  await expect(page.getByLabel('Agenda semanal')).toHaveCount(0)
+  await page.getByRole('link', { name:'Ver calendario visual' }).click()
+  await expect(page).toHaveURL(/\/calendario\/visual$/)
+  await expect(page.getByLabel('Agenda semanal')).toBeVisible()
+  await page.getByRole('link', { name:'Volver a mis eventos' }).click()
+  await expect(page).toHaveURL(/\/calendario$/)
+})
+
+test('seleccionar Apple muestra su conexión sin mezclar los eventos de Google', async ({ page }) => {
+  await page.goto('/calendario')
+  await expect(page.getByRole('radiogroup', { name:'Rango',exact:true })).toBeVisible()
+  await page.getByRole('radio', { name:'Apple · iCloud',exact:true }).click()
+  await expect(page.getByRole('heading', { name:'Conecta tu Calendario de Apple' })).toBeVisible()
+  await expect(page.getByText('Café con Lucía', { exact:true })).toHaveCount(0)
+  await page.getByRole('link', { name:'Ver calendario visual' }).click()
+  await expect(page.getByRole('radio', { name:'Apple · iCloud',exact:true })).toHaveAttribute('aria-checked','true')
+  await expect(page.getByRole('region', { name:'Calendario de Apple' })).toBeVisible()
+  await page.getByRole('radio', { name:'Google',exact:true }).click()
+  await expect(page.getByLabel('Agenda semanal')).toBeVisible()
 })

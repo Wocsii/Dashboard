@@ -2,7 +2,7 @@ import { cleanup, render, screen, fireEvent } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router'
 import { afterEach, expect, it, vi } from 'vitest'
-import { CalendarPage } from './CalendarPage'
+import { CalendarVisualPage } from './CalendarVisualPage'
 import { calendarApi } from './api'
 
 vi.mock('./api', () => ({ calendarApi: { connect: vi.fn().mockResolvedValue(undefined) } }))
@@ -20,7 +20,7 @@ vi.mock('../settings/hooks', () => ({
 }))
 afterEach(cleanup)
 it('keeps read-only connections usable and asks for an explicit write upgrade', () => {
-  render(<QueryClientProvider client={new QueryClient()}><MemoryRouter><CalendarPage /></MemoryRouter></QueryClientProvider>)
+  render(<QueryClientProvider client={new QueryClient()}><MemoryRouter><CalendarVisualPage /></MemoryRouter></QueryClientProvider>)
   expect(screen.getByLabelText('Agenda semanal')).toBeVisible()
   expect(screen.getByRole('button', { name: 'Nuevo evento' })).toBeDisabled()
   fireEvent.click(screen.getByRole('button', { name: 'Activar edición' }))

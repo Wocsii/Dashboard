@@ -20,6 +20,7 @@ type SettingsRow = {
   log_focus_sessions: boolean
   week_starts_on: number
   visible_calendar_ids: string[] | null
+  visible_apple_calendar_ids: string[] | null
 } & Timestamps
 type ProjectRow = {
   id: string
@@ -86,6 +87,7 @@ export type Database = {
       notes: Table<NoteRow, never>
       focus_sessions: Table<FocusSessionRow, 'started_at' | 'ended_at' | 'duration_seconds'>
       google_connections: Table<GoogleConnectionRow, 'user_id' | 'refresh_token_encrypted'>
+      apple_connections: Table<{ user_id: string; apple_email: string; password_encrypted: string; status: 'ok' | 'needs_reauth'; connected_at: string; updated_at: string }, 'user_id' | 'apple_email' | 'password_encrypted'>
       allowed_emails: Table<{ email: string; created_at: string }, 'email'>
     }
     Views: Record<string, never>

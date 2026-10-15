@@ -11,7 +11,8 @@ import { dateTimeInZone, eventColors, zonedDateTimeToISO } from './model'
 
 type Props = { event?: CalendarEvent; date: Date; initialAllDay?: boolean; calendars: CalendarInfo[]; canWrite: boolean; onClose: () => void }
 export function EventDialog({ event, date, initialAllDay, calendars, canWrite, onClose }: Props) {
-  const initialZone = event?.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
+  const defaultCalendar = calendars.find((c) => c.id === event?.calendarId) ?? calendars.find((c) => c.writable && c.visible) ?? calendars.find((c) => c.writable)
+  const initialZone = event?.timeZone ?? defaultCalendar?.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
   const [title, setTitle] = useState(event?.title ?? '')
   const [calendarId, setCalendarId] = useState(event?.calendarId ?? calendars.find((c) => c.writable && c.visible)?.id ?? calendars.find((c) => c.writable)?.id ?? '')
   const [allDay, setAllDay] = useState(event?.allDay ?? initialAllDay ?? false)
@@ -22,7 +23,7 @@ export function EventDialog({ event, date, initialAllDay, calendars, canWrite, o
   const [description, setDescription] = useState(event?.description ?? '')
   const [guests, setGuests] = useState(event?.attendees?.map((a) => a.email).join(', ') ?? '')
   const [notifyGuests, setNotifyGuests] = useState(false)
-  const originalReminder = event?.reminderMinutes === undefined ? 'default' : event.reminderMinutes === null ? 'none' : String(event.reminderMinutes)
+  const originalReminder = event?.reminderMinutes === undefined ? defaultCalendar?.provider === 'apple' ? 'none' : 'default' : event.reminderMinutes === null ? 'none' : String(event.reminderMinutes)
   const [reminder, setReminder] = useState(originalReminder)
   const [repeat, setRepeat] = useState('')
   const [colorId, setColorId] = useState(event?.colorId ?? '')
@@ -33,6 +34,7 @@ export function EventDialog({ event, date, initialAllDay, calendars, canWrite, o
   const { save, remove } = useCalendarMutations()
   const toast = useToast()
   const calendar = calendars.find((c) => c.id === calendarId)
+  const apple = calendar?.provider === 'apple' || calendarId.startsWith('apple:')
   const readOnly = !canWrite || !calendar?.writable || event?.writable === false
   const pending = save.isPending || remove.isPending
   const close = () => { if (!pending) onClose() }
@@ -52,10 +54,10 @@ export function EventDialog({ event, date, initialAllDay, calendars, canWrite, o
       const unchangedGuests = event && guests === (event.attendees?.map((a) => a.email).join(', ') ?? '')
       await save.mutateAsync({ event, data: {
         calendarId, title: title.trim(), start: startDate, end: endDate, allDay, timeZone, location, description,
-        attendees: unchangedGuests ? undefined : emails, notifyGuests, colorId, category,
+        attendees: apple || unchangedGuests ? undefined : emails, notifyGuests: apple ? false : notifyGuests, colorId, category,
         reminderMinutes: event && reminder === originalReminder ? undefined : reminder === 'default' ? undefined : reminder === 'none' ? null : Number(reminder),
         useDefaultReminder: reminder === 'default' && originalReminder !== 'default',
-        ...(!event ? { recurrence: repeat ? [`RRULE:FREQ=${repeat}`] : [] } : {}), createMeet,
+        ...(!event ? { recurrence: repeat ? [`RRULE:FREQ=${repeat}`] : [] } : {}), createMeet: apple ? false : createMeet,
       } })
       toast(event ? 'Evento actualizado en el calendario' : 'Evento creado en el calendario')
       onClose()
@@ -68,7 +70,7 @@ export function EventDialog({ event, date, initialAllDay, calendars, canWrite, o
 
   return <Modal open onClose={close} title={event ? 'Tu evento' : 'Un nuevo plan'}>
     <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-4 py-2">
-      {readOnly && <p className="rounded-xl bg-sky-50 p-3 text-xs text-ink-soft">{!canWrite ? 'Autoriza la edición de Google Calendar para guardar cambios.' : 'Este calendario o evento es de solo lectura.'}</p>}
+      {readOnly && <p className="rounded-xl bg-sky-50 p-3 text-xs text-ink-soft">{!canWrite ? 'Autoriza la edición del calendario para guardar cambios.' : 'Este calendario o evento es de solo lectura.'}</p>}
       <Field label="Título del evento">{(id) => <Input id={id} autoFocus value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={250} disabled={readOnly || pending} placeholder="¿Qué tienes en mente?" className="h-12 text-base font-medium" />}</Field>
       <Field label="Calendario">{(id) => <Select id={id} value={calendarId} onChange={(e) => setCalendarId(e.target.value)} disabled={!!event || pending || !canWrite} required>{calendars.filter((c) => !event ? c.writable : c.id === event.calendarId).map((c) => <option key={c.id} value={c.id}>{c.summary}</option>)}</Select>}</Field>
       <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={allDay} onChange={(e) => setAllDay(e.target.checked)} disabled={readOnly || pending} className="size-4 accent-ink" /> Todo el día</label>
@@ -86,13 +88,13 @@ export function EventDialog({ event, date, initialAllDay, calendars, canWrite, o
         <div className="mt-4 flex flex-col gap-4">
       {!allDay && <Field label="Zona horaria">{(id) => <Input id={id} value={timeZone} onChange={(e) => setTimeZone(e.target.value)} disabled={readOnly || pending} placeholder="Europe/Madrid" />}</Field>}
           <div className="grid grid-cols-2 gap-3">
-        <Field label="Recordatorio">{(id) => <Select id={id} value={reminder} onChange={(e) => setReminder(e.target.value)} disabled={readOnly || pending}><option value="default">Del calendario</option><option value="none">Sin aviso</option>{[0,5,10,15,30,60,1440].map((n) => <option key={n} value={n}>{n === 0 ? 'Al empezar' : n === 1440 ? '1 día antes' : `${n} min antes`}</option>)}{reminder !== 'default' && reminder !== 'none' && ![0,5,10,15,30,60,1440].includes(Number(reminder)) && <option value={reminder}>{reminder} min antes</option>}</Select>}</Field>
+        <Field label="Recordatorio">{(id) => <Select id={id} value={reminder} onChange={(e) => setReminder(e.target.value)} disabled={readOnly || pending}>{!apple && <option value="default">Del calendario</option>}<option value="none">Sin aviso</option>{[0,5,10,15,30,60,1440].map((n) => <option key={n} value={n}>{n === 0 ? 'Al empezar' : n === 1440 ? '1 día antes' : `${n} min antes`}</option>)}{reminder !== 'default' && reminder !== 'none' && ![0,5,10,15,30,60,1440].includes(Number(reminder)) && <option value={reminder}>{reminder} min antes</option>}</Select>}</Field>
         <Field label="Repetición">{(id) => <Select id={id} value={event?.recurringEventId ? 'instance' : repeat} onChange={(e) => setRepeat(e.target.value)} disabled={!!event || readOnly || pending}><option value="">No se repite</option><option value="DAILY">Cada día</option><option value="WEEKLY">Cada semana</option><option value="MONTHLY">Cada mes</option><option value="YEARLY">Cada año</option>{event?.recurringEventId && <option value="instance">Evento recurrente</option>}</Select>}</Field>
           </div>
-      {event?.recurringEventId && <p className="-mt-2 text-[11px] text-muted">Los cambios y el borrado afectan solo a esta aparición. Puedes cambiar toda la serie desde Google Calendar.</p>}
-      <Field label="Invitados" hint="Separa los correos con comas.">{(id) => <div className="relative"><Users aria-hidden className="pointer-events-none absolute top-3 left-3 size-4 text-muted" /><Input id={id} value={guests} onChange={(e) => setGuests(e.target.value)} disabled={readOnly || pending} placeholder="nombre@correo.com" className="pl-9" /></div>}</Field>
-      {!!guests && <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={notifyGuests} onChange={(e) => setNotifyGuests(e.target.checked)} disabled={readOnly || pending} className="size-4 accent-ink" /> {event ? 'Notificar los cambios a los invitados' : 'Enviar invitaciones a los invitados'}</label>}
-      {event?.meetUrl ? <a href={event.meetUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs font-medium text-ink-soft hover:underline"><Video className="size-4" /> Entrar en Google Meet</a> : !readOnly && <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={createMeet} onChange={(e) => setCreateMeet(e.target.checked)} disabled={pending} className="size-4 accent-ink" /><Video className="size-4" /> Añadir videollamada de Google Meet</label>}
+      {event?.recurringEventId && <p className="-mt-2 text-[11px] text-muted">Los cambios y el borrado afectan solo a esta aparición. Puedes cambiar toda la serie desde {apple ? 'Apple Calendar' : 'Google Calendar'}.</p>}
+      <Field label="Invitados" hint={apple ? 'Las invitaciones de iCloud se gestionan en Apple Calendar.' : 'Separa los correos con comas.'}>{(id) => <div className="relative"><Users aria-hidden className="pointer-events-none absolute top-3 left-3 size-4 text-muted" /><Input id={id} value={guests} onChange={(e) => setGuests(e.target.value)} disabled={apple || readOnly || pending} placeholder="nombre@correo.com" className="pl-9" /></div>}</Field>
+      {!!guests && !apple && <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={notifyGuests} onChange={(e) => setNotifyGuests(e.target.checked)} disabled={readOnly || pending} className="size-4 accent-ink" /> {event ? 'Notificar los cambios a los invitados' : 'Enviar invitaciones a los invitados'}</label>}
+      {event?.meetUrl ? <a href={event.meetUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs font-medium text-ink-soft hover:underline"><Video className="size-4" /> Entrar en Google Meet</a> : !apple && !readOnly && <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={createMeet} onChange={(e) => setCreateMeet(e.target.checked)} disabled={pending} className="size-4 accent-ink" /><Video className="size-4" /> Añadir videollamada de Google Meet</label>}
       <Field label="Notas">{(id) => <TextArea id={id} value={description} onChange={(e) => setDescription(e.target.value)} disabled={readOnly || pending} placeholder="Los detalles de tu plan…" />}</Field>
         </div>
       </details>

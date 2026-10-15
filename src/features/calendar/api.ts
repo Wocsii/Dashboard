@@ -1,7 +1,7 @@
 import { isDemo, isEmbedded } from '@/lib/env'
 import { supabase } from '@/lib/supabase'
 import { demoCalendars, demoEvents, saveDemoEvent, deleteDemoEvent } from './demoCalendar'
-import type { CalendarEvent, CalendarEventInput, CalendarInfo, CalendarStatus } from '@/types/domain'
+import type { CalendarEvent, CalendarEventInput, CalendarInfo, CalendarProvider, CalendarStatus } from '@/types/domain'
 
 export class CalendarApiError extends Error {
   constructor(
@@ -26,26 +26,28 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const calendarApi = {
-  async status(): Promise<CalendarStatus> {
-    if (isDemo) return { state: 'connected', email: 'demo@local', canWrite: true }
-    return call('/api/google/status')
+  async status(provider: CalendarProvider = 'google'): Promise<CalendarStatus> {
+    if (isDemo) return provider === 'apple' ? { state:'disconnected' } : { state: 'connected', email: 'demo@local', canWrite: true }
+    return call(`/api/${provider}/status`)
   },
-  async calendars(): Promise<CalendarInfo[]> {
-    if (isDemo) return demoCalendars()
-    return (await call<{ calendars: CalendarInfo[] }>('/api/google/calendars')).calendars
+  async calendars(provider: CalendarProvider = 'google'): Promise<CalendarInfo[]> {
+    if (isDemo) return provider === 'apple' ? [] : demoCalendars()
+    return (await call<{ calendars: CalendarInfo[] }>(`/api/${provider}/calendars`)).calendars
   },
-  async events(timeMin: Date, timeMax: Date): Promise<CalendarEvent[]> {
-    if (isDemo) return demoEvents(timeMin, timeMax)
+  async events(timeMin: Date, timeMax: Date, provider: CalendarProvider = 'google'): Promise<CalendarEvent[]> {
+    if (isDemo) return provider === 'apple' ? [] : demoEvents(timeMin, timeMax)
     const q = new URLSearchParams({ timeMin: timeMin.toISOString(), timeMax: timeMax.toISOString() })
-    return (await call<{ events: CalendarEvent[] }>(`/api/google/events?${q}`)).events
+    return (await call<{ events: CalendarEvent[] }>(`/api/${provider}/events?${q}`)).events
   },
   async saveEvent(data: CalendarEventInput, event?: CalendarEvent): Promise<CalendarEvent> {
+    const provider = data.calendarId.startsWith('apple:') ? 'apple' : 'google'
     if (isDemo) return saveDemoEvent(data, event)
-    return (await call<{ event: CalendarEvent }>('/api/google/events-write', { method: event ? 'PATCH' : 'POST', body: JSON.stringify({ data, eventId: event?.googleId, etag: event?.etag }) })).event
+    return (await call<{ event: CalendarEvent }>(`/api/${provider}/events-write`, { method: event ? 'PATCH' : 'POST', body: JSON.stringify({ data, eventId: event?.googleId, etag: event?.etag, objectUrl:event?.appleObjectUrl, uid:event?.appleUid, recurrenceId:event?.appleRecurrenceId }) })).event
   },
   async deleteEvent(event: CalendarEvent, notifyGuests = false): Promise<void> {
     if (isDemo) return deleteDemoEvent(event)
-    await call('/api/google/events-write', { method: 'DELETE', body: JSON.stringify({ calendarId: event.calendarId, eventId: event.googleId, etag: event.etag, notifyGuests }) })
+    const provider = event.provider ?? (event.calendarId.startsWith('apple:') ? 'apple' : 'google')
+    await call(`/api/${provider}/events-write`, { method: 'DELETE', body: JSON.stringify({ calendarId: event.calendarId, eventId: event.googleId, etag: event.etag, notifyGuests, objectUrl:event.appleObjectUrl, uid:event.appleUid, recurrenceId:event.appleRecurrenceId }) })
   },
   /** Abre el consentimiento de Google (en pestaña nueva si estamos dentro de la extensión) */
   async connect() {
@@ -54,8 +56,12 @@ export const calendarApi = {
     if (isEmbedded) window.open(url, '_blank', 'noopener')
     else window.location.assign(url)
   },
-  async disconnect() {
+  async connectApple(email: string, password: string): Promise<CalendarStatus> {
+    if (isDemo) throw new CalendarApiError('Conecta tu sesión del dashboard para vincular una cuenta real de iCloud. La demo no guarda contraseñas.', 'not_configured')
+    return call('/api/apple/connection', { method:'POST',body:JSON.stringify({ email,password }) })
+  },
+  async disconnect(provider: CalendarProvider = 'google') {
     if (isDemo) return
-    await call('/api/google/disconnect', { method: 'POST' })
+    await call(provider === 'apple' ? '/api/apple/connection' : '/api/google/disconnect', { method:provider === 'apple' ? 'DELETE' : 'POST' })
   },
 }

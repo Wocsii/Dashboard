@@ -1,3 +1,4 @@
+import { CalendarProvider } from '@/features/calendar/CalendarProvider'
 import { Outlet } from 'react-router'
 import { Spinner } from '@/components/ui/States'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -11,10 +12,12 @@ export function Providers() {
   if (status === 'loading') return <Spinner />
   if (status === 'signed_out') return <LoginPage />
   return (
-    <PomodoroProvider>
-      <QuickActionsProvider>
-        <Outlet />
-      </QuickActionsProvider>
-    </PomodoroProvider>
+    <CalendarProvider>
+      <PomodoroProvider>
+        <QuickActionsProvider>
+          <Outlet />
+        </QuickActionsProvider>
+      </PomodoroProvider>
+    </CalendarProvider>
   )
 }

@@ -80,7 +80,7 @@ export function buildSampleData(now = new Date()): SampleData {
     focusSessions,
     settings: {
       user_id: DEMO_USER_ID, focus_minutes: 25, short_break_minutes: 5, long_break_minutes: 15, long_break_every: 4,
-      log_focus_sessions: true, week_starts_on: 1, visible_calendar_ids: null, created_at: base.created_at, updated_at: base.updated_at,
+      log_focus_sessions: true, week_starts_on: 1, visible_calendar_ids: null, visible_apple_calendar_ids: null, created_at: base.created_at, updated_at: base.updated_at,
     },
     profile: { id: DEMO_USER_ID, display_name: 'Demo', timezone: 'Europe/Madrid', created_at: base.created_at, updated_at: base.updated_at },
   }

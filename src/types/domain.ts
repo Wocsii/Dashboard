@@ -16,7 +16,8 @@ export type NoteInput = Pick<Note, 'title' | 'content' | 'pinned'>
 export type FocusSessionInput = Pick<FocusSession, 'kind' | 'started_at' | 'ended_at' | 'duration_seconds' | 'completed' | 'task_id'>
 export type SettingsInput = Partial<Omit<UserSettings, 'user_id' | 'created_at' | 'updated_at'>>
 
-export type CalendarInfo = { id: string; summary: string; color: string; primary: boolean; visible: boolean; writable?: boolean; timeZone?: string }
+export type CalendarProvider = 'google' | 'apple'
+export type CalendarInfo = { id: string; summary: string; color: string; primary: boolean; visible: boolean; provider?: CalendarProvider; writable?: boolean; timeZone?: string }
 export type CalendarEvent = {
   id: string
   calendarId: string
@@ -28,6 +29,10 @@ export type CalendarEvent = {
   meetUrl?: string
   htmlLink?: string
   color: string
+  provider?: CalendarProvider
+  appleObjectUrl?: string
+  appleUid?: string
+  appleRecurrenceId?: string
   googleId?: string
   description?: string
   attendees?: { email: string; displayName?: string; responseStatus?: string; organizer?: boolean; self?: boolean }[]

@@ -27,7 +27,7 @@ export function QuickActionsProvider({ children }: { children: ReactNode }) {
     newProject: () => setProject({ open: true, project: null }),
     editProject: (p) => setProject({ open: true, project: p }),
     newNote: () => navigate('/notas?nueva=1'),
-    newEvent: () => navigate('/calendario?nuevo=1'),
+    newEvent: () => navigate('/calendario/visual?nuevo=1'),
   }
 
   return (

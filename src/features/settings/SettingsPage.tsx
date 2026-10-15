@@ -11,6 +11,7 @@ import { useToast } from '@/components/ui/Toast'
 import { resetDemoData } from '@/data/demoRepository'
 import { isDemo } from '@/lib/env'
 import { useAuth } from '../auth/AuthProvider'
+import { AppleConnectionPanel } from '../calendar/AppleConnectionPanel'
 import { CalendarStatusPanel } from '../calendar/CalendarStatusPanel'
 import { calendarKeys, useCalendars, useCalendarStatus, useDisconnectCalendar } from '../calendar/hooks'
 import { useProfile, useSettings, useUpdateProfile, useUpdateSettings } from './hooks'
@@ -25,12 +26,12 @@ const calendarMessages: Record<string, [string, 'info' | 'error']> = {
 
 function CalendarSettings() {
   const qc = useQueryClient()
-  const status = useCalendarStatus()
+  const status = useCalendarStatus('google')
   const connected = status.data?.state === 'connected'
-  const calendars = useCalendars(connected)
+  const calendars = useCalendars(connected,'google')
   const { data: settings } = useSettings()
   const updateSettings = useUpdateSettings()
-  const disconnect = useDisconnectCalendar()
+  const disconnect = useDisconnectCalendar('google')
 
   const toggle = (id: string, visible: boolean) => {
     const current = (calendars.data ?? []).filter((c) => c.visible).map((c) => c.id)
@@ -103,10 +104,16 @@ export function SettingsPage() {
     <>
       <PageHeader title="Ajustes" subtitle={email ? `Sesión iniciada como ${email}` : undefined} />
       <div className="grid gap-5 lg:grid-cols-2">
-        <Card>
-          <h2 className="mb-4 text-sm font-semibold">Google Calendar</h2>
-          <CalendarSettings />
-        </Card>
+        <div className="flex flex-col gap-5">
+          <Card>
+            <h2 className="mb-4 text-sm font-semibold">Google Calendar</h2>
+            <CalendarSettings />
+          </Card>
+          <Card>
+            <h2 className="mb-4 text-sm font-semibold">Apple Calendar · iCloud</h2>
+            <AppleConnectionPanel />
+          </Card>
+        </div>
         <div className="flex flex-col gap-5">
           <Card>
             <h2 className="mb-4 text-sm font-semibold">Perfil</h2>

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { addDays, endOfDay, startOfDay } from 'date-fns'
-import type { CalendarEvent, CalendarEventInput, CalendarStatus } from '@/types/domain'
+import type { CalendarEvent, CalendarEventInput, CalendarProvider, CalendarStatus } from '@/types/domain'
+import { useCalendarProvider } from './CalendarProvider'
 import { calendarApi, CalendarApiError } from './api'
 
 export const calendarKeys = {
@@ -9,12 +10,16 @@ export const calendarKeys = {
   events: (range: string) => ['calendar', 'events', range] as const,
 }
 
-export function useCalendarStatus() {
-  return useQuery<CalendarStatus>({ queryKey: calendarKeys.status, queryFn: calendarApi.status, staleTime: 60_000, retry: false })
+export function useCalendarStatus(source?: CalendarProvider) {
+  const { provider:current } = useCalendarProvider()
+  const provider = source ?? current
+  return useQuery<CalendarStatus>({ queryKey: [...calendarKeys.status,provider], queryFn: () => calendarApi.status(provider), staleTime: 60_000, retry: false })
 }
 
-export function useCalendars(enabled: boolean) {
-  return useQuery({ queryKey: calendarKeys.calendars, queryFn: calendarApi.calendars, enabled, staleTime: 10 * 60_000, retry: false })
+export function useCalendars(enabled: boolean, source?: CalendarProvider) {
+  const { provider:current } = useCalendarProvider()
+  const provider = source ?? current
+  return useQuery({ queryKey: [...calendarKeys.calendars,provider], queryFn: () => calendarApi.calendars(provider), enabled, staleTime: 10 * 60_000, retry: false })
 }
 
 export type Range = 'today' | 'week' | 'upcoming'
@@ -32,10 +37,11 @@ export function useEvents(range: Range, enabled: boolean) {
 
 export function useCalendarEvents(start: Date, end: Date, enabled: boolean, label = 'view') {
   const qc = useQueryClient()
+  const { provider } = useCalendarProvider()
   return useQuery({
-    queryKey: calendarKeys.events(`${label}:${start.toDateString()}:${end.toDateString()}`),
+    queryKey: calendarKeys.events(`${provider}:${label}:${start.toDateString()}:${end.toDateString()}`),
     queryFn: async () => {
-      try { return await calendarApi.events(start, end) } catch (e) {
+      try { return await calendarApi.events(start, end, provider) } catch (e) {
         if (e instanceof CalendarApiError && e.code === 'needs_reauth') void qc.invalidateQueries({ queryKey: calendarKeys.status })
         throw e
       }
@@ -57,7 +63,8 @@ export function useCalendarMutations() {
   return { save, remove }
 }
 
-export function useDisconnectCalendar() {
+export function useDisconnectCalendar(source?: CalendarProvider) {
   const qc = useQueryClient()
-  return useMutation({ mutationFn: calendarApi.disconnect, onSuccess: () => qc.invalidateQueries({ queryKey: ['calendar'] }) })
+  const { provider:current } = useCalendarProvider()
+  return useMutation({ mutationFn: () => calendarApi.disconnect(source ?? current), onSuccess: () => qc.invalidateQueries({ queryKey: ['calendar'] }) })
 }
