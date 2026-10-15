@@ -1,0 +1,21 @@
+import { expect, test } from '@playwright/test'
+
+test('elige música y conserva la selección al recargar', async ({ page }) => {
+  await page.goto('/')
+  await page.evaluate(() => localStorage.removeItem('dashboard.spotify.content'))
+  await page.reload()
+  const music = page.getByRole('region', { name: 'Música para concentrarte' })
+  await music.getByRole('button', { name: 'Elegir música' }).click()
+  await music.getByLabel('¿Qué quieres escuchar?').fill('https://open.spotify.com/track/0Lr4kGOYn9l83EjuK6cZFQ?si=test')
+  await music.getByRole('button', { name: 'Escuchar' }).click()
+  await expect(music.locator('iframe')).toHaveAttribute('src', /embed\/track\/0Lr4kGOYn9l83EjuK6cZFQ/)
+  await page.reload()
+  await expect(music.locator('iframe')).toHaveAttribute('src', /embed\/track\/0Lr4kGOYn9l83EjuK6cZFQ/)
+  await music.scrollIntoViewIfNeeded()
+  await music.screenshot({ path: '/tmp/spotify-mini-desktop.png', animations: 'disabled' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await music.getByRole('button', { name: 'Elegir música' }).click()
+  await music.scrollIntoViewIfNeeded()
+  await expect(music.getByLabel('¿Qué quieres escuchar?')).toBeInViewport()
+  await page.screenshot({ path: '/tmp/spotify-mini-mobile.png', animations: 'disabled' })
+})
