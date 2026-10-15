@@ -22,10 +22,11 @@ export function useCalendars(enabled: boolean, source?: CalendarProvider) {
   return useQuery({ queryKey: [...calendarKeys.calendars,provider], queryFn: () => calendarApi.calendars(provider), enabled, staleTime: 10 * 60_000, retry: false })
 }
 
-export type Range = 'today' | 'week' | 'upcoming'
+export type Range = 'today' | 'threeDays' | 'week' | 'upcoming'
 
 export function rangeBounds(range: Range, now = new Date()): [Date, Date] {
   if (range === 'today') return [startOfDay(now), endOfDay(now)]
+  if (range === 'threeDays') return [now, endOfDay(addDays(now, 2))]
   if (range === 'week') return [startOfDay(now), endOfDay(addDays(now, 6))]
   return [now, endOfDay(addDays(now, 30))]
 }

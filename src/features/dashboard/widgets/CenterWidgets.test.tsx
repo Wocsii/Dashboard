@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { afterEach, expect, it, vi } from 'vitest'
-import { UpcomingEventsWidget } from './CenterWidgets'
+import { UpcomingEventsContent } from './CenterWidgets'
 
 const state = vi.hoisted(() => ({
   provider: 'google',
@@ -20,18 +20,18 @@ afterEach(() => {
   state.events.data = []
   vi.clearAllMocks()
 })
-const show = () => render(<MemoryRouter><UpcomingEventsWidget /></MemoryRouter>)
-it('queries the upcoming month and displays an event beyond the first week', () => {
-  const start = new Date(); start.setDate(start.getDate() + 20)
+const show = () => render(<MemoryRouter><UpcomingEventsContent /></MemoryRouter>)
+it('queries the three-day range and displays a returned event', () => {
+  const start = new Date(); start.setDate(start.getDate() + 2)
   state.events.data = [{ id:'later',title:'Plan lejano',start:start.toISOString(),end:new Date(+start + 3600000).toISOString(),allDay:false }]
   show()
-  expect(state.useEvents).toHaveBeenCalledWith('upcoming', true)
+  expect(state.useEvents).toHaveBeenCalledWith('threeDays', true)
   expect(screen.getByText('Plan lejano')).toBeVisible()
 })
 it('explains the empty date range and selected provider', () => {
   state.provider = 'apple'
   show()
-  expect(screen.getByText(/próximos 30 días.*Apple/)).toBeVisible()
+  expect(screen.getByText(/próximos 3 días.*Apple/)).toBeVisible()
 })
 it('shows loading and fetch errors instead of disappearing', () => {
   state.events.isLoading = true
@@ -39,7 +39,7 @@ it('shows loading and fetch errors instead of disappearing', () => {
   expect(screen.getByRole('status')).toHaveTextContent('Buscando')
   state.events.isLoading = false
   state.events.error = new Error('No se pudo contactar con iCloud')
-  view.rerender(<MemoryRouter><UpcomingEventsWidget /></MemoryRouter>)
+  view.rerender(<MemoryRouter><UpcomingEventsContent /></MemoryRouter>)
   expect(screen.getByRole('alert')).toHaveTextContent('No se pudo contactar con iCloud')
 })
 it('sends disconnected Apple users to settings rather than Google login', () => {
