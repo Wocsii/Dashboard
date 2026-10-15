@@ -27,8 +27,7 @@ export function QuickActionsProvider({ children }: { children: ReactNode }) {
     newProject: () => setProject({ open: true, project: null }),
     editProject: (p) => setProject({ open: true, project: p }),
     newNote: () => navigate('/notas?nueva=1'),
-    // La v1 solo lee Google Calendar: los eventos se crean en Google (ver docs/GOOGLE_CALENDAR.md)
-    newEvent: () => window.open('https://calendar.google.com/calendar/r/eventedit', '_blank', 'noopener'),
+    newEvent: () => navigate('/calendario?nuevo=1'),
   }
 
   return (

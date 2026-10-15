@@ -1,6 +1,6 @@
 # Google Calendar
 
-Es gratis y **solo lectura**: la app lista tus calendarios y lee sus eventos.
+La app consulta tus calendarios y permite crear, editar, mover, redimensionar y borrar eventos en los calendarios donde tengas permiso de escritura. Las vistas de mes, semana y día utilizan los eventos reales de Google.
 
 ## Cómo funciona
 
@@ -13,13 +13,13 @@ App → GET /api/google/events    → el servidor renueva el access token si cad
 ```
 
 - El navegador **nunca** ve el *client secret* ni los tokens de Google.
-- **Permisos mínimos:** `calendar.calendarlist.readonly` (lista de calendarios), `calendar.events.readonly` (leer eventos), y `openid` y `email` (para mostrar qué cuenta está conectada).
+- **Permisos mínimos:** `calendar.calendarlist.readonly` (lista de calendarios), `calendar.events` (leer, crear, editar y borrar eventos), y `openid` y `email` (para mostrar qué cuenta está conectada).
 - **Estados que verás en la app:**
   - **Sin configurar:** faltan variables en el servidor.
   - **Conectar:** no has dado permiso todavía.
   - **Reconectar:** el token caducó o lo revocaste.
   - **Conectado.**
-- Los calendarios visibles se eligen en **Ajustes**. Por defecto se usa la misma selección que tengas en Google Calendar.
+- Los calendarios visibles se eligen en el panel lateral de **Calendario** o en **Ajustes**. Por defecto se usa la misma selección que tengas en Google Calendar.
 
 ## 1. Proyecto de Google Cloud
 
@@ -32,7 +32,7 @@ App → GET /api/google/events    → el servidor renueva el access token si cad
 2. **Audience:** tipo **External**. Mientras pruebas, añade tu cuenta en **Test users**.
 3. **Data access → Add or remove scopes:** añade
    - `.../auth/calendar.calendarlist.readonly`
-   - `.../auth/calendar.events.readonly`
+   - `.../auth/calendar.events`
    - `openid` y `.../auth/userinfo.email`
 
 ## 3. Publicar la app (importante)
@@ -77,11 +77,36 @@ En la app ve a **Ajustes → Conectar Google Calendar**, acepta los permisos y v
 
 **Desconectar** (en Ajustes) revoca el token en Google y borra la fila.
 
-## Fase posterior: crear y editar eventos
+## Activar la edición en una conexión existente
 
-Ahora el botón **+ Evento** abre Google Calendar en una pestaña nueva. Para crear eventos desde la app:
+No hace falta crear otro proyecto de Google ni cambiar las claves de Vercel o las tablas de Supabase.
 
-1. Añade el scope `https://www.googleapis.com/auth/calendar.events` (o `calendar.events.owned` para limitarlo a tus calendarios) en `GOOGLE_SCOPES` (`api/_lib/google.ts`) y en la pantalla de consentimiento.
-2. Crea `api/google/events-write.ts` con `POST` (insertar) y `PATCH` (actualizar), que llamen a `POST/PATCH https://www.googleapis.com/calendar/v3/calendars/{id}/events` con el access token de `getAccessToken()`.
-3. Añade `calendarApi.createEvent()` en `src/features/calendar/api.ts` y un `EventDialog` parecido a `TaskDialog`.
-4. Las conexiones existentes no tendrán el nuevo permiso. Detecta `scopes` sin `calendar.events` en `google_connections` y muestra **Reconectar** para volver a dar consentimiento.
+1. En **Google Cloud → Google Auth Platform → Data access**, añade `https://www.googleapis.com/auth/calendar.events` a los permisos de la app existente.
+2. Despliega la nueva versión del dashboard.
+3. En **Calendario**, pulsa **Activar edición** y acepta el permiso ampliado. Cada usuario debe autorizar su propia cuenta una vez. Hasta entonces, sus eventos siguen visibles en modo lectura.
+
+`GET /api/google/status` devuelve `canWrite` a partir de los scopes guardados en `google_connections`. Las operaciones de escritura comprueban de nuevo el permiso en el servidor y el rol del calendario; el estado del navegador no concede permisos.
+
+## Crear, editar y organizar
+
+- **Nuevo evento** o una celda libre abre el formulario integrado. El botón de evento en Inicio lleva al mismo formulario del calendario.
+- Puedes elegir título, fecha y horas, día completo, zona horaria IANA, ubicación, descripción, categoría, color y recordatorio. Los cambios se guardan en Google.
+- Las vistas **Mes / Semana / Día**, flechas y **Hoy** permiten recorrer otras fechas. El panel lateral tiene mini calendario y selección de calendarios que se guarda en los ajustes existentes.
+- Arrastra un bloque a otra hora o día para moverlo. El borde inferior permite cambiar la duración en pasos de 15 minutos. También puedes usar las flechas arriba/abajo con ese control enfocado, o editar las horas en el formulario.
+- Los eventos que se solapan se distribuyen en columnas. Los eventos de varios días y de día completo respetan el final exclusivo de Google.
+- **Eliminar** pide confirmación. La edición de una aparición recurrente afecta solo a esa aparición. Puedes crear series diarias, semanales, mensuales o anuales; los cambios de repetición de una serie existente se realizan desde Google Calendar.
+- Los invitados se añaden por correo. El envío de invitaciones o avisos se elige expresamente en el formulario. Los avatares se representan con iniciales de los invitados reales; no se solicitan permisos de Google Contacts.
+- Puedes solicitar una videollamada de Google Meet, si el calendario y la cuenta lo permiten. Los enlaces ya existentes siguen disponibles.
+- Las categorías Personal / Trabajo / Salud se guardan como propiedades privadas del evento en Google; sus barras muestran recuentos reales del período, no estadísticas inventadas. Los colores usan los colores de evento de Google.
+
+`POST /api/google/events-write` crea, `PATCH` actualiza y `DELETE` elimina. El usuario se obtiene de su JWT de Supabase. El servidor cifra y conserva las credenciales como antes. Las actualizaciones utilizan `etag` e `If-Match` para evitar sobrescribir cambios recientes, y preservan los campos del evento que no se editan. Los listados recorren las páginas de Google para no truncar eventos o calendarios.
+
+Los cambios hechos desde Google se recargan al volver a enfocar el dashboard, cada minuto o con **Actualizar calendario**. No se trata de una sincronización instantánea mediante webhooks.
+
+Google Tasks, gestión de archivos de Drive y fotografías de contactos no se integran: requieren servicios o permisos distintos. Los calendarios de cumpleaños y otros calendarios de solo lectura no se pueden editar.
+
+## Modo demo y validación
+
+Sin Supabase, los eventos de ejemplo y los cambios se guardan solo en este navegador. El calendario de cumpleaños de ejemplo es de solo lectura. La demo no crea eventos ni envía invitaciones reales; su repetición básica permite comprobar el recorrido visual.
+
+Las pruebas cubren rangos mensuales, solapamientos, fechas de día completo, zonas horarias/cambio de hora, validación del servidor, permisos, conflictos de edición, creación, edición y borrado. Las pruebas contra Google simulan las respuestas: para validar la cuenta real hay que autorizar el nuevo scope en producción y guardar un evento de prueba propio.

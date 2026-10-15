@@ -16,7 +16,7 @@ export type NoteInput = Pick<Note, 'title' | 'content' | 'pinned'>
 export type FocusSessionInput = Pick<FocusSession, 'kind' | 'started_at' | 'ended_at' | 'duration_seconds' | 'completed' | 'task_id'>
 export type SettingsInput = Partial<Omit<UserSettings, 'user_id' | 'created_at' | 'updated_at'>>
 
-export type CalendarInfo = { id: string; summary: string; color: string; primary: boolean; visible: boolean }
+export type CalendarInfo = { id: string; summary: string; color: string; primary: boolean; visible: boolean; writable?: boolean; timeZone?: string }
 export type CalendarEvent = {
   id: string
   calendarId: string
@@ -28,9 +28,38 @@ export type CalendarEvent = {
   meetUrl?: string
   htmlLink?: string
   color: string
+  googleId?: string
+  description?: string
+  attendees?: { email: string; displayName?: string; responseStatus?: string; organizer?: boolean; self?: boolean }[]
+  reminderMinutes?: number | null
+  recurrence?: string[]
+  recurringEventId?: string
+  timeZone?: string
+  colorId?: string
+  category?: string
+  etag?: string
+  writable?: boolean
+}
+export type CalendarEventInput = {
+  calendarId: string
+  title: string
+  description: string
+  start: string
+  end: string
+  allDay: boolean
+  timeZone: string
+  location: string
+  attendees?: string[]
+  reminderMinutes?: number | null
+  useDefaultReminder?: boolean
+  recurrence?: string[]
+  colorId?: string
+  category?: string
+  notifyGuests?: boolean
+  createMeet?: boolean
 }
 export type CalendarStatus =
   | { state: 'not_configured' }
   | { state: 'disconnected' }
   | { state: 'needs_reauth'; email: string | null }
-  | { state: 'connected'; email: string | null }
+  | { state: 'connected'; email: string | null; canWrite?: boolean }

@@ -1,7 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { serverEnv } from './env.js'
 
-export type ErrorCode = 'not_configured' | 'not_connected' | 'needs_reauth' | 'unauthorized' | 'bad_request' | 'unknown'
+export type ErrorCode = 'not_configured' | 'not_connected' | 'needs_reauth' | 'unauthorized' | 'bad_request' | 'unknown' | 'needs_permission' | 'forbidden' | 'conflict'
 
 export class HttpError extends Error {
   constructor(

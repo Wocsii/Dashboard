@@ -53,7 +53,7 @@ function CalendarSettings() {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-ink-soft">
-        Conectado como <strong>{status.data?.state === 'connected' ? (status.data.email ?? 'Google') : ''}</strong> · solo lectura
+        Conectado como <strong>{status.data?.state === 'connected' ? (status.data.email ?? 'Google') : ''}</strong> · {status.data?.state === 'connected' && status.data.canWrite ? 'lectura y edición de eventos' : 'solo lectura'}
       </p>
       <div>
         <p className="mb-2 text-xs font-medium text-ink-soft">Calendarios visibles</p>

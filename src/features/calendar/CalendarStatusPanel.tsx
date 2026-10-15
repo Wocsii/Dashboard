@@ -34,7 +34,7 @@ export function CalendarStatusPanel({ status, compact }: { status: CalendarStatu
     <div className="flex flex-col items-center gap-3 py-6 text-center text-sm text-ink-soft">
       <p>Conecta tu Google Calendar para ver aquí tus eventos.</p>
       <Button size="sm" onClick={connect}><Link2 className="size-3.5" /> Conectar Google Calendar</Button>
-      {!compact && <p className="text-[11px] text-muted">Solo lectura. Puedes desconectarlo cuando quieras en Ajustes.</p>}
+      {!compact && <p className="text-[11px] text-muted">Podrás consultar y editar tus eventos. Puedes desconectarlo en Ajustes.</p>}
     </div>
   )
 }

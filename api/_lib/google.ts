@@ -2,12 +2,13 @@ import { decrypt, encrypt } from './crypto.js'
 import { serverEnv } from './env.js'
 import { HttpError, supabaseAdmin } from './http.js'
 
-/** Permisos mínimos: listar calendarios y leer eventos (+ email para mostrar la cuenta conectada) */
+export const GOOGLE_WRITE_SCOPE = 'https://www.googleapis.com/auth/calendar.events'
+/** Lista de calendarios y lectura/escritura de eventos; no modifica permisos de calendarios. */
 export const GOOGLE_SCOPES = [
   'openid',
   'email',
   'https://www.googleapis.com/auth/calendar.calendarlist.readonly',
-  'https://www.googleapis.com/auth/calendar.events.readonly',
+  GOOGLE_WRITE_SCOPE,
 ]
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token'
@@ -120,16 +121,33 @@ export async function getAccessToken(userId: string): Promise<string> {
   }
 }
 
-export async function googleGet<T>(userId: string, path: string, params?: Record<string, string>): Promise<T> {
+export async function googleRequest<T>(userId: string, path: string, params?: Record<string, string>, init?: RequestInit): Promise<T> {
   const token = await getAccessToken(userId)
   const url = `${API}${path}${params ? `?${new URLSearchParams(params)}` : ''}`
-  const res = await fetch(url, { headers: { authorization: `Bearer ${token}` } })
+  const res = await fetch(url, { ...init, headers: { authorization: `Bearer ${token}`, ...(init?.body ? { 'content-type': 'application/json' } : {}), ...init?.headers } })
   if (res.status === 401) {
     await supabaseAdmin().from('google_connections').update({ access_token_expires_at: null }).eq('user_id', userId)
     throw new HttpError(409, 'needs_reauth', 'Google rechazó el acceso. Vuelve a conectar el calendario.')
   }
+  if (res.status === 400) throw new HttpError(400, 'bad_request', 'Google no aceptó los datos del evento. Revisa las fechas, los invitados o la videollamada.')
+  if (res.status === 429) throw new HttpError(429, 'unknown', 'Google necesita una pausa. Espera un momento y vuelve a intentarlo.')
+  if (res.status === 403) throw new HttpError(403, 'forbidden', 'Google no permite acceder a este calendario o modificar este evento. Comprueba sus permisos.')
+  if (res.status === 404 || res.status === 410) throw new HttpError(409, 'conflict', 'Este evento ya no está disponible. Actualiza el calendario.')
+  if (res.status === 412) throw new HttpError(409, 'conflict', 'El evento ha cambiado en Google. Actualiza el calendario antes de guardar.')
   if (!res.ok) throw new Error(`Google Calendar request failed (${res.status})`)
+  if (res.status === 204) return undefined as T
   return (await res.json()) as T
+}
+
+export const googleGet = <T>(userId: string, path: string, params?: Record<string, string>) => googleRequest<T>(userId, path, params)
+
+export async function requireCalendarWrite(userId: string) {
+  const { data, error } = await supabaseAdmin().from('google_connections').select('scopes').eq('user_id', userId).maybeSingle()
+  if (error) throw new Error('No se pudieron comprobar los permisos de Google')
+  if (!data) throw new HttpError(409, 'not_connected', 'Google Calendar no está conectado')
+  if (!data.scopes?.includes(GOOGLE_WRITE_SCOPE) && !data.scopes?.includes('https://www.googleapis.com/auth/calendar')) {
+    throw new HttpError(403, 'needs_permission', 'Vuelve a conectar Google Calendar para autorizar la creación y edición de eventos.')
+  }
 }
 
 export async function revoke(userId: string) {
@@ -144,22 +162,33 @@ export async function revoke(userId: string) {
 }
 
 // ── Normalización ────────────────────────────────────────────────
-export type GCalendarListEntry = { id: string; summary: string; summaryOverride?: string; backgroundColor?: string; primary?: boolean; selected?: boolean }
+export type GCalendarListEntry = { id: string; summary: string; summaryOverride?: string; backgroundColor?: string; primary?: boolean; selected?: boolean; accessRole?: string; timeZone?: string }
 export type GEvent = {
   id: string
   status?: string
   summary?: string
-  start: { date?: string; dateTime?: string }
-  end: { date?: string; dateTime?: string }
+  start: { date?: string; dateTime?: string; timeZone?: string }
+  end: { date?: string; dateTime?: string; timeZone?: string }
   location?: string
   hangoutLink?: string
   htmlLink?: string
+  etag?: string
+  description?: string
+  attendees?: { email: string; displayName?: string; responseStatus?: string; organizer?: boolean; self?: boolean }[]
+  recurrence?: string[]
+  recurringEventId?: string
+  reminders?: { useDefault?: boolean; overrides?: { method: string; minutes: number }[] }
+  colorId?: string
+  extendedProperties?: { private?: Record<string, string> }
 }
+
+const EVENT_COLORS: Record<string, string> = { '1': '#a4bdfc', '2': '#7ae7bf', '3': '#dbadff', '4': '#ff887c', '5': '#fbd75b', '6': '#ffb878', '7': '#46d6db', '8': '#e1e1e1', '9': '#5484ed', '10': '#51b749', '11': '#dc2127' }
 
 export function normalizeEvent(e: GEvent, calendarId: string, color: string) {
   const allDay = Boolean(e.start.date)
   return {
     id: `${calendarId}:${e.id}`,
+    googleId: e.id,
     calendarId,
     title: e.summary || '(Sin título)',
     start: (allDay ? e.start.date : e.start.dateTime)!,
@@ -168,14 +197,23 @@ export function normalizeEvent(e: GEvent, calendarId: string, color: string) {
     location: e.location,
     meetUrl: e.hangoutLink,
     htmlLink: e.htmlLink,
-    color,
+    color: (e.colorId && EVENT_COLORS[e.colorId]) || color,
+    description: e.description,
+    attendees: e.attendees,
+    recurrence: e.recurrence,
+    recurringEventId: e.recurringEventId,
+    reminderMinutes: (!e.reminders || e.reminders.useDefault) ? undefined : e.reminders?.overrides?.[0]?.minutes ?? null,
+    timeZone: e.start.timeZone,
+    colorId: e.colorId,
+    category: e.extendedProperties?.private?.dashboardCategory,
+    etag: e.etag,
   }
 }
 
 /** Calendarios del usuario con la marca `visible` según sus ajustes */
 export async function listCalendars(userId: string) {
-  const [{ items = [] }, { data: settings }] = await Promise.all([
-    googleGet<{ items?: GCalendarListEntry[] }>(userId, '/users/me/calendarList', { minAccessRole: 'reader' }),
+  const [items, { data: settings }] = await Promise.all([
+    allCalendars(userId),
     supabaseAdmin().from('user_settings').select('visible_calendar_ids').eq('user_id', userId).maybeSingle(),
   ])
   const chosen: string[] | null = settings?.visible_calendar_ids ?? null
@@ -184,7 +222,20 @@ export async function listCalendars(userId: string) {
     summary: c.summaryOverride ?? c.summary,
     color: c.backgroundColor ?? '#8fb8e3',
     primary: Boolean(c.primary),
+    writable: c.accessRole === 'owner' || c.accessRole === 'writer',
+    timeZone: c.timeZone,
     // Sin elección propia se respeta la selección de Google Calendar
     visible: chosen ? chosen.includes(c.id) : Boolean(c.selected || c.primary),
   }))
+}
+
+async function allCalendars(userId: string) {
+  const result: GCalendarListEntry[] = []
+  let pageToken: string | undefined
+  do {
+    const page = await googleGet<{ items?: GCalendarListEntry[]; nextPageToken?: string }>(userId, '/users/me/calendarList', { minAccessRole: 'reader', maxResults: '250', ...(pageToken ? { pageToken } : {}) })
+    result.push(...(page.items ?? []))
+    pageToken = page.nextPageToken
+  } while (pageToken)
+  return result
 }

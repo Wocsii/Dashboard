@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { addDays, endOfDay, startOfDay } from 'date-fns'
-import type { CalendarStatus } from '@/types/domain'
+import type { CalendarEvent, CalendarEventInput, CalendarStatus } from '@/types/domain'
 import { calendarApi, CalendarApiError } from './api'
 
 export const calendarKeys = {
@@ -26,24 +26,35 @@ export function rangeBounds(range: Range, now = new Date()): [Date, Date] {
 }
 
 export function useEvents(range: Range, enabled: boolean) {
+  const [start, end] = rangeBounds(range)
+  return useCalendarEvents(start, end, enabled, range)
+}
+
+export function useCalendarEvents(start: Date, end: Date, enabled: boolean, label = 'view') {
   const qc = useQueryClient()
   return useQuery({
-    queryKey: calendarKeys.events(range),
+    queryKey: calendarKeys.events(`${label}:${start.toDateString()}:${end.toDateString()}`),
     queryFn: async () => {
-      const [a, b] = rangeBounds(range)
-      try {
-        return await calendarApi.events(a, b)
-      } catch (e) {
-        // Token revocado o caducado: refresca el estado para mostrar "Reconectar"
+      try { return await calendarApi.events(start, end) } catch (e) {
         if (e instanceof CalendarApiError && e.code === 'needs_reauth') void qc.invalidateQueries({ queryKey: calendarKeys.status })
         throw e
       }
     },
-    enabled,
-    staleTime: 5 * 60_000,
-    refetchInterval: 10 * 60_000,
+    enabled, staleTime: 60_000, refetchInterval: 60_000,
     retry: (n, e) => !(e instanceof CalendarApiError && e.code !== 'network') && n < 2,
   })
+}
+
+export function useCalendarMutations() {
+  const qc = useQueryClient()
+  const refresh = () => qc.invalidateQueries({ queryKey: ['calendar', 'events'] })
+  const onError = (error: Error) => {
+    if (error instanceof CalendarApiError && ['needs_reauth', 'needs_permission'].includes(error.code)) void qc.invalidateQueries({ queryKey: calendarKeys.status })
+    if (error instanceof CalendarApiError && error.code === 'conflict') void refresh()
+  }
+  const save = useMutation({ mutationFn: ({ data, event }: { data: CalendarEventInput; event?: CalendarEvent }) => calendarApi.saveEvent(data, event), onSuccess: refresh, onError })
+  const remove = useMutation({ mutationFn: ({ event, notifyGuests }: { event: CalendarEvent; notifyGuests?: boolean }) => calendarApi.deleteEvent(event, notifyGuests), onSuccess: refresh, onError })
+  return { save, remove }
 }
 
 export function useDisconnectCalendar() {

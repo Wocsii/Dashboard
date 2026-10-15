@@ -15,14 +15,17 @@ export const GET = handle(async (req) => {
   const calendars = (await listCalendars(user.id)).filter((c) => c.visible)
   const results = await Promise.all(
     calendars.map(async (c) => {
-      const { items = [] } = await googleGet<{ items?: GEvent[] }>(user.id, `/calendars/${encodeURIComponent(c.id)}/events`, {
-        timeMin: timeMin.toISOString(),
-        timeMax: timeMax.toISOString(),
-        singleEvents: 'true',
-        orderBy: 'startTime',
-        maxResults: '250',
-      })
-      return items.filter((e) => e.status !== 'cancelled').map((e) => normalizeEvent(e, c.id, c.color))
+      const events: ReturnType<typeof normalizeEvent>[] = []
+      let pageToken: string | undefined
+      do {
+        const page = await googleGet<{ items?: GEvent[]; nextPageToken?: string }>(user.id, `/calendars/${encodeURIComponent(c.id)}/events`, {
+          timeMin: timeMin.toISOString(), timeMax: timeMax.toISOString(), singleEvents: 'true', orderBy: 'startTime', maxResults: '250',
+          ...(pageToken ? { pageToken } : {}),
+        })
+        events.push(...(page.items ?? []).filter((e) => e.status !== 'cancelled').map((e) => ({ ...normalizeEvent(e, c.id, c.color), writable: c.writable })))
+        pageToken = page.nextPageToken
+      } while (pageToken)
+      return events
     }),
   )
   const events = results.flat().sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
