@@ -88,3 +88,33 @@ for (const width of [1024, 768]) {
     }
   })
 }
+
+test('los filtros de próximos eventos están en Ajustes y el origen de Inicio se conserva por separado', async ({ page }) => {
+  await expect(page.getByRole('heading', { name:'Próximos 3 días', exact:true })).toHaveCount(0)
+  await expect(page.getByLabel('Calendarios de próximos eventos')).toHaveCount(0)
+  await page.getByRole('navigation', { name:'Navegación principal' }).getByRole('link', { name:'Ajustes',exact:true }).click()
+  const source = page.getByRole('radiogroup', { name:'Origen de próximos eventos' })
+  await source.getByRole('radio', { name:'Apple',exact:true }).click()
+  await page.getByRole('link', { name:'Inicio',exact:true }).click()
+  await expect(page.getByText(/Conecta o revisa tu cuenta de Apple/)).toBeVisible()
+  await page.getByRole('link', { name:'Calendario',exact:true }).click()
+  await expect(page.getByRole('radiogroup', { name:'Origen del calendario' }).getByRole('radio', { name:'Google',exact:true })).toHaveAttribute('aria-checked','true')
+  await page.getByRole('link', { name:'Inicio',exact:true }).click()
+  await page.reload()
+  await expect(page.getByText(/Conecta o revisa tu cuenta de Apple/)).toBeVisible()
+  await page.getByRole('navigation', { name:'Navegación principal' }).getByRole('link', { name:'Ajustes',exact:true }).click()
+  await source.getByRole('radio', { name:'Google',exact:true }).click()
+  const filters = page.getByRole('group', { name:'Calendarios y colores que quieres mostrar' })
+  await expect(filters.getByRole('checkbox').first()).toBeEnabled()
+  const checkboxes = filters.getByRole('checkbox')
+  for (let i=0; i < await checkboxes.count(); i++) {
+    await expect(checkboxes.nth(i)).toBeEnabled()
+    if (await checkboxes.nth(i).isChecked()) {
+      await checkboxes.nth(i).click()
+      await expect(checkboxes.nth(i)).not.toBeChecked()
+    }
+  }
+  await expect(filters.getByText('Selecciona al menos uno para ver eventos en Inicio.')).toBeVisible()
+  await page.getByRole('link', { name:'Inicio',exact:true }).click()
+  await expect(page.getByText(/No hay eventos en los próximos 3 días/)).toBeVisible()
+})

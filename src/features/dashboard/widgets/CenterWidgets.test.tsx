@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { afterEach, expect, it, vi } from 'vitest'
-import { UpcomingEventsContent } from './CenterWidgets'
+import { UpcomingEventsWidget } from './CenterWidgets'
 
 const state = vi.hoisted(() => ({
   provider: 'google',
@@ -9,7 +9,7 @@ const state = vi.hoisted(() => ({
   events: { data: [] as Record<string, unknown>[], isLoading: false, error: null as Error | null, refetch: vi.fn() },
   useEvents: vi.fn(),
 }))
-vi.mock('../../calendar/CalendarProvider', () => ({ useCalendarProvider: () => ({ provider: state.provider }) }))
+vi.mock('../../calendar/CalendarProvider', () => ({ useUpcomingCalendarProvider: () => ({ provider: state.provider }) }))
 vi.mock('../../calendar/hooks', () => ({ useCalendarStatus: () => state.status, useEvents: (...args: unknown[]) => { state.useEvents(...args); return state.events } }))
 afterEach(() => {
   cleanup()
@@ -20,12 +20,12 @@ afterEach(() => {
   state.events.data = []
   vi.clearAllMocks()
 })
-const show = () => render(<MemoryRouter><UpcomingEventsContent /></MemoryRouter>)
+const show = () => render(<MemoryRouter><UpcomingEventsWidget /></MemoryRouter>)
 it('queries the three-day range and displays a returned event', () => {
   const start = new Date(); start.setDate(start.getDate() + 2)
   state.events.data = [{ id:'later',title:'Plan lejano',start:start.toISOString(),end:new Date(+start + 3600000).toISOString(),allDay:false }]
   show()
-  expect(state.useEvents).toHaveBeenCalledWith('threeDays', true)
+  expect(state.useEvents).toHaveBeenCalledWith('threeDays', true, 'google')
   expect(screen.getByText('Plan lejano')).toBeVisible()
 })
 it('explains the empty date range and selected provider', () => {
@@ -39,7 +39,7 @@ it('shows loading and fetch errors instead of disappearing', () => {
   expect(screen.getByRole('status')).toHaveTextContent('Buscando')
   state.events.isLoading = false
   state.events.error = new Error('No se pudo contactar con iCloud')
-  view.rerender(<MemoryRouter><UpcomingEventsContent /></MemoryRouter>)
+  view.rerender(<MemoryRouter><UpcomingEventsWidget /></MemoryRouter>)
   expect(screen.getByRole('alert')).toHaveTextContent('No se pudo contactar con iCloud')
 })
 it('sends disconnected Apple users to settings rather than Google login', () => {

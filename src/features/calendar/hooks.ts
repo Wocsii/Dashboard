@@ -31,14 +31,15 @@ export function rangeBounds(range: Range, now = new Date()): [Date, Date] {
   return [now, endOfDay(addDays(now, 30))]
 }
 
-export function useEvents(range: Range, enabled: boolean) {
+export function useEvents(range: Range, enabled: boolean, source?: CalendarProvider) {
   const [start, end] = rangeBounds(range)
-  return useCalendarEvents(start, end, enabled, range)
+  return useCalendarEvents(start, end, enabled, range, source)
 }
 
-export function useCalendarEvents(start: Date, end: Date, enabled: boolean, label = 'view') {
+export function useCalendarEvents(start: Date, end: Date, enabled: boolean, label = 'view', source?: CalendarProvider) {
   const qc = useQueryClient()
-  const { provider } = useCalendarProvider()
+  const { provider:current } = useCalendarProvider()
+  const provider = source ?? current
   return useQuery({
     queryKey: calendarKeys.events(`${provider}:${label}:${start.toDateString()}:${end.toDateString()}`),
     queryFn: async () => {

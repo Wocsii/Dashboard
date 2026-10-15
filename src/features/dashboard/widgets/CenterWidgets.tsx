@@ -1,5 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query'
-import { useSettings, useUpdateSettings } from '../../settings/hooks'
 import { Check, ListChecks, Play, Target, Video } from 'lucide-react'
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
@@ -11,8 +9,8 @@ import { themeConfig } from '@/config/theme.config'
 import { formatShort, relativeDay } from '@/lib/dates'
 import { plural } from '@/lib/stats'
 import { isDueToday, isOverdue, pickFocusTask } from '@/lib/tasks'
-import { useCalendarStatus, useCalendars, useEvents } from '../../calendar/hooks'
-import { useCalendarProvider } from '../../calendar/CalendarProvider'
+import { useCalendarStatus, useEvents } from '../../calendar/hooks'
+import { useUpcomingCalendarProvider } from '../../calendar/CalendarProvider'
 import { CalendarStatusPanel } from '../../calendar/CalendarStatusPanel'
 import { eventWhen } from '../../calendar/format'
 import { usePomodoro } from '../../focus/PomodoroProvider'
@@ -124,42 +122,10 @@ export function FocusTaskWidget() {
 }
 
 export function UpcomingEventsWidget() {
-  const { provider } = useCalendarProvider()
-  const status = useCalendarStatus()
-  const calendars = useCalendars(status.data?.state === 'connected')
-  const { data: settings } = useSettings()
-  const update = useUpdateSettings()
-  const qc = useQueryClient()
-  const selected = (provider === 'apple' ? settings?.visible_apple_calendar_ids : settings?.visible_calendar_ids)
-    ?? calendars.data?.filter((c) => c.visible).map((c) => c.id) ?? []
-  const toggle = (id: string) => {
-    const ids = selected.includes(id) ? selected.filter((value) => value !== id) : [...selected, id]
-    update.mutate(provider === 'apple' ? { visible_apple_calendar_ids: ids } : { visible_calendar_ids: ids }, {
-      onSettled: () => { void qc.invalidateQueries({ queryKey: ['calendar'] }) },
-    })
-  }
-  return <>
-    {status.data?.state === 'connected' && <Card tilt={-tilt}>
-      <h2 className="text-[17px] font-semibold">Próximos 3 días</h2>
-      <p className="mt-1 text-xs text-muted">Hoy y los dos días siguientes. Elige los calendarios por su color; la selección también se aplica en Calendario.</p>
-      {calendars.isLoading && <Spinner label="Cargando calendarios…" />}
-      {calendars.error && <ErrorNote error={calendars.error} onRetry={() => void calendars.refetch()} />}
-      <div className="mt-3 flex flex-wrap gap-2" aria-label="Calendarios de próximos eventos">
-        {calendars.data?.map((calendar) => <button key={calendar.id} type="button" disabled={update.isPending || !settings} aria-pressed={selected.includes(calendar.id)} onClick={() => toggle(calendar.id)} className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs ${selected.includes(calendar.id) ? 'border-ink bg-white' : 'border-line opacity-60'}`}>
-          <span className="size-3 rounded-full" style={{ backgroundColor: calendar.color }} aria-hidden />{calendar.summary}
-        </button>)}
-      </div>
-      {update.error && <ErrorNote error={update.error} />}
-    </Card>}
-    <UpcomingEventsContent />
-  </>
-}
-
-export function UpcomingEventsContent() {
-  const { provider } = useCalendarProvider()
-  const status = useCalendarStatus()
+  const { provider } = useUpcomingCalendarProvider()
+  const status = useCalendarStatus(provider)
   const connected = status.data?.state === 'connected'
-  const events = useEvents('threeDays', connected)
+  const events = useEvents('threeDays', connected, provider)
   const next = (events.data ?? []).filter((e) => new Date(e.allDay ? `${e.end.slice(0, 10)}T00:00:00` : e.end) > new Date()).slice(0, 2)
 
   if (status.error || events.error || status.isLoading || (connected && events.isLoading))

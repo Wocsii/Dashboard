@@ -102,11 +102,11 @@ test('la portada mantiene la lista original y abre el calendario visual por sepa
 test('seleccionar Apple muestra su conexión sin mezclar los eventos de Google', async ({ page }) => {
   await page.goto('/calendario')
   await expect(page.getByRole('radiogroup', { name:'Rango',exact:true })).toBeVisible()
-  await page.getByRole('radio', { name:'Apple · iCloud',exact:true }).click()
+  await page.getByRole('radio', { name:'Apple',exact:true }).click()
   await expect(page.getByRole('heading', { name:'Conecta tu Calendario de Apple' })).toBeVisible()
   await expect(page.getByText('Café con Lucía', { exact:true })).toHaveCount(0)
   await page.getByRole('link', { name:'Ver calendario visual' }).click()
-  await expect(page.getByRole('radio', { name:'Apple · iCloud',exact:true })).toHaveAttribute('aria-checked','true')
+  await expect(page.getByRole('radio', { name:'Apple',exact:true })).toHaveAttribute('aria-checked','true')
   await expect(page.getByRole('region', { name:'Calendario de Apple' })).toBeVisible()
   await page.getByRole('radio', { name:'Google',exact:true }).click()
   await expect(page.getByLabel('Agenda semanal')).toBeVisible()
