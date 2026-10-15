@@ -4,7 +4,6 @@ import { DaySummaryWidget, FocusTaskWidget, UpcomingEventsWidget } from './Cente
 import { ActiveProjectWidget, ProductivityWidget, WeeklySummaryWidget } from './LeftWidgets'
 import { ActiveProjectsWidget, PomodoroMiniWidget, TodayListWidget } from './RightWidgets'
 import { WeeklyChartWidget } from './WeeklyChartWidget'
-import { SpotifyMiniPlayer } from './SpotifyMiniPlayer'
 
 /** Id de widget → componente. Para añadir uno nuevo: créalo, regístralo aquí y ponlo en dashboard.layout.ts */
 export const widgetRegistry: Record<WidgetId, ComponentType> = {
@@ -16,7 +15,6 @@ export const widgetRegistry: Record<WidgetId, ComponentType> = {
   upcomingEvents: UpcomingEventsWidget,
   todayList: TodayListWidget,
   pomodoroMini: PomodoroMiniWidget,
-  spotifyMini: SpotifyMiniPlayer,
   activeProjects: ActiveProjectsWidget,
   weeklyChart: WeeklyChartWidget,
 }

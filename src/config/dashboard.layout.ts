@@ -12,13 +12,12 @@ export type WidgetId =
   | 'daySummary'
   | 'todayList'
   | 'pomodoroMini'
-  | 'spotifyMini'
   | 'activeProjects'
   | 'weeklyChart'
 
 export const dashboardLayout: { left: WidgetId[]; center: WidgetId[]; right: WidgetId[]; bottom: WidgetId[] } = {
   left: ['activeProject', 'productivity', 'weeklySummary'],
-  center: ['daySummary', 'focusTask', 'upcomingEvents', 'spotifyMini'],
+  center: ['daySummary', 'focusTask', 'upcomingEvents'],
   right: ['todayList', 'pomodoroMini', 'activeProjects'],
   bottom: ['weeklyChart'],
 }
