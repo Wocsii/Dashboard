@@ -67,8 +67,11 @@ export function CalendarVisualPage() {
 
   return <>
     <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-      <div><Link to="/calendario" className="mb-3 inline-block text-xs text-ink-soft hover:underline">← Volver a mis eventos</Link><h1 className="font-display text-4xl leading-none">Calendario visual</h1><p className="mt-2 text-xs text-ink-soft">Un lugar para todo lo que viene.</p></div>
-      <a href={externalUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-soft hover:underline"><ExternalLink className="size-3.5" /> {providerName}</a>
+      <div><h1 className="font-display text-4xl leading-none">Calendario visual</h1><p className="mt-2 text-xs text-ink-soft">Un lugar para todo lo que viene.</p></div>
+      <div className="flex flex-wrap items-center gap-3">
+        <a href={externalUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-soft hover:underline"><ExternalLink className="size-3.5" /> {providerName}</a>
+        <Link to="/calendario" className="inline-flex h-10 items-center rounded-full bg-sun px-4 text-sm font-medium text-ink shadow-pill hover:brightness-95">Ver eventos</Link>
+      </div>
     </div>
     <div className="mb-4"><CalendarSourcePicker onChange={() => { closeDialog(); setOptimisticVisible(null); setCategory('') }} /></div>
     {status.error && <ErrorNote error={status.error} onRetry={() => void status.refetch()} />}

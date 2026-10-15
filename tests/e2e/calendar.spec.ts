@@ -95,7 +95,7 @@ test('la portada mantiene la lista original y abre el calendario visual por sepa
   await page.getByRole('link', { name:'Ver calendario visual' }).click()
   await expect(page).toHaveURL(/\/calendario\/visual$/)
   await expect(page.getByLabel('Agenda semanal')).toBeVisible()
-  await page.getByRole('link', { name:'Volver a mis eventos' }).click()
+  await page.getByRole('link', { name:'Ver eventos' }).click()
   await expect(page).toHaveURL(/\/calendario$/)
 })
 
