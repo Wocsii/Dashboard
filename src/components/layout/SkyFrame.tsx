@@ -2,13 +2,12 @@ import type { ReactNode } from 'react'
 import { themeConfig } from '@/config/theme.config'
 
 /**
- * La "ventana de cielo": marco gris azulado + contenedor redondeado con el
- * paisaje (cielo pastel y colinas) de fondo. Todo el contenido flota encima.
+ * Paisaje de cielo y colinas a pantalla completa. El contenido flota encima.
  */
 export function SkyFrame({ children }: { children: ReactNode }) {
   return (
-    <div className="h-full px-1.5 py-2 sm:px-2 sm:py-3 lg:py-4">
-      <div className="relative h-full overflow-hidden rounded-frame bg-sky-100 shadow-float">
+    <div className="h-full">
+      <div className="relative h-full overflow-hidden bg-sky-100">
         <picture aria-hidden className="absolute inset-0 block">
           <source media="(max-width: 900px)" srcSet={themeConfig.assets.backgroundSmall} />
           <img
