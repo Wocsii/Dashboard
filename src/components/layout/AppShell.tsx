@@ -8,8 +8,8 @@ export function AppShell() {
   return (
     <SkyFrame>
       <Sidebar />
-      <main id="contenido" className="soft-scroll absolute inset-0 overflow-y-auto px-4 pt-5 pb-24 md:pr-8 md:pb-10 md:pl-24 lg:pt-7">
-        <div className="mx-auto w-full max-w-[1400px]">
+      <main id="contenido" className="soft-scroll absolute inset-0 overflow-y-auto px-3 pt-5 pb-24 md:pr-5 md:pb-10 md:pl-20 lg:pt-7">
+        <div className="w-full">
           {isDemo && (
             <p className="mb-4 inline-flex rounded-full bg-white/70 px-3 py-1 text-[11px] font-medium text-ink-soft shadow-pill backdrop-blur">
               {copy.demoBanner}

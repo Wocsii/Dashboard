@@ -40,7 +40,7 @@ export function Sidebar() {
         // móvil: abajo, horizontal y desplazable
         'bottom-3 left-1/2 max-w-[calc(100%-1.5rem)] -translate-x-1/2 flex-row overflow-x-auto',
         // tablet/escritorio: izquierda, vertical
-        'md:top-1/2 md:bottom-auto md:left-4 md:max-w-none md:-translate-x-0 md:-translate-y-1/2 md:flex-col md:overflow-visible md:py-3',
+        'md:top-1/2 md:bottom-auto md:left-2 md:max-w-none md:-translate-x-0 md:-translate-y-1/2 md:flex-col md:overflow-visible md:py-3',
       )}
     >
       <img

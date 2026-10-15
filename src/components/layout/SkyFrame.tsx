@@ -7,7 +7,7 @@ import { themeConfig } from '@/config/theme.config'
  */
 export function SkyFrame({ children }: { children: ReactNode }) {
   return (
-    <div className="h-full p-2 sm:p-3 lg:p-5">
+    <div className="h-full px-1.5 py-2 sm:px-2 sm:py-3 lg:py-4">
       <div className="relative h-full overflow-hidden rounded-frame bg-sky-100 shadow-float">
         <picture aria-hidden className="absolute inset-0 block">
           <source media="(max-width: 900px)" srcSet={themeConfig.assets.backgroundSmall} />
