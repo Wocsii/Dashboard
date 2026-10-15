@@ -15,6 +15,7 @@ import { useProjects } from '../../projects/hooks'
 import { useQuickActions } from '../../quick-actions'
 import { useTasks, useUpdateTask } from '../../tasks/hooks'
 import { DueBadge } from '../../tasks/TaskBits'
+import { SpotifyMiniPlayer } from './SpotifyMiniPlayer'
 
 /** Panel translúcido de tareas de hoy (como "Quick requests") */
 export function TodayListWidget() {
@@ -85,6 +86,7 @@ export function PomodoroMiniWidget() {
           {running ? <Pause className="size-4" /> : <Play className="size-4 fill-ink" />}
         </button>
       </div>
+      <SpotifyMiniPlayer />
     </Card>
   )
 }
