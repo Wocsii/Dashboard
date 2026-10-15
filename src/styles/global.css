@@ -1,0 +1,29 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--color-frame);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--color-sun-soft); }
+  :focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; }
+  button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+}
+
+@layer components {
+  /* Scroll discreto dentro de la ventana de cielo */
+  .soft-scroll { scrollbar-width: thin; scrollbar-color: rgb(40 70 110 / 0.25) transparent; }
+
+  /* Etiqueta pequeña gris + valor negro, como en la referencia */
+  .label { font-size: 0.6875rem; color: var(--color-muted); letter-spacing: 0.01em; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

@@ -1,0 +1,57 @@
+import { CalendarPlus, FolderPlus, NotebookPen, Plus } from 'lucide-react'
+import { Button, IconButton } from '@/components/ui/Button'
+import { copy } from '@/config/copy.es'
+import { dashboardLayout, type WidgetId } from '@/config/dashboard.layout'
+import { themeConfig } from '@/config/theme.config'
+import { formatLong, partOfDay } from '@/lib/dates'
+import { useQuickActions } from '../quick-actions'
+import { widgetRegistry } from './widgets/registry'
+
+function Column({ ids, className }: { ids: WidgetId[]; className?: string }) {
+  return (
+    <div className={className}>
+      {ids.map((id) => {
+        const W = widgetRegistry[id]
+        return <W key={id} />
+      })}
+    </div>
+  )
+}
+
+export function DashboardPage() {
+  const { newTask, newProject, newNote, newEvent } = useQuickActions()
+  const now = new Date()
+  return (
+    <>
+      {/* Cabecera: avatar + saludo serif · título centrado · acciones rápidas */}
+      <header className="grid items-center gap-4 border-b border-ink/5 pb-5 lg:grid-cols-[1fr_auto_1fr]">
+        <div className="flex items-center gap-4">
+          <img src={themeConfig.assets.avatar} alt="" className="size-14 rounded-full object-cover shadow-pill ring-2 ring-white" />
+          <div>
+            <h1 className="font-display text-5xl leading-[0.9] tracking-tight sm:text-6xl">{themeConfig.greeting}</h1>
+            <p className="mt-1.5 text-xs text-ink-soft">
+              {formatLong(now)} · {themeConfig.subtitles[partOfDay(now)]}
+            </p>
+          </div>
+        </div>
+        <p className="hidden text-center text-lg font-medium tracking-tight lg:block">{copy.dashboard.title}</p>
+        <div className="flex flex-wrap items-center gap-2 lg:justify-end" aria-label="Acciones rápidas" role="group">
+          <Button variant="light" size="sm" onClick={() => newProject()}><FolderPlus className="size-3.5" /> {copy.quickActions.project}</Button>
+          <Button variant="light" size="sm" onClick={newNote}><NotebookPen className="size-3.5" /> {copy.quickActions.note}</Button>
+          <Button variant="light" size="sm" onClick={newEvent}><CalendarPlus className="size-3.5" /> {copy.quickActions.event}</Button>
+          <IconButton label={`Nueva ${copy.quickActions.task.toLowerCase()}`} variant="dark" size="lg" onClick={() => newTask()}>
+            <Plus className="size-5" />
+          </IconButton>
+        </div>
+      </header>
+
+      <div className="mt-7 grid gap-8 md:grid-cols-2 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
+        <Column ids={dashboardLayout.left} className="flex flex-col items-start gap-7 [&>*:last-child]:w-full [&>*:last-child]:max-w-sm" />
+        <Column ids={dashboardLayout.center} className="flex flex-col gap-5 xl:px-2" />
+        <Column ids={dashboardLayout.right} className="flex flex-col gap-5 md:col-span-2 md:grid md:grid-cols-2 xl:col-span-1 xl:flex" />
+      </div>
+
+      <Column ids={dashboardLayout.bottom} className="mt-8 flex flex-col gap-5" />
+    </>
+  )
+}

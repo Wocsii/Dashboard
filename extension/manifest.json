@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Mi espacio · Nueva pestaña",
+  "short_name": "Mi espacio",
+  "version": "1.0.0",
+  "description": "Abre tu dashboard personal (alojado en la nube) en cada nueva pestaña.",
+  "chrome_url_overrides": { "newtab": "newtab.html" },
+  "icons": { "16": "icons/icon-16.png", "32": "icons/icon-32.png", "48": "icons/icon-48.png", "128": "icons/icon-128.png" },
+  "host_permissions": ["https://*.vercel.app/*"],
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvAycQDa5fosWtqRUsd4pO5TkMWYljZBGU92p2VKSRxtfSLClLU2SwJxNSYZ+CABI1Qy7uMBPvmwOF+ZVkkp5LPWq/nAC/BlVJ2TVBcjDumq0+YlDfepgcLa/4VPI5VEeK5NDLH8WNym5Tzz/vZkccr4dJSP9RUsYXxxTb9WqH3lsR1Lzbg7uSpZvitMUFF8TxhNDjKwtqcUyOC3FlF5bYXCD1Fh6Eea9YVjkMAOesvjF5jevHbH4aWmiTSNL55r4QLV7QlofiT20o4ZGS8Wms6oMbKSX0t2B1r4WPUPGWcHFjU6bEJI8+j+g/wrB03mxcNsjhy+t2rRxY0VW1j2c8wIDAQAB"
+}
