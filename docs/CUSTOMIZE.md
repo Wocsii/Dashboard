@@ -38,7 +38,7 @@ bottom: [],
 2. Regístralo en `widgets/registry.tsx` con un id.
 3. Añade el id a `WidgetId` y colócalo en `dashboard.layout.ts`.
 
-**Usar la ilustración definitiva de Codex:**
+**Cambiar una ilustración** (sustituye el archivo o apunta a otro):
 
 ```ts
 // src/config/theme.config.ts

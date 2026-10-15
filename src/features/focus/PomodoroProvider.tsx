@@ -8,6 +8,7 @@ import * as P from './pomodoro'
 
 const STATE_KEY = 'mi-espacio:pomodoro:v1'
 const LOGGED_KEY = 'mi-espacio:pomodoro:last-logged'
+const loggedInMemory = new Set<string>()
 
 type Stored = { state: P.PomodoroState; taskId: string | null }
 
@@ -58,12 +59,28 @@ function chime() {
 /** Ejecuta fn solo en una pestaña aunque haya varias abiertas (Web Locks) */
 async function once(id: string, fn: () => void) {
   const run = () => {
-    if (localStorage.getItem(LOGGED_KEY) === id) return
-    localStorage.setItem(LOGGED_KEY, id)
+    if (loggedInMemory.has(id)) return
+    try {
+      if (localStorage.getItem(LOGGED_KEY) === id) return
+    } catch {
+      // Se continúa con la deduplicación en memoria.
+    }
+    loggedInMemory.add(id)
+    try {
+      localStorage.setItem(LOGGED_KEY, id)
+    } catch {
+      // La marca en memoria sigue evitando duplicados en esta pestaña.
+    }
     fn()
   }
-  if ('locks' in navigator) await navigator.locks.request('mi-espacio-pomodoro', run)
-  else run()
+  try {
+    if ('locks' in navigator) await navigator.locks.request('mi-espacio-pomodoro', run)
+    else run()
+  } catch {
+    // El bloqueo o el almacenamiento pueden no estar disponibles (p. ej. modo privado).
+    // La marca en memoria evita duplicados dentro de esta pestaña.
+    run()
+  }
 }
 
 export function PomodoroProvider({ children }: { children: ReactNode }) {

@@ -4,8 +4,8 @@ import { cn } from '@/lib/cn'
 export type ChipTone = 'mint' | 'coral' | 'sun' | 'sky' | 'blush' | 'lilac' | 'neutral' | 'dark'
 
 const tones: Record<ChipTone, string> = {
-  mint: 'bg-mint-strong text-white',
-  coral: 'bg-coral text-white',
+  mint: 'bg-mint-strong-accessible text-white',
+  coral: 'bg-coral-accessible text-white',
   sun: 'bg-sun text-ink',
   sky: 'bg-sky text-ink-soft',
   blush: 'bg-blush text-ink-soft',

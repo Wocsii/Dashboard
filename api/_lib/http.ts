@@ -31,7 +31,9 @@ export function handle(fn: (req: Request) => Promise<Response>) {
       return await fn(req)
     } catch (e) {
       if (e instanceof HttpError) return json({ code: e.code, message: e.message }, e.status)
-      console.error(e)
+      // Solo el mensaje (ya saneado en _lib/google.ts): nunca el objeto completo,
+      // que podría incluir tokens o respuestas de terceros.
+      console.error('API request failed:', e instanceof Error ? e.message : 'internal_error')
       return json({ code: 'unknown', message: 'Error inesperado del servidor' }, 500)
     }
   }

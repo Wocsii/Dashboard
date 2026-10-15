@@ -40,7 +40,7 @@ async function tokenRequest(body: Record<string, string>): Promise<TokenResponse
   })
   const data = (await res.json().catch(() => ({}))) as Record<string, string>
   if (!res.ok) {
-    const err = new Error(data.error_description ?? data.error ?? `Google token ${res.status}`) as Error & { googleError?: string }
+    const err = new Error(`Google token request failed (${res.status})`) as Error & { googleError?: string }
     err.googleError = data.error
     throw err
   }
@@ -128,7 +128,7 @@ export async function googleGet<T>(userId: string, path: string, params?: Record
     await supabaseAdmin().from('google_connections').update({ access_token_expires_at: null }).eq('user_id', userId)
     throw new HttpError(409, 'needs_reauth', 'Google rechazó el acceso. Vuelve a conectar el calendario.')
   }
-  if (!res.ok) throw new Error(`Google Calendar ${res.status}: ${await res.text()}`)
+  if (!res.ok) throw new Error(`Google Calendar request failed (${res.status})`)
   return (await res.json()) as T
 }
 

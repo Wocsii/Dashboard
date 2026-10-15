@@ -1,6 +1,6 @@
 # Tareas para Codex
 
-> **Contexto:** Claude Code coordinó la implementación, pero **no tenía acceso a Codex** en esta sesión (el CLI `codex` no está instalado). No se ha delegado nada todavía: estas tareas están listas para que las ejecutes con Codex (`codex` o `codex exec "…"`). Si instalas y autenticas Codex CLI (`npm i -g @openai/codex`), Claude Code puede lanzarlas directamente.
+> **Estado:** el 15-10-2026 se instaló temporalmente Codex CLI (0.162.1) y Claude Code le delegó C1–C7 con `codex exec`: **todas hechas** (ver tabla). Después se desinstaló el CLI. Para repetir o ampliar una tarea, reinstálalo (`npm i -g @openai/codex`) y ejecuta `codex exec "Haz la tarea Cn de CODEX_TASKS.md"`.
 
 **Proyecto:** dashboard personal en React 19, TypeScript, Vite, Tailwind v4 y Supabase. Ejecuta `npm install && npm run dev`. Sin `.env.local` arranca en **modo demo** con datos de ejemplo en http://localhost:5173.
 
@@ -13,15 +13,15 @@
 
 ## Orden y dependencias
 
-| # | Tarea | ¿Bloquea? |
-|---|---|---|
-| C1 | Propuesta visual y captura comparativa con la referencia | **Sí: hacerla antes de dar por definitivo el diseño del Inicio** |
-| C2 | Ilustración del chico rubio estilo coreano | No (hay placeholder) |
-| C3 | Fondo de cielo y colinas | No (hay placeholder) |
-| C4 | Hoja decorativa de la tarjeta amarilla | No |
-| C5 | Iconos de la extensión | Antes de publicar la extensión |
-| C6 | Correcciones de layout a partir de capturas | Después de C1 a C4 |
-| C7 | Revisión de accesibilidad, responsive y código | Al final |
+| # | Tarea | ¿Bloquea? | Estado |
+|---|---|---|---|
+| C1 | Propuesta visual y captura comparativa con la referencia | **Sí: hacerla antes de dar por definitivo el diseño del Inicio** | ✅ `docs/design/visual-review.md`, `comparison-home.png` |
+| C2 | Ilustración del chico rubio estilo coreano | No (hay placeholder) | ✅ `avatar-boy.webp`, `hero-boy.webp` |
+| C3 | Fondo de cielo y colinas | No (hay placeholder) | ✅ `sky-hills.webp`, `sky-hills-1920.webp` |
+| C4 | Hoja decorativa de la tarjeta amarilla | No | ✅ `leaf.webp` |
+| C5 | Iconos de la extensión | Antes de publicar la extensión | ✅ `extension/icons/*.png` |
+| C6 | Correcciones de layout a partir de capturas | Después de C1 a C4 | ✅ tokens, layout del Inicio, recursos definitivos |
+| C7 | Revisión de accesibilidad, responsive y código | Al final | ✅ `docs/design/a11y-review.md` (axe: 0 violaciones) |
 
 ---
 

@@ -1,5 +1,6 @@
 // Genera iconos PNG placeholder para la extensión (sol sobre cielo y colina).
-// Uso: npm run assets:placeholders   ·  Sin dependencias: codifica PNG a mano.
+// ⚠ Sobrescribe los iconos definitivos de Codex. Solo como respaldo: node scripts/make-placeholder-icons.mjs
+// Sin dependencias: codifica PNG a mano.
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { deflateSync } from 'node:zlib'
 

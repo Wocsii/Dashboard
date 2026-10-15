@@ -51,7 +51,7 @@ export function DaySummaryWidget() {
         items={[
           { label: 'Para hoy', value: plural(today, 'tarea', 'tareas') },
           { label: 'Hechas hoy', value: plural(s.completedBars.find((b) => b.highlight)?.value ?? 0, 'tarea', 'tareas') },
-          { label: 'Vencidas', value: <span className={overdue ? 'text-coral' : undefined}>{overdue}</span>, align: 'right' },
+          { label: 'Vencidas', value: <span className={overdue ? 'text-coral-accessible' : undefined}>{overdue}</span>, align: 'right' },
         ]}
       />
       <div className="mt-4 flex items-center justify-between border-t border-line pt-3">

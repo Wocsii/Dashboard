@@ -38,20 +38,24 @@ export function KanbanCard({ task, project, onOpen }: { task: Task; project?: Pr
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id, data: { status: task.status } })
   return (
     <li
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
-      {...attributes}
-      {...listeners}
-      aria-roledescription="tarjeta arrastrable"
-      aria-label={`${task.title}. Pulsa espacio para mover, Enter para editar`}
-      onClick={onOpen}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') onOpen()
-        else listeners?.onKeyDown?.(e)
-      }}
-      className="cursor-grab touch-none list-none rounded-tile active:cursor-grabbing"
+      className="list-none"
     >
-      <KanbanCardView task={task} project={project} dragging={isDragging} />
+      <div
+        ref={setNodeRef}
+        style={{ transform: CSS.Transform.toString(transform), transition }}
+        {...attributes}
+        {...listeners}
+        aria-roledescription="tarjeta arrastrable"
+        aria-label={`${task.title}. Pulsa espacio para mover, Enter para editar`}
+        onClick={onOpen}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') onOpen()
+          else listeners?.onKeyDown?.(e)
+        }}
+        className="cursor-grab touch-none rounded-tile active:cursor-grabbing"
+      >
+        <KanbanCardView task={task} project={project} dragging={isDragging} />
+      </div>
     </li>
   )
 }

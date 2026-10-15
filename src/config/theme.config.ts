@@ -14,19 +14,17 @@ export const themeConfig = {
     evening: 'Un último empujón y a descansar',
   },
 
-  /**
-   * Recursos visuales. Los .svg son PLACEHOLDERS temporales.
-   * Cuando Codex genere los definitivos (ver CODEX_TASKS.md) cambia la extensión aquí.
-   */
+  /** Recursos visuales definitivos generados para el dashboard. */
   assets: {
-    background: '/assets/generated/sky-hills.svg', // definitivo: sky-hills.webp (2560×1440)
-    avatar: '/assets/generated/avatar-boy.svg', // definitivo: avatar-boy.webp (512×512)
-    hero: '/assets/generated/hero-boy.svg', // definitivo: hero-boy.webp (1200×1500, transparente)
-    leaf: '/assets/generated/leaf.svg', // definitivo: leaf.webp (400×400, transparente)
+    background: '/assets/generated/sky-hills.webp', // 2560×1440
+    backgroundSmall: '/assets/generated/sky-hills-1920.webp', // ≤ 900px de ancho
+    avatar: '/assets/generated/avatar-boy.webp',
+    hero: '/assets/generated/hero-boy.webp',
+    leaf: '/assets/generated/leaf.webp',
   },
 
   /** Inclinación de las tarjetas apiladas del centro (grados). 0 = rectas */
-  stackTilt: 1.8,
+  stackTilt: 1.1,
   /** Muestra nubes CSS sobre el cielo */
   clouds: true,
 } as const

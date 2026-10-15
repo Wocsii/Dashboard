@@ -57,7 +57,7 @@ src/
 api/google/      ← funciones serverless de Google Calendar (OAuth y eventos)
 supabase/        ← migraciones SQL, seed y comprobación de RLS
 extension/       ← extensión de Chrome (nueva pestaña)
-public/assets/generated/ ← ilustraciones (placeholders hasta que Codex genere las finales)
+public/assets/generated/ ← ilustraciones y fondo (generados con Codex)
 ```
 
 ## Seguridad

@@ -13,7 +13,7 @@ extension/
   newtab.js       mete la app en un iframe o redirige a ella
   newtab.css
   config.js       URL de la app y modo (iframe | redirect)
-  icons/          iconos placeholder (Codex: tarea C5)
+  icons/          iconos (generados con Codex)
 ```
 
 ## Instalar

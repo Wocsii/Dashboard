@@ -61,7 +61,7 @@ export function ProductivityWidget() {
   const s = useStats()
   return (
     <div className="py-2">
-      <p className="text-[clamp(5rem,9vw,8.5rem)] leading-[0.85] font-light tracking-[-0.06em]" aria-describedby="prod-label">
+      <p className="text-[clamp(5rem,8vw,7rem)] leading-[0.85] font-light tracking-[-0.06em]" aria-describedby="prod-label">
         {s.productivity ?? 0}
         <span className="tracking-[-0.04em]">%</span>
       </p>

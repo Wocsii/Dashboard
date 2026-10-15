@@ -18,8 +18,9 @@ export async function GET(req: Request): Promise<Response> {
   try {
     await saveConnection(state.uid, await exchangeCode(code))
     return back('connected')
-  } catch (e) {
-    console.error('Google callback', e)
+  } catch {
+    // El detalle puede incluir respuestas o credenciales de Google.
+    console.error('Google callback failed')
     return back('error')
   }
 }

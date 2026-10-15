@@ -23,35 +23,38 @@
   /* Superficies */
   --color-card: #ffffff;
   --color-ivory: #fffcf4;
-  --color-glass: rgb(255 255 255 / 0.55);
+  --color-glass: rgb(255 255 255 / 0.68);
   --color-glass-strong: rgb(255 255 255 / 0.78);
   --color-line: rgb(17 24 39 / 0.07);
 
   /* Texto */
   --color-ink: #121316;
   --color-ink-soft: #3b3f47;
-  --color-muted: #8a909a;
+  --color-muted: #68727e;
 
   /* Acentos pastel */
   --color-sun: #f8c94a;          /* amarillo de la tarjeta de actividad */
   --color-sun-soft: #fdeeb8;
   --color-mint: #bfe6c6;
   --color-mint-strong: #2fcf7a;  /* chip "Reunión" */
+  /* Versiones para texto pequeño: conservan el matiz, con contraste AA. */
+  --color-mint-strong-accessible: #147a45; /* blanco: 5.39:1 */
   --color-blush: #f7d4dc;
   --color-coral: #f0453a;        /* chip "Alta prioridad" */
+  --color-coral-accessible: #b52f28; /* blanco: 6.17:1; sobre marfil: 6.02:1 */
   --color-lilac: #dcd6f7;
   --color-sky: #cfe3f7;
   --color-meadow: #7fb35a;
 
   /* Radios */
   --radius-frame: 2rem;
-  --radius-card: 1.375rem;
+  --radius-card: 1.5rem;
   --radius-tile: 1rem;
 
   /* Sombras suaves azuladas */
-  --shadow-soft: 0 1px 2px rgb(40 70 110 / 0.06), 0 18px 40px -18px rgb(40 70 110 / 0.28);
+  --shadow-soft: 0 1px 2px rgb(40 70 110 / 0.08), 0 22px 46px -18px rgb(40 70 110 / 0.31);
   --shadow-float: 0 2px 6px rgb(40 70 110 / 0.08), 0 30px 60px -24px rgb(40 70 110 / 0.35);
-  --shadow-pill: 0 1px 2px rgb(40 70 110 / 0.08), 0 8px 24px -10px rgb(40 70 110 / 0.3);
+  --shadow-pill: 0 1px 2px rgb(40 70 110 / 0.06), 0 7px 20px -10px rgb(40 70 110 / 0.22);
 
   /* Animaciones */
   --animate-rise: rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;

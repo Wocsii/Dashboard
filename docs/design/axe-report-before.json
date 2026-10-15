@@ -1,0 +1,142 @@
+{
+  "/": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "help": "Elements must meet minimum color contrast ratio thresholds",
+      "nodes": [
+        {
+          "target": ".bg-coral\\/85",
+          "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.16 (foreground color: #ffffff, background color: #f26158, font size: 7.9pt (10.5px), font weight: normal). Expected contrast ratio of 4.5:1"
+        },
+        {
+          "target": ".shadow-soft.animate-rise.bg-card:nth-child(3) > .items-start.justify-between.gap-2 > .bg-mint-strong.h-5.px-2",
+          "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.03 (foreground color: #ffffff, background color: #2fcf7a, font size: 7.9pt (10.5px), font weight: normal). Expected contrast ratio of 4.5:1"
+        },
+        {
+          "target": ".shadow-soft.animate-rise.bg-card:nth-child(4) > .items-start.justify-between.gap-2 > .bg-mint-strong.h-5.px-2",
+          "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.03 (foreground color: #ffffff, background color: #2fcf7a, font size: 7.9pt (10.5px), font weight: normal). Expected contrast ratio of 4.5:1"
+        }
+      ]
+    }
+  ],
+  "/tareas": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "help": "Elements must meet minimum color contrast ratio thresholds",
+      "nodes": [
+        {
+          "target": ".bg-coral.h-5.px-2",
+          "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.73 (foreground color: #ffffff, background color: #f0453a, font size: 7.9pt (10.5px), font weight: normal). Expected contrast ratio of 4.5:1"
+        },
+        {
+          "target": ".text-coral",
+          "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.73 (foreground color: #f0453a, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Expected contrast ratio of 4.5:1"
+        },
+        {
+          "target": ".bg-coral\\/85",
+          "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.16 (foreground color: #ffffff, background color: #f26158, font size: 7.9pt (10.5px), font weight: normal). Expected contrast ratio of 4.5:1"
+        }
+      ]
+    }
+  ],
+  "/kanban": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "help": "Elements must meet minimum color contrast ratio thresholds",
+      "nodes": [
+        {
+          "target": ".bg-coral.h-5.px-2",
+          "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.73 (foreground color: #ffffff, background color: #f0453a, font size: 7.9pt (10.5px), font weight: normal). Expected contrast ratio of 4.5:1"
+        },
+        {
+          "target": ".text-coral",
+          "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.73 (foreground color: #f0453a, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Expected contrast ratio of 4.5:1"
+        },
+        {
+          "target": ".bg-coral\\/85",
+          "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.16 (foreground color: #ffffff, background color: #f26158, font size: 7.9pt (10.5px), font weight: normal). Expected contrast ratio of 4.5:1"
+        }
+      ]
+    },
+    {
+      "id": "list",
+      "impact": "serious",
+      "help": "<ul> and <ol> must only directly contain <li>, <script> or <template> elements",
+      "nodes": [
+        {
+          "target": "section[aria-labelledby=\"col-todo\"] > ul",
+          "summary": "Fix all of the following:\n  List element has direct children that are not allowed: [role=button]"
+        },
+        {
+          "target": "section[aria-labelledby=\"col-in_progress\"] > ul",
+          "summary": "Fix all of the following:\n  List element has direct children that are not allowed: [role=button]"
+        },
+        {
+          "target": "section[aria-labelledby=\"col-blocked\"] > ul",
+          "summary": "Fix all of the following:\n  List element has direct children that are not allowed: [role=button]"
+        },
+        {
+          "target": "section[aria-labelledby=\"col-done\"] > ul",
+          "summary": "Fix all of the following:\n  List element has direct children that are not allowed: [role=button]"
+        }
+      ]
+    }
+  ],
+  "/proyectos": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "help": "Elements must meet minimum color contrast ratio thresholds",
+      "nodes": [
+        {
+          "target": "article:nth-child(1) > .text-left.block.p-5 > .mb-4.justify-between.gap-2 > .h-5.px-2.text-\\[10\\.5px\\]",
+          "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.03 (foreground color: #ffffff, background color: #2fcf7a, font size: 7.9pt (10.5px), font weight: normal). Expected contrast ratio of 4.5:1"
+        },
+        {
+          "target": "article:nth-child(2) > .text-left.block.p-5 > .mb-4.justify-between.gap-2 > .h-5.px-2.text-\\[10\\.5px\\]",
+          "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.03 (foreground color: #ffffff, background color: #2fcf7a, font size: 7.9pt (10.5px), font weight: normal). Expected contrast ratio of 4.5:1"
+        }
+      ]
+    }
+  ],
+  "/notas": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "help": "Elements must meet minimum color contrast ratio thresholds",
+      "nodes": [
+        {
+          "target": ".text-coral",
+          "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.64 (foreground color: #f0453a, background color: #fffcf4, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+        }
+      ]
+    }
+  ],
+  "/calendario": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "help": "Elements must meet minimum color contrast ratio thresholds",
+      "nodes": [
+        {
+          "target": "section[aria-label=\"Jueves, 15 de octubre\"] > .gap-3.md\\:grid-cols-2.xl\\:grid-cols-3 > article > .items-start.justify-between.flex > .h-5.px-2.text-\\[10\\.5px\\]",
+          "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.03 (foreground color: #ffffff, background color: #2fcf7a, font size: 7.9pt (10.5px), font weight: normal). Expected contrast ratio of 4.5:1"
+        },
+        {
+          "target": "section[aria-label=\"Viernes, 16 de octubre\"] > .gap-3.md\\:grid-cols-2.xl\\:grid-cols-3 > article > .items-start.justify-between.flex > .h-5.px-2.text-\\[10\\.5px\\]",
+          "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.03 (foreground color: #ffffff, background color: #2fcf7a, font size: 7.9pt (10.5px), font weight: normal). Expected contrast ratio of 4.5:1"
+        },
+        {
+          "target": "section[aria-label=\"Sábado, 17 de octubre\"] > .gap-3.md\\:grid-cols-2.xl\\:grid-cols-3 > article > .items-start.justify-between.flex > .h-5.px-2.text-\\[10\\.5px\\]",
+          "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.03 (foreground color: #ffffff, background color: #2fcf7a, font size: 7.9pt (10.5px), font weight: normal). Expected contrast ratio of 4.5:1"
+        }
+      ]
+    }
+  ],
+  "/enfoque": [],
+  "/estadisticas": [],
+  "/ajustes": []
+}

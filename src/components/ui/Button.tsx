@@ -8,7 +8,7 @@ const variants: Record<Variant, string> = {
   dark: 'bg-ink text-white hover:bg-ink-soft shadow-pill',
   light: 'bg-card text-ink hover:bg-sky-50 shadow-pill',
   ghost: 'bg-transparent text-ink-soft hover:bg-white/60',
-  danger: 'bg-transparent text-coral hover:bg-blush/60',
+  danger: 'bg-transparent text-coral-accessible hover:bg-blush/60',
   sun: 'bg-sun text-ink hover:brightness-95 shadow-pill',
 }
 const sizes: Record<Size, string> = {

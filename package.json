@@ -14,7 +14,6 @@
     "test:e2e": "playwright test",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build",
     "build:extension": "node scripts/build-extension.mjs",
-    "assets:placeholders": "node scripts/make-placeholder-icons.mjs",
     "secrets:scan": "node scripts/scan-secrets.mjs",
     "db:push": "npx supabase db push",
     "db:types": "npx supabase gen types typescript --linked > src/types/database.types.ts"
@@ -37,6 +36,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.64.1",
     "@tailwindcss/vite": "^4.3.3",

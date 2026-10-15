@@ -10,7 +10,7 @@ const priorityTone: Record<TaskPriority, ChipTone> = { urgent: 'coral', high: 'c
 
 export function PriorityChip({ priority }: { priority: TaskPriority }) {
   return (
-    <Chip tone={priorityTone[priority]} className={priority === 'high' ? 'bg-coral/85' : undefined}>
+    <Chip tone={priorityTone[priority]} className={priority === 'high' ? 'bg-coral-accessible' : undefined}>
       {(priority === 'urgent' || priority === 'high') && <Flame className="size-3" aria-hidden />}
       {copy.priority[priority]}
     </Chip>
@@ -26,7 +26,7 @@ export function DueBadge({ task }: { task: Task }) {
     <span
       className={cn(
         'inline-flex items-center gap-1 text-[11px] font-medium',
-        overdue ? 'text-coral' : isToday ? 'text-ink' : 'text-muted',
+        overdue ? 'text-coral-accessible' : isToday ? 'text-ink' : 'text-muted',
       )}
     >
       <CalendarClock className="size-3" aria-hidden />

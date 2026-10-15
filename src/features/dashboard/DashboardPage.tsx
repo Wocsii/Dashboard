@@ -28,7 +28,7 @@ export function DashboardPage() {
         <div className="flex items-center gap-4">
           <img src={themeConfig.assets.avatar} alt="" className="size-14 rounded-full object-cover shadow-pill ring-2 ring-white" />
           <div>
-            <h1 className="font-display text-5xl leading-[0.9] tracking-tight sm:text-6xl">{themeConfig.greeting}</h1>
+            <h1 className="font-display text-5xl leading-[0.9] tracking-tight">{themeConfig.greeting}</h1>
             <p className="mt-1.5 text-xs text-ink-soft">
               {formatLong(now)} · {themeConfig.subtitles[partOfDay(now)]}
             </p>
@@ -45,10 +45,10 @@ export function DashboardPage() {
         </div>
       </header>
 
-      <div className="mt-7 grid gap-8 md:grid-cols-2 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
+      <div className="mt-5 grid gap-6 md:grid-cols-2 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.1fr)_minmax(0,0.95fr)]">
         <Column ids={dashboardLayout.left} className="flex flex-col items-start gap-7 [&>*:last-child]:w-full [&>*:last-child]:max-w-sm" />
         <Column ids={dashboardLayout.center} className="flex flex-col gap-5 xl:px-2" />
-        <Column ids={dashboardLayout.right} className="flex flex-col gap-5 md:col-span-2 md:grid md:grid-cols-2 xl:col-span-1 xl:flex" />
+        <Column ids={dashboardLayout.right} className="flex flex-col gap-5 md:col-span-2 xl:col-span-1" />
       </div>
 
       <Column ids={dashboardLayout.bottom} className="mt-8 flex flex-col gap-5" />
