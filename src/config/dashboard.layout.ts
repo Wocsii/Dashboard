@@ -18,7 +18,7 @@ export type WidgetId =
 
 export const dashboardLayout: { left: WidgetId[]; center: WidgetId[]; right: WidgetId[]; bottom: WidgetId[] } = {
   left: ['activeProject', 'productivity', 'weeklySummary'],
-  center: ['daySummary', 'focusTask', 'upcomingEvents'],
-  right: ['todayList', 'pomodoroMini', 'spotifyMini', 'activeProjects'],
+  center: ['daySummary', 'focusTask', 'upcomingEvents', 'spotifyMini'],
+  right: ['todayList', 'pomodoroMini', 'activeProjects'],
   bottom: ['weeklyChart'],
 }
