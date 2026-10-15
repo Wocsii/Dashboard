@@ -65,24 +65,24 @@ export function CalendarPage() {
       <a href="https://calendar.google.com" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-soft hover:underline"><ExternalLink className="size-3.5" /> Google Calendar</a>
     </div>
     {status.error && <ErrorNote error={status.error} onRetry={() => void status.refetch()} />}
-    <div className="overflow-hidden rounded-[30px] border-[6px] border-[#171a19] bg-[#202322] shadow-float lg:flex">
+    <div className="overflow-hidden rounded-[30px] border-[6px] border-white/80 bg-sky-100 shadow-float lg:flex">
       <div className={`${sideOpen ? 'block' : 'hidden'} lg:block`}><CalendarSidebar date={date} onSelect={(day) => { setDate(day); setSideOpen(false) }} calendars={calendars.data ?? []} visibleIds={visibleIds} onToggle={toggleCalendar} events={allEvents} onEdit={(event) => setDialog({ date, event })} name={profile?.display_name || 'Mi calendario'} weekStartsOn={weekStartsOn} category={category} onCategory={setCategory} pending={updateSettings.isPending} /></div>
       <section aria-label="Calendario de Google" className="min-w-0 flex-1 rounded-[24px] bg-white">
         <header className="flex flex-col gap-4 px-5 pt-6 pb-5 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-xl font-medium tracking-tight capitalize xl:text-2xl">{title}</h2>
-            <Segmented<CalendarView> label="Vista del calendario" value={view} onChange={setView} size="sm" options={[{ value:'month', label:'Mes' },{ value:'week', label:'Semana' },{ value:'day', label:'Día' }]} />
+            <div className="[&_[aria-checked=true]]:bg-sky-200 [&_[aria-checked=true]]:text-ink"><Segmented<CalendarView> label="Vista del calendario" value={view} onChange={setView} size="sm" options={[{ value:'month', label:'Mes' },{ value:'week', label:'Semana' },{ value:'day', label:'Día' }]} /></div>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-1"><IconButton label="Período anterior" size="sm" onClick={() => setDate(navigateDate(date,view,-1))}><ChevronLeft className="size-4" /></IconButton><Button variant="light" size="sm" onClick={() => setDate(startOfDay(new Date()))}>Hoy</Button><IconButton label="Período siguiente" size="sm" onClick={() => setDate(navigateDate(date,view,1))}><ChevronRight className="size-4" /></IconButton><IconButton label="Actualizar calendario" size="sm" disabled={events.isFetching} onClick={() => { void events.refetch(); void calendars.refetch(); void status.refetch() }}><RefreshCw className={`size-3.5 ${events.isFetching ? 'animate-spin' : ''}`} /></IconButton></div>
-            <div className="flex gap-2"><Button variant="light" size="sm" className="lg:hidden" onClick={() => setSideOpen(!sideOpen)} aria-expanded={sideOpen}>Mis calendarios</Button><Button size="sm" disabled={!canWrite || !calendars.data?.some((c) => c.writable)} onClick={() => { const next = new Date(date); next.setHours(9); create(next) }}><Plus className="size-3.5" /> Nuevo evento</Button></div>
+            <div className="flex gap-2"><Button variant="light" size="sm" className="lg:hidden" onClick={() => setSideOpen(!sideOpen)} aria-expanded={sideOpen}>Mis calendarios</Button><Button variant="sun" size="sm" disabled={!canWrite || !calendars.data?.some((c) => c.writable)} onClick={() => { const next = new Date(date); next.setHours(9); create(next) }}><Plus className="size-3.5" /> Nuevo evento</Button></div>
           </div>
           <p className="text-[10px] text-muted">{connected && status.data?.state === 'connected' ? status.data.email : 'Google Calendar'} · {Intl.DateTimeFormat().resolvedOptions().timeZone}{events.isFetching && !events.isPending ? ' · Sincronizando…' : ''}</p>
         </header>
         {status.isPending && <Spinner label="Conectando con tu calendario…" />}
         {status.data && !connected && <div className="px-6 py-10"><CalendarStatusPanel status={status.data} /></div>}
         {connected && <>
-          {!canWrite && <div className="mx-5 mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-sky-50 px-4 py-3"><p className="max-w-md text-xs text-ink-soft">Tu calendario está conectado en modo lectura. Activa la edición para añadir y mover eventos.</p><Button size="sm" onClick={() => void calendarApi.connect().catch((error: Error) => toast(error.message, 'error'))}>Activar edición</Button></div>}
+          {!canWrite && <div className="mx-5 mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-sky-50 px-4 py-3"><p className="max-w-md text-xs text-ink-soft">Tu calendario está conectado en modo lectura. Activa la edición para añadir y mover eventos.</p><Button variant="sun" size="sm" onClick={() => void calendarApi.connect().catch((error: Error) => toast(error.message, 'error'))}>Activar edición</Button></div>}
           {calendars.error && <div className="px-5 pb-4"><ErrorNote error={calendars.error} onRetry={() => void calendars.refetch()} /></div>}
           {events.error && <div className="px-5 pb-4"><ErrorNote error={events.error} onRetry={() => void events.refetch()} /></div>}
           {events.isPending ? <Spinner label="Preparando tus planes…" /> : <CalendarBoard dates={dates} view={view} selected={date} events={shownEvents} canWrite={canWrite} busy={save.isPending} onSelect={selectDay} onEdit={(event) => setDialog({ date, event })} onCreate={create} onChange={(event, input) => void changeEvent(event,input)} />}
