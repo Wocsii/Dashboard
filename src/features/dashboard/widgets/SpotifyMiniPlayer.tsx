@@ -1,6 +1,6 @@
 import { ExternalLink, Music2 } from 'lucide-react'
 
-const playlistId = '37i9dQZF1DX8Uebhn9wlr'
+const playlistId = '37i9dQZF1DX4sWSpwq3LiO'
 
 export function SpotifyMiniPlayer() {
   return (
@@ -16,7 +16,7 @@ export function SpotifyMiniPlayer() {
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold">Tu momento de música</p>
-          <p className="mt-0.5 text-[10px] text-muted">Spotify · Para concentrarte</p>
+          <p className="mt-0.5 text-[10px] text-muted">Spotify · Peaceful Piano</p>
         </div>
         <a href={`https://open.spotify.com/playlist/${playlistId}`} target="_blank" rel="noopener noreferrer" aria-label="Abrir música en Spotify" className="grid size-7 shrink-0 place-items-center rounded-full text-muted hover:bg-sky-50 hover:text-ink">
           <ExternalLink className="size-3.5" />
