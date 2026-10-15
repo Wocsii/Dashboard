@@ -4,7 +4,7 @@ const playlistId = '37i9dQZF1DX4sWSpwq3LiO'
 
 export function SpotifyMiniPlayer() {
   return (
-    <section aria-label="Música para concentrarte" className="relative mt-6 rounded-[24px] bg-white p-3 shadow-[0_8px_22px_rgba(0,0,0,0.12)]">
+    <section aria-label="Música para concentrarte" className="animate-rise relative mt-2 rounded-[24px] bg-white p-3 shadow-[0_8px_22px_rgba(0,0,0,0.12)]">
       <div className="mb-3 flex items-center gap-3 pl-1">
         <div
           aria-hidden
