@@ -3,12 +3,14 @@ import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Chip } from '@/components/ui/Chip'
+import { ErrorNote, Spinner } from '@/components/ui/States'
 import { copy } from '@/config/copy.es'
 import { themeConfig } from '@/config/theme.config'
 import { formatShort, relativeDay } from '@/lib/dates'
 import { plural } from '@/lib/stats'
 import { isDueToday, isOverdue, pickFocusTask } from '@/lib/tasks'
 import { useCalendarStatus, useEvents } from '../../calendar/hooks'
+import { useCalendarProvider } from '../../calendar/CalendarProvider'
 import { CalendarStatusPanel } from '../../calendar/CalendarStatusPanel'
 import { eventWhen } from '../../calendar/format'
 import { usePomodoro } from '../../focus/PomodoroProvider'
@@ -120,16 +122,29 @@ export function FocusTaskWidget() {
 }
 
 export function UpcomingEventsWidget() {
+  const { provider } = useCalendarProvider()
   const status = useCalendarStatus()
   const connected = status.data?.state === 'connected'
-  const events = useEvents('week', connected)
-  const next = (events.data ?? []).filter((e) => new Date(e.end) > new Date()).slice(0, 2)
+  const events = useEvents('upcoming', connected)
+  const next = (events.data ?? []).filter((e) => new Date(e.allDay ? `${e.end.slice(0, 10)}T00:00:00` : e.end) > new Date()).slice(0, 2)
+
+  if (status.error || events.error || status.isLoading || (connected && events.isLoading))
+    return (
+      <Card tilt={-tilt} className="animate-rise">
+        <h2 className="text-[17px] font-semibold">{copy.dashboard.upcoming}</h2>
+        {status.error || events.error
+          ? <ErrorNote error={status.error ?? events.error} onRetry={() => { void status.refetch(); if (connected) void events.refetch() }} />
+          : <Spinner label="Buscando tus próximos eventos…" />}
+      </Card>
+    )
 
   if (status.data && !connected)
     return (
       <Card tilt={-tilt} className="animate-rise">
         <h2 className="text-[17px] font-semibold">{copy.dashboard.upcoming}</h2>
-        <CalendarStatusPanel status={status.data} compact />
+        {provider === 'apple'
+          ? <p className="mt-2 text-sm text-muted">Conecta o revisa tu cuenta de Apple en <Link to="/ajustes" className="font-medium underline">Ajustes</Link> para ver tus eventos.</p>
+          : <CalendarStatusPanel status={status.data} compact />}
       </Card>
     )
 
@@ -137,7 +152,8 @@ export function UpcomingEventsWidget() {
     return (
       <Card tilt={-tilt} className="animate-rise">
         <h2 className="text-[17px] font-semibold">{copy.dashboard.upcoming}</h2>
-        <p className="mt-2 text-sm text-muted">{copy.empty.events}</p>
+        <p className="mt-2 text-sm text-muted">No hay eventos en los próximos 30 días en tus calendarios visibles de {provider === 'apple' ? 'Apple' : 'Google'}.</p>
+        <Link to="/calendario" className="mt-3 inline-block text-sm font-medium underline">Ver calendario</Link>
       </Card>
     )
 
