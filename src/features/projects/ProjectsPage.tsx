@@ -122,7 +122,7 @@ export function ProjectsPage() {
           )}
         </div>
 
-        <Card tone="ivory" as="aside" aria-label="Detalle del proyecto" className="h-fit xl:sticky xl:top-0">
+        <Card tone="ivory" as="aside" tilt={0.8} aria-label="Detalle del proyecto" className={cn('h-fit origin-top-left shadow-project-detail xl:sticky xl:top-11', list.length > 0 && 'xl:mt-11')}>
           {selected ? (
             <>
               <div className="flex items-start justify-between gap-2">
