@@ -15,8 +15,6 @@ import { useFocusSessions, useLogFocusSession } from './hooks'
 import * as P from './pomodoro'
 
 const STATE_KEY = 'mi-espacio:pomodoro:v1'
-const LOGGED_KEY = 'mi-espacio:pomodoro:last-logged'
-const loggedInMemory = new Set<string>()
 
 type Stored = { state: P.PomodoroState; taskId: string | null }
 
@@ -63,33 +61,6 @@ function chime() {
     })
   } catch {
     /* sin audio */
-  }
-}
-
-/** Ejecuta fn solo en una pestaña aunque haya varias abiertas (Web Locks) */
-async function once(id: string, fn: () => void) {
-  const run = () => {
-    if (loggedInMemory.has(id)) return
-    try {
-      if (localStorage.getItem(LOGGED_KEY) === id) return
-    } catch {
-      // Se continúa con la deduplicación en memoria.
-    }
-    loggedInMemory.add(id)
-    try {
-      localStorage.setItem(LOGGED_KEY, id)
-    } catch {
-      // La marca en memoria sigue evitando duplicados en esta pestaña.
-    }
-    fn()
-  }
-  try {
-    if ('locks' in navigator) await navigator.locks.request('mi-espacio-pomodoro', run)
-    else run()
-  } catch {
-    // El bloqueo o el almacenamiento pueden no estar disponibles (p. ej. modo privado).
-    // La marca en memoria evita duplicados dentro de esta pestaña.
-    run()
   }
 }
 
@@ -146,24 +117,19 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       const task = tasks?.find((t) => t.id === taskId)
       const habit = projects?.find((p) => p.id === task?.project_id)?.exercise_config
       if ((!logEnabled && !habit) || s.mode !== 'focus' || !s.startedAt) return
-      const seconds = completed ? Math.round(P.minutesToMs(durations.focus) / 1000) : P.elapsedSeconds(s, endedAt)
-      if (seconds < (habit ? 1 : 60)) return
-      if (habit) {
-        log.mutate({ id: timerSessionId(s.startedAt, taskId!), kind: 'focus', started_at: new Date(s.startedAt).toISOString(), ended_at: new Date(endedAt).toISOString(), duration_seconds: seconds, completed: completed && !s.indefinite, task_id: taskId })
-        return
-      }
-      void once(String(s.startedAt), () =>
-        log.mutate({
-          kind: 'focus',
-          started_at: new Date(s.startedAt!).toISOString(),
-          ended_at: new Date(endedAt).toISOString(),
-          duration_seconds: seconds,
-          completed,
-          task_id: taskId,
-        }),
-      )
+      const seconds = P.elapsedSeconds(s, endedAt)
+      if (seconds < 1) return
+      log.mutate({
+        id: timerSessionId(s.startedAt, taskId ?? 'unassigned'),
+        kind: 'focus',
+        started_at: new Date(s.startedAt).toISOString(),
+        ended_at: new Date(endedAt).toISOString(),
+        duration_seconds: seconds,
+        completed: completed && !s.indefinite,
+        task_id: taskId,
+      })
     },
-    [durations.focus, log, logEnabled, taskId, tasks, projects],
+    [log, logEnabled, taskId, tasks, projects],
   )
 
   // Parado: el tiempo restante sigue a las duraciones configuradas
@@ -249,7 +215,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   const persistTimer = useRef(() => {})
   useEffect(() => {
     persistTimer.current = () => {
-      if (currentProject?.exercise_config && state.status !== 'idle') logSession(state, false, Date.now())
+      if (state.status !== 'idle') logSession(state, false, Date.now())
     }
   })
   useEffect(() => {

@@ -16,7 +16,9 @@ Todos los hábitos permiten elegir explícitamente si su tiempo cuenta en las es
 
 La meta diaria opcional admite minutos, horas o Pomodoros completos. Si es obligatoria, el check espera a alcanzarla. Las metas por Pomodoros arrancan un bloque con la duración configurada en Enfoque; las metas de minutos y horas usan el reloj continuo. Los descansos y los Pomodoros interrumpidos no suman bloques completos.
 
-El tiempo se actualiza en directo y se guarda cada cinco segundos y al pausar o terminar. Reanudar o recargar mantiene la misma sesión sin duplicarla. El volumen se introduce en el panel de estudio.
+El tiempo se actualiza en directo y se guarda cada cinco segundos y al pausar o terminar, también en Enfoque sin hábito asociado cuando está activado el registro de concentración. Reanudar o recargar mantiene la misma sesión sin duplicarla. Los bloques completados registran el tiempo real del reloj, aunque se hayan cambiado las duraciones durante el bloque.
+
+Los guardados fallidos se reintentan y conservan una copia pendiente por cuenta en este navegador. Se reenvían al recuperar la conexión, volver a la pestaña o cargar de nuevo la aplicación; se eliminan de pendientes solo tras la confirmación del servidor. Si el almacenamiento del navegador no está disponible, esa copia se conserva únicamente en memoria mientras la pestaña siga abierta. El volumen se introduce en el panel de estudio.
 
 ## Base de datos
 

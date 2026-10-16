@@ -41,7 +41,7 @@ export function createSupabaseRepository(): Repository {
 
     listFocusSessions: async (since) =>
       unwrap(await db.from('focus_sessions').select('*').gte('started_at', since).order('started_at', { ascending: false })),
-    createFocusSession: async (input) => unwrap(await db.from('focus_sessions').upsert(input).select().single()),
+    createFocusSession: async (input) => unwrap(await db.from('focus_sessions').upsert({ ...input, user_id: await uid() }).select().single()),
 
     getSettings: async () => {
       const row = unwrap(await db.from('user_settings').select('*').maybeSingle())
