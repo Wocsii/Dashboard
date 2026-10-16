@@ -71,7 +71,7 @@ export function NotesPage() {
                   aria-current={selected?.id === n.id}
                   className={cn(
                     'w-full rounded-tile px-3.5 py-3 text-left transition-colors',
-                    selected?.id === n.id ? 'bg-card shadow-soft' : 'hover:bg-white/60',
+                    selected?.id === n.id ? 'bg-card shadow-soft' : 'hover:bg-card/60',
                   )}
                 >
                   <div className="flex items-center gap-1.5">

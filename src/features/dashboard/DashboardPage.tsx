@@ -1,3 +1,4 @@
+import { Mascot } from '@/components/ui/Mascot'
 import { CalendarPlus, FolderPlus, NotebookPen, Plus } from 'lucide-react'
 import { Button, IconButton } from '@/components/ui/Button'
 import { copy } from '@/config/copy.es'
@@ -29,7 +30,7 @@ export function DashboardPage() {
       {/* Cabecera: avatar + saludo serif · título centrado · acciones rápidas */}
       <header className="grid items-center gap-4 border-b border-ink/5 pb-5 lg:grid-cols-[1fr_auto_1fr]">
         <div className="flex min-w-0 items-center gap-4">
-          <img src={themeConfig.assets.avatar} alt="" className="size-14 shrink-0 rounded-full object-cover shadow-pill ring-2 ring-white" />
+          <Mascot variant="avatar" className="size-14 shrink-0 rounded-full object-cover shadow-pill ring-2 ring-card" />
           <div className="min-w-0">
             <h1 className="font-display text-5xl leading-[0.9] break-words tracking-tight">{name ? `¡Buenas, ${name}!` : themeConfig.greeting}</h1>
             <p className="mt-1.5 text-xs text-ink-soft">

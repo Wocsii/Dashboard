@@ -2,7 +2,7 @@ import { forwardRef, useId, type InputHTMLAttributes, type ReactNode, type Selec
 import { cn } from '@/lib/cn'
 
 const control =
-  'w-full rounded-tile border border-line bg-white/90 px-3 text-sm text-ink placeholder:text-muted outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-200/60'
+  'w-full rounded-tile border border-line bg-card/90 px-3 text-sm text-ink placeholder:text-muted outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-200/60'
 
 export function Field({ label, children, hint, className }: { label: string; children: (id: string) => ReactNode; hint?: string; className?: string }) {
   const id = useId()
@@ -50,7 +50,7 @@ export function Segmented<T extends string>({
   size?: 'sm' | 'md'
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className="inline-flex rounded-full bg-white/80 p-1 shadow-pill">
+    <div role="radiogroup" aria-label={label} className="inline-flex rounded-full bg-card/80 p-1 shadow-pill">
       {options.map((o) => (
         <button
           key={o.value}
@@ -61,7 +61,7 @@ export function Segmented<T extends string>({
           className={cn(
             'rounded-full font-medium transition-colors',
             size === 'sm' ? 'h-7 px-3 text-xs' : 'h-8 px-4 text-[13px]',
-            value === o.value ? 'bg-ink text-white' : 'text-ink-soft hover:text-ink',
+            value === o.value ? 'bg-ink text-on-solid' : 'text-ink-soft hover:text-ink',
           )}
         >
           {o.label}

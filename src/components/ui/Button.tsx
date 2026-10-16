@@ -5,9 +5,9 @@ type Variant = 'dark' | 'light' | 'ghost' | 'danger' | 'sun'
 type Size = 'sm' | 'md'
 
 const variants: Record<Variant, string> = {
-  dark: 'bg-ink text-white hover:bg-ink-soft shadow-pill',
+  dark: 'bg-ink text-on-solid hover:bg-ink-soft shadow-pill',
   light: 'bg-card text-ink hover:bg-sky-50 shadow-pill',
-  ghost: 'bg-transparent text-ink-soft hover:bg-white/60',
+  ghost: 'bg-transparent text-ink-soft hover:bg-card/60',
   danger: 'bg-transparent text-coral-accessible hover:bg-blush/60',
   sun: 'bg-sun text-ink hover:brightness-95 shadow-pill',
 }

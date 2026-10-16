@@ -1,3 +1,4 @@
+import { Mascot } from '@/components/ui/Mascot'
 import { Pause, Play, RotateCcw, SkipForward } from 'lucide-react'
 import { BarChart } from '@/components/ui/BarChart'
 import { Button, IconButton } from '@/components/ui/Button'
@@ -6,7 +7,6 @@ import { Field, Input, Segmented, Select } from '@/components/ui/Field'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { ProgressRing } from '@/components/ui/Progress'
 import { copy } from '@/config/copy.es'
-import { themeConfig } from '@/config/theme.config'
 import { dayLabel, formatLong, toISODate, todayISO, weekDays } from '@/lib/dates'
 import { focusMinutes, formatMinutes } from '@/lib/stats'
 import type { FocusKind } from '@/types/domain'
@@ -111,7 +111,7 @@ export function FocusPage() {
               {tasks.filter((t) => t.status !== 'done').map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
             </Select>
           </div>
-          <img src={themeConfig.assets.hero} alt="" className="character-outline pointer-events-none absolute top-6 right-6 hidden h-36 min-[1400px]:block" />
+          <Mascot variant="hero" className="character-outline pointer-events-none absolute top-6 right-6 hidden h-36 min-[1400px]:block" />
         </Card>
 
         <div className="flex flex-col gap-5">

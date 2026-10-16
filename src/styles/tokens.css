@@ -74,3 +74,49 @@
   --project-lilac: var(--color-lilac);
   --project-coral: #f6a38f;
 }
+
+@theme {
+  --color-on-solid: #ffffff;
+  --color-on-accent: #ffffff;
+}
+:root {
+  --event-tint: 62%;
+  --event-border-tint: 75%;
+  color-scheme: light;
+}
+:root[data-theme='night'] {
+  color-scheme: dark;
+  --color-frame: #10192c;
+  --color-sky-50: #25354c;
+  --color-sky-100: #24344b;
+  --color-sky-200: #344860;
+  --color-sky-300: #425c79;
+  --color-sky-400: #85a9d4;
+  --color-card: #202d42;
+  --color-ivory: #252e40;
+  --color-glass: rgb(27 40 61 / 0.88);
+  --color-glass-strong: rgb(34 49 73 / 0.94);
+  --color-line: rgb(218 230 250 / 0.13);
+  --color-ink: #eef2fb;
+  --color-ink-soft: #d1dbea;
+  --color-muted: #b2bed2;
+  --color-on-solid: #152035;
+  --color-on-accent: #152035;
+  --color-sun: #675329;
+  --color-sun-soft: #52472e;
+  --color-mint: #294d49;
+  --color-mint-strong: #78c8a3;
+  --color-mint-strong-accessible: #8bd4b0;
+  --color-blush: #53394b;
+  --color-coral: #e8a59b;
+  --color-coral-accessible: #ffb4a8;
+  --color-lilac: #494262;
+  --color-sky: #344d68;
+  --color-meadow: #547b66;
+  --project-coral: #69443f;
+  --shadow-soft: 0 2px 4px rgb(3 8 20 / 0.18), 0 22px 46px -18px rgb(3 8 20 / 0.55);
+  --shadow-float: 0 3px 8px rgb(3 8 20 / 0.25), 0 30px 60px -24px rgb(3 8 20 / 0.65);
+  --shadow-pill: 0 2px 10px rgb(3 8 20 / 0.3);
+  --event-tint: 22%;
+  --event-border-tint: 40%;
+}

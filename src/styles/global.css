@@ -32,3 +32,26 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Only the landscape is dimmed; the mascot and the interface keep their own colors. */
+.sky-landscape { transition: filter 700ms ease; }
+.night-sky {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0;
+  background: linear-gradient(180deg, rgb(9 17 48 / 0.7), rgb(29 38 79 / 0.35) 52%, transparent 82%);
+  transition: opacity 700ms ease;
+}
+[data-theme='night'] .sky-landscape { filter: brightness(0.3) saturate(0.65) hue-rotate(18deg); }
+[data-theme='night'] .night-sky { opacity: 1; }
+[data-theme='night'] .day-clouds { opacity: 0.08; }
+.night-moon {
+  position: absolute; right: 8%; top: 5%; width: clamp(44px, 6vw, 80px); aspect-ratio: 1;
+  border-radius: 50%; background: #f7edd1;
+  box-shadow: 0 0 40px 12px rgb(228 225 251 / 0.16), 0 0 110px 30px rgb(180 192 255 / 0.1);
+}
+.night-moon::before, .night-moon::after { content: ''; position: absolute; border-radius: 50%; background: rgb(169 162 152 / 0.15); }
+.night-moon::before { width: 24%; height: 24%; left: 22%; top: 25%; }
+.night-moon::after { width: 14%; height: 14%; right: 22%; bottom: 20%; }
+.night-star { position: absolute; border-radius: 50%; background: #e4e9ff; box-shadow: 0 0 7px rgb(225 234 255 / 0.65); }
+[data-theme='night'] .soft-scroll { scrollbar-color: rgb(173 194 223 / 0.35) transparent; }
+
+[data-theme='night'] .decorative-leaf { filter: brightness(0.65) saturate(0.75); }

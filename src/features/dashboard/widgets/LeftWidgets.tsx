@@ -83,23 +83,23 @@ export function WeeklySummaryWidget() {
   ]
   return (
     <Card tone="sun" className="relative overflow-visible pb-8">
-      <img src={themeConfig.assets.leaf} alt="" className="pointer-events-none absolute -top-8 right-6 w-24 rotate-12 drop-shadow-md" />
+      <img src={themeConfig.assets.leaf} alt="" className="decorative-leaf pointer-events-none absolute -top-8 right-6 w-24 rotate-12 drop-shadow-md" />
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">{copy.dashboard.weekly}</h2>
-        <span className="relative z-10 rounded-full bg-white px-2.5 py-0.5 text-[10.5px] font-semibold shadow-pill">Estadística</span>
+        <span className="relative z-10 rounded-full bg-card px-2.5 py-0.5 text-[10.5px] font-semibold shadow-pill">Estadística</span>
       </div>
       <dl className="mt-6 grid grid-cols-3 gap-2">
         {items.map(({ value, label }) => (
           <div key={label}>
             <dd className="text-3xl leading-none font-semibold tracking-tight whitespace-nowrap">{value}</dd>
-            <dt className="mt-1.5 text-[10.5px] font-medium text-ink/70">{label}</dt>
+            <dt className="mt-1.5 text-[10.5px] font-medium text-ink-soft">{label}</dt>
           </div>
         ))}
       </dl>
       <Link
         to="/estadisticas"
         aria-label="Ver estadísticas"
-        className="absolute -bottom-4 left-1/2 grid size-9 -translate-x-1/2 place-items-center rounded-full bg-white text-ink shadow-pill hover:bg-sky-50"
+        className="absolute -bottom-4 left-1/2 grid size-9 -translate-x-1/2 place-items-center rounded-full bg-card text-ink shadow-pill hover:bg-sky-50"
       >
         <ArrowUpRight className="size-4" />
       </Link>

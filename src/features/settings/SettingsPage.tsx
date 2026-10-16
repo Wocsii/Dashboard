@@ -15,6 +15,7 @@ import { AppleConnectionPanel } from '../calendar/AppleConnectionPanel'
 import { CalendarStatusPanel } from '../calendar/CalendarStatusPanel'
 import { calendarKeys, useCalendars, useCalendarStatus, useDisconnectCalendar } from '../calendar/hooks'
 import { useProfile, useSettings, useUpdateProfile, useUpdateSettings } from './hooks'
+import { AppearanceSettings } from '../appearance/AppearanceSettings'
 import { UpcomingEventsSettings } from './UpcomingEventsSettings'
 
 const calendarMessages: Record<string, [string, 'info' | 'error']> = {
@@ -106,6 +107,7 @@ export function SettingsPage() {
       <PageHeader title="Ajustes" subtitle={email ? `Sesión iniciada como ${email}` : undefined} />
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="flex flex-col gap-5">
+          <Card><AppearanceSettings /></Card>
           <Card>
             <h2 className="mb-4 text-sm font-semibold">Próximos eventos de Inicio</h2>
             <UpcomingEventsSettings />

@@ -1,7 +1,7 @@
+import { Mascot } from '@/components/ui/Mascot'
 import { NavLink } from 'react-router'
 import { LogOut } from 'lucide-react'
 import { footerNav, mainNav, type NavItem } from '@/config/navigation.config'
-import { themeConfig } from '@/config/theme.config'
 import { cn } from '@/lib/cn'
 import { isDemo } from '@/lib/env'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -16,13 +16,13 @@ function Item({ item }: { item: NavItem }) {
       className={({ isActive }) =>
         cn(
           'group relative grid size-11 place-items-center rounded-full transition-colors',
-          isActive ? 'bg-ink text-white shadow-pill' : 'text-ink-soft hover:bg-sky-50 hover:text-ink',
+          isActive ? 'bg-ink text-on-solid shadow-pill' : 'text-ink-soft hover:bg-sky-50 hover:text-ink',
         )
       }
     >
       <Icon className="size-[18px]" strokeWidth={1.8} aria-hidden />
       {/* etiqueta flotante al pasar el ratón (solo escritorio) */}
-      <span className="pointer-events-none absolute left-full ml-3 hidden whitespace-nowrap rounded-full bg-ink px-3 py-1 text-xs font-medium text-white opacity-0 shadow-pill transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 md:block">
+      <span className="pointer-events-none absolute left-full ml-3 hidden whitespace-nowrap rounded-full bg-ink px-3 py-1 text-xs font-medium text-on-solid opacity-0 shadow-pill transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 md:block">
         {item.label}
       </span>
     </NavLink>
@@ -36,18 +36,14 @@ export function Sidebar() {
     <nav
       aria-label="Navegación principal"
       className={cn(
-        'absolute z-20 flex items-center gap-1 rounded-full bg-white/90 p-1.5 shadow-float backdrop-blur-xl',
+        'absolute z-20 flex items-center gap-1 rounded-full bg-card/90 p-1.5 shadow-float backdrop-blur-xl',
         // móvil: abajo, horizontal y desplazable
         'bottom-3 left-1/2 max-w-[calc(100%-1.5rem)] -translate-x-1/2 flex-row overflow-x-auto',
         // tablet/escritorio: izquierda, vertical
         'md:top-1/2 md:bottom-auto md:left-2 md:max-w-none md:-translate-x-0 md:-translate-y-1/2 md:flex-col md:overflow-visible md:py-3',
       )}
     >
-      <img
-        src={themeConfig.assets.avatar}
-        alt=""
-        className="mb-2 hidden size-11 rounded-full object-cover ring-2 ring-white md:block"
-      />
+      <Mascot variant="avatar" className="mb-2 hidden size-11 rounded-full object-cover ring-2 ring-card md:block" />
       {mainNav.map((item) => (
         <Item key={item.to} item={item} />
       ))}

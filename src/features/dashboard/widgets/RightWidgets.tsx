@@ -80,7 +80,7 @@ export function PomodoroMiniWidget() {
           type="button"
           onClick={running ? pause : start}
           aria-label={running ? 'Pausar temporizador' : 'Iniciar temporizador'}
-          className="grid size-9 place-items-center rounded-full bg-white shadow-pill hover:bg-sky-50"
+          className="grid size-9 place-items-center rounded-full bg-card shadow-pill hover:bg-sky-50"
         >
           {running ? <Pause className="size-4" /> : <Play className="size-4 fill-ink" />}
         </button>

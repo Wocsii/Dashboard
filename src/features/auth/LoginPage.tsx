@@ -1,3 +1,4 @@
+import { Mascot } from '@/components/ui/Mascot'
 import { useEffect, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { SkyFrame } from '@/components/layout/SkyFrame'
@@ -50,7 +51,7 @@ export function LoginPage() {
       <main className="grid h-full place-items-center p-6">
         <div className="flex w-full max-w-md flex-col items-center animate-rise">
         {/* El personaje va encima de la tarjeta (no solapado): sus trazos blancos se leen sobre el cielo */}
-        <img src={themeConfig.assets.hero} alt="" className="character-outline relative z-10 -mb-3 h-44" />
+        <Mascot variant="hero" className="character-outline relative z-10 -mb-3 h-44" />
         <Card className="w-full px-8 pt-10 pb-8 text-center" tone="ivory">
           <h1 className="font-display text-5xl leading-none">{themeConfig.greeting}</h1>
           <p className="mt-3 text-sm text-ink-soft">Entra en {themeConfig.appName} para ver tu día.</p>

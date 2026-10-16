@@ -48,3 +48,9 @@ avatar: '/assets/generated/personaje-avatar.webp',
 ## Componentes base
 
 Están en `src/components/ui/` y son pequeños: `Card` (tonos `white | ivory | glass | sun` e inclinación), `Button`/`IconButton` (`dark | light | ghost | danger | sun`), `Chip`, `Modal`, `Field`/`Input`/`Select`/`Segmented`, `ProgressBar`/`ProgressRing`, `BarChart`. Si cambias uno, se actualiza en toda la app.
+
+## Modo noche
+
+En **Ajustes → Apariencia** puedes elegir Día, Noche o Automático. El horario inicial es de 21:00 a 07:00 y se puede cambiar; utiliza la hora local del dispositivo y permite cruzar medianoche. La selección se guarda por cuenta en este navegador y se comparte entre sus pestañas. No requiere migraciones de base de datos.
+
+La iluminación nocturna se aplica solo al paisaje original; la luna y las estrellas se superponen como decoración. Los colores de las superficies, textos, controles, gráficos y calendario usan tokens nocturnos. La mascota conserva sus colores y utiliza las variantes `personaje-avatar-night.png` y `personaje-hero-night.png` con gorrito.

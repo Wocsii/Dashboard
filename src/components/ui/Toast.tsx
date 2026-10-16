@@ -20,7 +20,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             key={t.id}
             className={cn(
               'animate-rise rounded-full px-4 py-2 text-sm shadow-float',
-              t.tone === 'error' ? 'bg-coral-accessible text-white' : 'bg-ink text-white',
+              t.tone === 'error' ? 'bg-coral-accessible text-on-accent' : 'bg-ink text-on-solid',
             )}
           >
             {t.message}

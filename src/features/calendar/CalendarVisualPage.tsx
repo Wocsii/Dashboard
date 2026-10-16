@@ -75,9 +75,9 @@ export function CalendarVisualPage() {
     </div>
     <div className="mb-4"><CalendarSourcePicker onChange={() => { closeDialog(); setOptimisticVisible(null); setCategory('') }} /></div>
     {status.error && <ErrorNote error={status.error} onRetry={() => void status.refetch()} />}
-    <div className="overflow-hidden rounded-[30px] border-[6px] border-white/80 bg-sky-100 shadow-float lg:flex">
+    <div className="overflow-hidden rounded-[30px] border-[6px] border-card/80 bg-sky-100 shadow-float lg:flex">
       <div className={`${sideOpen ? 'block' : 'hidden'} lg:block`}><CalendarSidebar date={date} onSelect={(day) => { setDate(day); setSideOpen(false) }} calendars={calendars.data ?? []} visibleIds={visibleIds} onToggle={toggleCalendar} events={allEvents} onEdit={(event) => setDialog({ date, event })} name={profile?.display_name || 'Mi calendario'} weekStartsOn={weekStartsOn} category={category} onCategory={setCategory} pending={updateSettings.isPending} /></div>
-      <section aria-label={provider === 'apple' ? 'Calendario de Apple' : 'Calendario de Google'} className="min-w-0 flex-1 rounded-[24px] bg-white">
+      <section aria-label={provider === 'apple' ? 'Calendario de Apple' : 'Calendario de Google'} className="min-w-0 flex-1 rounded-[24px] bg-card">
         <header className="flex flex-col gap-4 px-5 pt-6 pb-5 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-xl font-medium tracking-tight capitalize xl:text-2xl">{title}</h2>

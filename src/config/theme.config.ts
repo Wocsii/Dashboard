@@ -22,6 +22,8 @@ export const themeConfig = {
     avatar: '/assets/generated/personaje-avatar.webp', // 512×512, fondo rosa, recorte circular
     hero: '/assets/generated/personaje-hero.webp', // cuerpo entero, fondo transparente
     leaf: '/assets/generated/leaf.webp',
+    avatarNight: '/assets/generated/personaje-avatar-night.png',
+    heroNight: '/assets/generated/personaje-hero-night.png',
   },
 
   /** Inclinación de las tarjetas apiladas del centro (grados). 0 = rectas */

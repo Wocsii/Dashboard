@@ -32,7 +32,7 @@ export function BarChart({ data, title, height = 120, color = 'var(--color-ink)'
               }}
             />
             {hover === i && (
-              <div className="pointer-events-none absolute bottom-full z-10 mb-2 rounded-full bg-ink px-2.5 py-1 text-[11px] font-medium whitespace-nowrap text-white shadow-pill">
+              <div className="pointer-events-none absolute bottom-full z-10 mb-2 rounded-full bg-ink px-2.5 py-1 text-[11px] font-medium whitespace-nowrap text-on-solid shadow-pill">
                 {d.full ?? d.label}: {d.display}
               </div>
             )}

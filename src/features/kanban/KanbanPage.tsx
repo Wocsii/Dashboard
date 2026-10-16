@@ -79,7 +79,7 @@ function Column({ status, dot, ids, byId, projectMap, onOpen, onAdd }: {
         <h2 id={`col-${status}`} className="flex items-center gap-2 text-sm font-semibold">
           <span className={cn('size-2 rounded-full', dot)} aria-hidden />
           {copy.status[status]}
-          <span className="rounded-full bg-white/80 px-1.5 text-[11px] font-medium text-muted">{ids.length}</span>
+          <span className="rounded-full bg-card/80 px-1.5 text-[11px] font-medium text-muted">{ids.length}</span>
         </h2>
         <IconButton label={`Añadir en ${copy.status[status]}`} size="sm" onClick={onAdd}>
           <Plus className="size-4" />
@@ -183,7 +183,7 @@ export function KanbanPage() {
           <>
             <select
               aria-label="Filtrar por proyecto"
-              className="h-10 rounded-full border border-line bg-white/90 px-4 text-sm"
+              className="h-10 rounded-full border border-line bg-card/90 px-4 text-sm"
               value={projectFilter}
               onChange={(e) => setProjectFilter(e.target.value)}
             >
