@@ -1,6 +1,6 @@
 # Google Tasks y Kanban
 
-En Ajustes → Google Tasks · Kanban se conecta y desconecta cada cuenta de manera opcional. Sin conexión se conserva el tablero local de cuatro estados. Con conexión el tablero muestra una columna por lista real de Google Tasks, con su nombre, incluidas listas vacías y nuevas.
+En Ajustes → Google Tasks · Kanban se conecta y desconecta cada cuenta de manera opcional. Sin conexión se conserva el tablero habitual con cuatro estados y el botón **Añadir columna** para crear columnas personalizadas. Sus nombres, estado asociado y distribución se recuerdan por cuenta en este navegador y se comparten entre sus pestañas; no se sincronizan entre ordenadores. Las tareas siguen guardándose en Supabase. Con conexión el tablero muestra una columna por lista real de Google Tasks, con su nombre, incluidas listas vacías y nuevas.
 
 ## Activación en producción
 

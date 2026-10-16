@@ -11,20 +11,20 @@ import { useCreateTask, useDeleteTask, useUpdateTask } from './hooks'
 
 export type TaskDraft = Partial<TaskInput>
 
-type Props = { open: boolean; onClose: () => void; task?: Task | null; defaults?: TaskDraft }
+type Props = { open: boolean; onClose: () => void; task?: Task | null; defaults?: TaskDraft; onCreated?: (task: Task) => void }
 
 const empty: TaskInput = { title: '', description: '', status: 'todo', priority: 'medium', due_date: null, tags: [], project_id: null, is_focus: false }
 
-export function TaskDialog({ open, onClose, task, defaults }: Props) {
+export function TaskDialog({ open, onClose, task, defaults, onCreated }: Props) {
   return (
     <Modal open={open} onClose={onClose} title={task ? 'Editar tarea' : 'Nueva tarea'}>
       {/* key: reinicia el formulario al cambiar de tarea */}
-      <TaskForm key={task?.id ?? 'new'} task={task} defaults={defaults} onDone={onClose} />
+      <TaskForm key={task?.id ?? 'new'} task={task} defaults={defaults} onCreated={onCreated} onDone={onClose} />
     </Modal>
   )
 }
 
-function TaskForm({ task, defaults, onDone }: { task?: Task | null; defaults?: TaskDraft; onDone: () => void }) {
+function TaskForm({ task, defaults, onDone, onCreated }: { task?: Task | null; defaults?: TaskDraft; onCreated?: (task: Task) => void; onDone: () => void }) {
   const { data: projects = [] } = useProjects()
   const create = useCreateTask()
   const update = useUpdateTask()
@@ -40,8 +40,8 @@ function TaskForm({ task, defaults, onDone }: { task?: Task | null; defaults?: T
     const tags = tagsText.split(',').map((t) => t.trim()).filter(Boolean)
     const payload: TaskInput = { ...form, title, tags }
     if (task) update.mutate({ id: task.id, patch: payload })
-    else create.mutate(payload)
-    onDone()
+    else create.mutate(payload, { onSuccess: created => { if (created) onCreated?.(created); if (onCreated) onDone() } })
+    if (task || !onCreated) onDone()
   }
 
   return (
@@ -105,7 +105,7 @@ function TaskForm({ task, defaults, onDone }: { task?: Task | null; defaults?: T
         )}
         <div className="flex gap-2">
           <Button variant="ghost" onClick={onDone}>Cancelar</Button>
-          <Button type="submit">{task ? 'Guardar' : 'Crear tarea'}</Button>
+          <Button type="submit" disabled={create.isPending || update.isPending}>{task ? 'Guardar' : 'Crear tarea'}</Button>
         </div>
       </div>
     </form>
