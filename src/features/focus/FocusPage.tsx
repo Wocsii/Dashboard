@@ -89,7 +89,7 @@ export function FocusPage() {
 
   return (
     <>
-      <PageHeader title="Enfoque" subtitle={`Bloques completados en esta sesión: ${state.completedFocus}`} />
+      <PageHeader title="Enfoque" />
       {saveConfirmed && <p role="status" className="mb-4 text-sm text-ink-soft">Tiempo guardado</p>}
       {saveError && <div role="alert" className="mb-5 rounded-card bg-blush p-4 text-sm"><p>No se pudo guardar el tiempo: {saveError}</p><p className="mt-1 text-xs">El registro se conserva pendiente en este navegador.</p><Button variant="light" size="sm" className="mt-3" onClick={retrySave}>Reintentar guardado</Button></div>}
       <div className="grid gap-5 lg:grid-cols-[1.3fr_1fr]">
