@@ -1,3 +1,4 @@
+import { ColumnSettings } from '../kanban/ColumnSettings'
 import { GoogleTasksSettings } from '../google-tasks/GoogleTasksSettings'
 import { useEffect } from 'react'
 import { useSearchParams } from 'react-router'
@@ -110,6 +111,7 @@ export function SettingsPage() {
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="flex flex-col gap-5">
           <Card><AppearanceSettings /></Card>
+          <Card><h2 className="mb-4 text-sm font-semibold">Columnas del tablero</h2><ColumnSettings /></Card>
           <Card><h2 className="mb-4 text-sm font-semibold">Google Tasks · Kanban</h2><GoogleTasksSettings /></Card>
           <Card>
             <h2 className="mb-4 text-sm font-semibold">Próximos eventos de Inicio</h2>

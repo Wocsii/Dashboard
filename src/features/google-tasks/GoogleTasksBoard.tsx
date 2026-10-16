@@ -1,3 +1,4 @@
+import { MAX_COLUMNS, useColumnVisibility, visibleColumns } from '../kanban/column-visibility'
 import { ColumnColorPicker } from '../kanban/ColumnColorPicker'
 import { useGoogleColumnColors } from './useGoogleColumnColors'
 import { projectColorVar, type ProjectColor } from '@/config/theme.config'
@@ -40,6 +41,7 @@ function Column({ column, onEdit, onAdd, pending, readOnly, color }: { color: Pr
 }
 export function GoogleTasksBoard() {
   const { data: profile } = useProfile()
+  const { selected, save: saveVisible } = useColumnVisibility(profile?.id ?? 'loading', 'google')
   const { colors, setColor } = useGoogleColumnColors(profile?.id)
   const [columnColor, setColumnColor] = useState<ProjectColor>('sky')
   const board = useGoogleBoard(true)
@@ -48,6 +50,7 @@ export function GoogleTasksBoard() {
   const [newList, setNewList] = useState(false)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }))
   const columns = board.data?.columns ?? []
+  const shownColumns = visibleColumns(columns, selected)
   const canWrite = board.data?.canWrite === true
   const close = () => { setEdit(null); setNewList(false); mutation.reset() }
   function onDragEnd({ active, over }: DragEndEvent) {
@@ -61,20 +64,20 @@ export function GoogleTasksBoard() {
     mutation.mutate({ action: 'move', list: from.list, task: from.task.id, destination, ...(previous && previous.id !== from.task.id ? { previous: previous.id } : {}) })
   }
   return <>
-    <PageHeader title="Tablero" subtitle="Tus listas y tareas de Google Tasks" actions={<><Button variant="light" disabled={board.isFetching} onClick={() => void board.refetch()}>Actualizar</Button>{canWrite && <Button onClick={() => { mutation.reset(); setColumnColor('sky'); setNewList(true) }}>Añadir columna</Button>}</>} />
-    <p className="mb-4 text-sm text-ink-soft">{canWrite ? 'Cada columna es una lista de Google Tasks. Arrastra las tarjetas o cambia su lista al editarlas.' : 'Solo lectura. Puedes activar la edición desde Ajustes.'} <Link to="/ajustes" className="underline">Gestionar conexión</Link></p>
+    <PageHeader title="Tablero" subtitle="Tus listas y tareas de Google Tasks" actions={<><Button variant="light" disabled={board.isFetching} onClick={() => void board.refetch()}>Actualizar</Button>{canWrite && <Button disabled={columns.length >= MAX_COLUMNS} onClick={() => { mutation.reset(); setColumnColor('sky'); setNewList(true) }}>Añadir columna</Button>}</>} />
+    <p className="mb-4 text-sm text-ink-soft">{canWrite ? 'Cada columna es una lista de Google Tasks. Arrastra las tarjetas o cambia su lista al editarlas.' : 'Solo lectura. Puedes activar la edición desde Ajustes.'} <Link to="/ajustes" className="underline">Elegir columnas y gestionar conexión</Link></p>
     {board.isLoading && <Spinner />}
     {board.error && <ErrorNote error={board.error} onRetry={() => void board.refetch()} />}
     {mutation.error && !edit && !newList && <ErrorNote error={mutation.error} />}
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
-      <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-4">{columns.map(column => <Column key={column.id} column={column} color={colors[column.id] ?? 'sky'} readOnly={!canWrite} pending={mutation.isPending} onAdd={() => { mutation.reset(); setEdit({ list: column.id }) }} onEdit={task => { mutation.reset(); setEdit({ list: column.id, task }) }} />)}</div>
+      <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-[repeat(auto-fit,minmax(210px,1fr))]">{shownColumns.map(column => <Column key={column.id} column={column} color={colors[column.id] ?? 'sky'} readOnly={!canWrite} pending={mutation.isPending} onAdd={() => { mutation.reset(); setEdit({ list: column.id }) }} onEdit={task => { mutation.reset(); setEdit({ list: column.id, task }) }} />)}</div>
     </DndContext>
     {!board.isLoading && !board.error && !columns.length && <p className="py-8 text-sm text-muted">No tienes listas. {canWrite ? 'Pulsa «Añadir columna» para crear la primera.' : 'Las listas que crees en Google aparecerán aquí.'}</p>}
     <Modal open={newList && canWrite} onClose={close} title="Añadir columna">
-      <form className="flex flex-col gap-4" onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget); mutation.mutate({ action: 'list', title: f.get('title') }, { onSuccess: result => { if (result && typeof result === 'object' && 'id' in result && typeof result.id === 'string') setColor(result.id, columnColor); close() } }) }}>
+      <form className="flex flex-col gap-4" onSubmit={e => { e.preventDefault(); if (columns.length >= MAX_COLUMNS) return; const f = new FormData(e.currentTarget); mutation.mutate({ action: 'list', title: f.get('title') }, { onSuccess: result => { if (result && typeof result === 'object' && 'id' in result && typeof result.id === 'string') { setColor(result.id, columnColor); if (selected !== null) saveVisible([...shownColumns.map(c => c.id), result.id]) } close() } }) }}>
         <Field label="Nombre de la lista">{id => <Input id={id} name="title" required maxLength={1024} />}</Field>
         <ColumnColorPicker value={columnColor} onChange={setColumnColor} />
-        {mutation.error && <ErrorNote error={mutation.error} />}<Button type="submit" disabled={mutation.isPending || !profile}>Crear lista en Google Tasks</Button>
+        {mutation.error && <ErrorNote error={mutation.error} />}<Button type="submit" disabled={mutation.isPending || !profile || columns.length >= MAX_COLUMNS}>Crear lista en Google Tasks</Button>
       </form>
     </Modal>
     <Modal open={!!edit && (canWrite || !!edit.task)} onClose={close} title={!canWrite ? 'Tarea de Google Tasks' : edit?.task ? 'Editar tarea de Google Tasks' : 'Nueva tarea de Google Tasks'}>

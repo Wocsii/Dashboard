@@ -31,3 +31,25 @@ test('sin Google Tasks: crear columna y tarjeta, mover con teclado y conservar t
   await page.reload()
   await expect(custom.getByText('Comparar vuelos')).toBeVisible()
 })
+
+test('elige columnas en ajustes y limita la creación a seis', async ({ page }) => {
+  await page.goto('/kanban')
+  for (const title of ['Revisión', 'Más adelante']) {
+    await page.getByRole('button', { name: 'Añadir columna', exact: true }).click()
+    await page.getByLabel('Nombre de la columna').fill(title)
+    await page.getByRole('button', { name: 'Crear columna', exact: true }).click()
+  }
+  await expect(page.getByRole('button', { name: 'Añadir columna', exact: true })).toBeDisabled()
+  await expect(page.getByRole('region')).toHaveCount(6)
+  await page.getByRole('link', { name: 'Ajustes', exact: true }).first().click()
+  await page.getByRole('checkbox', { name: 'Revisión', exact: true }).uncheck()
+  await page.getByRole('link', { name: 'Tablero', exact: true }).click()
+  await expect(page.getByRole('region')).toHaveCount(5)
+  await expect(page.getByRole('region', { name: /Revisión/ })).toHaveCount(0)
+  await page.reload()
+  await expect(page.getByRole('region')).toHaveCount(5)
+  await page.getByRole('link', { name: 'Ajustes', exact: true }).first().click()
+  await page.getByRole('checkbox', { name: 'Revisión', exact: true }).check()
+  await page.getByRole('link', { name: 'Tablero', exact: true }).click()
+  await expect(page.getByRole('region')).toHaveCount(6)
+})

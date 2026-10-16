@@ -44,3 +44,7 @@ Es una preferencia de protección dentro de Mi espacio: conserva el permiso OAut
 ## Colores de columnas
 
 Al crear una columna se puede elegir amarillo, verde, rosa, azul, lila o coral. El color se muestra en el punto de la cabecera. Las columnas locales conservan su color junto con su configuración. Google Tasks no tiene un campo de color para las listas: esos colores se guardan por cuenta en este navegador, sin enviarlos a Google.
+
+## Columnas visibles
+
+Ajustes → Columnas del tablero permite marcar hasta seis columnas. La selección se guarda por cuenta, navegador y origen (tablero local o Google Tasks). Ocultar una columna no borra listas ni tarjetas. Sin selección guardada se muestran las seis primeras disponibles. El tablero comienza con cuatro columnas locales y permite crear hasta seis en total; las listas de Google que ya superen ese número se conservan y se pueden seleccionar desde Ajustes. La creación de listas desde el tablero queda desactivada cuando ya existen seis. El diseño adapta el número de columnas al ancho disponible.
