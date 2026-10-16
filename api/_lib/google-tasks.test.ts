@@ -1,16 +1,16 @@
 // @vitest-environment node
 import { HttpError } from './http'
-import { tasksPages, tasksRequest, TASKS_ENABLED, TASKS_SCOPE } from './google-tasks'
+import { tasksPages, tasksRequest, TASKS_ENABLED, TASKS_SCOPE, TASKS_READONLY } from './google-tasks'
 import { POST } from './google-tasks-endpoint'
 
-const mocks = vi.hoisted(() => ({ scopes: ['https://www.googleapis.com/auth/tasks', 'dashboard:tasks:enabled'], token: vi.fn(), user: vi.fn() }))
+const mocks = vi.hoisted(() => ({ scopes: ['https://www.googleapis.com/auth/tasks', 'dashboard:tasks:enabled'], token: vi.fn(), update: vi.fn(), user: vi.fn() }))
 vi.mock('./google.js', () => ({ getAccessToken: mocks.token }))
 vi.mock('./http.js', async importOriginal => {
   const original = await importOriginal<typeof import('./http')>()
-  return { ...original, requireUser: mocks.user, supabaseAdmin: () => ({ from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { scopes: mocks.scopes, status: 'ok' } }) }) }) }) }) }
+  return { ...original, requireUser: mocks.user, supabaseAdmin: () => ({ from: () => ({ update: (row: { scopes: string[] }) => ({ eq: async (_key: string, uid: string) => { mocks.update(row, uid); mocks.scopes = row.scopes; return { error: null } } }), select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { scopes: mocks.scopes, status: 'ok' } }) }) }) }) }) }
 })
 describe('Google Tasks server', () => {
-  beforeEach(() => { mocks.scopes = [TASKS_SCOPE, TASKS_ENABLED]; mocks.token.mockResolvedValue('private-token'); mocks.user.mockResolvedValue({ id: 'user' }) })
+  beforeEach(() => { vi.clearAllMocks(); mocks.scopes = [TASKS_SCOPE, TASKS_ENABLED]; mocks.token.mockResolvedValue('private-token'); mocks.user.mockResolvedValue({ id: 'user' }) })
   afterEach(() => vi.unstubAllGlobals())
   it('no accede a Google si el usuario no ha activado Tasks', async () => {
     mocks.scopes = [TASKS_SCOPE]
@@ -38,4 +38,26 @@ describe('Google Tasks server', () => {
     const res = await POST(new Request('http://x/api/google/status?service=tasks', { method: 'POST', body: '{}' }))
     expect(res.status).toBe(401)
   })
+  it.each(['POST', 'PATCH', 'DELETE'])('bloquea %s antes de acceder a Google en solo lectura', async method => {
+    mocks.scopes.push(TASKS_READONLY)
+    const fetcher = vi.fn(); vi.stubGlobal('fetch', fetcher)
+    await expect(tasksRequest('user', '/lists/list/tasks/task', method, { title: 'Cambio' })).rejects.toMatchObject({ code: 'forbidden' })
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+  it('mantiene la lectura y permite volver a editar conservando la conexión', async () => {
+    mocks.scopes.push(TASKS_READONLY)
+    const fetcher = vi.fn().mockImplementation(async () => Response.json({ items: [] })); vi.stubGlobal('fetch', fetcher)
+    await expect(tasksRequest('user', '/users/@me/lists')).resolves.toEqual({ items: [] })
+    const res = await POST(new Request('http://x/api/google/status?service=tasks', { method: 'POST', body: JSON.stringify({ action: 'mode', mode: 'write' }) }))
+    expect(res.status).toBe(200)
+    expect(mocks.update).toHaveBeenCalledWith({ scopes: [TASKS_SCOPE, TASKS_ENABLED] }, 'user')
+    await expect(tasksRequest('user', '/users/@me/lists', 'POST', { title: 'Nueva' })).resolves.toEqual({ items: [] })
+  })
+  it('guarda solo lectura en la cuenta autenticada sin cambiar los permisos de Calendar', async () => {
+    mocks.scopes.push('https://www.googleapis.com/auth/calendar.events')
+    const res = await POST(new Request('http://x/api/google/status?service=tasks', { method: 'POST', body: JSON.stringify({ action: 'mode', mode: 'readonly' }) }))
+    expect(res.status).toBe(200)
+    expect(mocks.update).toHaveBeenCalledWith({ scopes: [TASKS_SCOPE, TASKS_ENABLED, 'https://www.googleapis.com/auth/calendar.events', TASKS_READONLY] }, 'user')
+  })
+
 })

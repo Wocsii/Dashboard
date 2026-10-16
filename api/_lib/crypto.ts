@@ -22,7 +22,7 @@ export function decrypt(payload: string, secretB64: string): string {
 }
 
 /** `state` de OAuth firmado con HMAC: protege contra CSRF y lleva el id de usuario */
-export type OAuthState = { uid: string; nonce: string; exp: number; service?: 'tasks' }
+export type OAuthState = { uid: string; nonce: string; exp: number; service?: 'tasks'; tasksReadOnly?: boolean }
 
 export function signState(state: OAuthState, secret: string): string {
   const body = Buffer.from(JSON.stringify(state)).toString('base64url')

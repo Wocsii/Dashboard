@@ -1,12 +1,13 @@
 import { z } from 'zod'
 import { isGoogleConfigured } from './env.js'
 import { handle, HttpError, json, requireUser, supabaseAdmin } from './http.js'
-import { tasksConnection, tasksPages, tasksRequest, TASKS_ENABLED, TASKS_SCOPE } from './google-tasks.js'
+import { tasksConnection, tasksPages, tasksRequest, TASKS_ENABLED, TASKS_SCOPE, TASKS_READONLY } from './google-tasks.js'
 
 const id = z.string().min(1).max(2048)
 const data = z.object({ title: z.string().trim().min(1).max(1024), notes: z.string().max(8192), due: z.string().regex(/^\d{4}-\d{2}-\d{2}T00:00:00\.000Z$/).nullable(), status: z.enum(['needsAction', 'completed']) })
 const command = z.discriminatedUnion('action', [
   z.object({ action: z.literal('disconnect') }),
+  z.object({ action: z.literal('mode'), mode: z.enum(['readonly', 'write']) }),
   z.object({ action: z.literal('list'), title: z.string().trim().min(1).max(1024) }),
   z.object({ action: z.literal('save'), list: id, task: id.optional(), etag: z.string().optional(), data }),
   z.object({ action: z.literal('delete'), list: id, task: id, etag: z.string().optional() }),
@@ -18,16 +19,27 @@ export const GET = handle(async (req) => {
   if (!isGoogleConfigured()) return json({ state: 'not_configured' })
   const c = await tasksConnection(user.id)
   const state = !c?.scopes?.includes(TASKS_ENABLED) ? 'disconnected' : c.status !== 'ok' || !c.scopes.includes(TASKS_SCOPE) ? 'needs_reauth' : 'connected'
-  if (new URL(req.url).searchParams.get('view') === 'status' || state !== 'connected') return json({ state, email: c?.google_email })
+  const mode = c?.scopes?.includes(TASKS_READONLY) || state === 'disconnected' ? 'readonly' : 'write'
+  const canWrite = state === 'connected' && mode === 'write'
+  if (new URL(req.url).searchParams.get('view') === 'status' || state !== 'connected') return json({ state, email: c?.google_email, mode, canWrite })
   const lists = await tasksPages<{ id: string; title: string }>(user.id, '/users/@me/lists')
   const columns = await Promise.all(lists.map(async (list) => ({ ...list, tasks: await tasksPages(user.id, `/lists/${enc(list.id)}/tasks?showCompleted=true&showHidden=true&showDeleted=false`) })))
-  return json({ columns })
+  return json({ columns, canWrite })
 })
 export const POST = handle(async (req) => {
   const user = await requireUser(req)
   const parsed = command.safeParse(await req.json().catch(() => null))
   if (!parsed.success) throw new HttpError(400, 'bad_request', 'Revisa los datos de la tarea o lista')
   const c = parsed.data
+  if (c.action === 'mode') {
+    const connection = await tasksConnection(user.id)
+    if (!connection?.scopes?.includes(TASKS_ENABLED)) throw new HttpError(409, 'not_connected', 'Conecta Google Tasks desde Ajustes')
+    const scopes = connection.scopes.filter((s: string) => s !== TASKS_READONLY)
+    if (c.mode === 'readonly') scopes.push(TASKS_READONLY)
+    const { error } = await supabaseAdmin().from('google_connections').update({ scopes }).eq('user_id', user.id)
+    if (error) throw new Error('No se pudo cambiar el modo de Google Tasks')
+    return json({ ok: true })
+  }
   if (c.action === 'disconnect') {
     const connection = await tasksConnection(user.id)
     if (connection) {

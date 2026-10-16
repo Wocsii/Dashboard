@@ -62,7 +62,7 @@ export function emailFromIdToken(idToken?: string): string | null {
   }
 }
 
-export async function saveConnection(userId: string, t: TokenResponse, tasks = false) {
+export async function saveConnection(userId: string, t: TokenResponse, tasks = false, tasksReadOnly = false) {
   const env = serverEnv()
   const db = supabaseAdmin()
   const { data: existing } = await db.from('google_connections').select('refresh_token_encrypted, scopes').eq('user_id', userId).maybeSingle()
@@ -74,7 +74,7 @@ export async function saveConnection(userId: string, t: TokenResponse, tasks = f
     refresh_token_encrypted: refresh,
     access_token_encrypted: encrypt(t.access_token, env.tokenKey!),
     access_token_expires_at: new Date(Date.now() + t.expires_in * 1000).toISOString(),
-    scopes: [...t.scope.split(' '), ...(tasks || existing?.scopes?.includes('dashboard:tasks:enabled') ? ['dashboard:tasks:enabled'] : [])],
+    scopes: [...t.scope.split(' '), ...(tasks || existing?.scopes?.includes('dashboard:tasks:enabled') ? ['dashboard:tasks:enabled'] : []), ...((tasks ? tasksReadOnly : existing?.scopes?.includes('dashboard:tasks:readonly')) ? ['dashboard:tasks:readonly'] : [])],
     status: 'ok',
     connected_at: new Date().toISOString(),
   })

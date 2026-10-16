@@ -18,7 +18,7 @@ export async function GET(req: Request): Promise<Response> {
   if (!code || !state) return back('invalid_state')
 
   try {
-    await saveConnection(state.uid, await exchangeCode(code), state.service === 'tasks')
+    await saveConnection(state.uid, await exchangeCode(code), state.service === 'tasks', state.tasksReadOnly)
     return back('connected')
   } catch {
     // El detalle puede incluir respuestas o credenciales de Google.

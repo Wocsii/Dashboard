@@ -2,19 +2,21 @@ import { getAccessToken } from './google.js'
 import { HttpError, supabaseAdmin } from './http.js'
 
 export const TASKS_SCOPE = 'https://www.googleapis.com/auth/tasks'
+export const TASKS_READONLY = 'dashboard:tasks:readonly'
 export const TASKS_ENABLED = 'dashboard:tasks:enabled'
 export async function tasksConnection(uid: string) {
   const { data, error } = await supabaseAdmin().from('google_connections').select('status, google_email, scopes').eq('user_id', uid).maybeSingle()
   if (error) throw new Error('No se pudo comprobar Google Tasks')
   return data
 }
-export async function requireTasks(uid: string) {
+export async function requireTasks(uid: string, write = false) {
   const c = await tasksConnection(uid)
   if (!c?.scopes?.includes(TASKS_ENABLED)) throw new HttpError(409, 'not_connected', 'Conecta Google Tasks desde Ajustes')
+  if (write && c.scopes.includes(TASKS_READONLY)) throw new HttpError(403, 'forbidden', 'Google Tasks está en solo lectura. Activa la edición desde Ajustes.')
   if (!c.scopes.includes(TASKS_SCOPE)) throw new HttpError(403, 'needs_permission', 'Vuelve a conectar Google Tasks para aceptar el permiso')
 }
 export async function tasksRequest<T>(uid: string, path: string, method = 'GET', body?: unknown, etag?: string): Promise<T> {
-  await requireTasks(uid)
+  await requireTasks(uid, method !== 'GET')
   const token = await getAccessToken(uid)
   const res = await fetch(`https://tasks.googleapis.com/tasks/v1${path}`, {
     method, headers: { Authorization: `Bearer ${token}`, ...(body ? { 'Content-Type': 'application/json' } : {}), ...(etag ? { 'If-Match': etag } : {}) },

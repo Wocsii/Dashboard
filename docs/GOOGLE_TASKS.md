@@ -32,3 +32,11 @@ La edición y eliminación usan `If-Match` con el etag de Google para detectar c
 ## Validación
 
 Tests de servidor con respuestas simuladas cubren autenticación, conexión opcional, paginación, conflictos y validación de comandos. Tests de componentes cubren columnas dinámicas, creación de listas, movimiento accesible y desconexión. La prueba real queda pendiente de habilitar la API y aceptar el consentimiento de la cuenta.
+
+## Solo lectura o edición
+
+En Ajustes → Google Tasks, cada cuenta elige **Solo lectura** o **Permitir edición**. Se puede elegir antes de conectar y cambiar después sin desconectar. Las conexiones nuevas empiezan por defecto en solo lectura; las existentes conservan la edición hasta que la persona cambie el modo.
+
+En solo lectura se consultan listas y detalles, pero no se muestran controles para crear, mover, editar, completar o borrar. El servidor bloquea también todas las escrituras aunque una pestaña conserve una vista anterior. El modo se guarda en la cuenta y se actualiza entre dispositivos al recargar o con la actualización periódica.
+
+Es una preferencia de protección dentro de Mi espacio: conserva el permiso OAuth de Google para poder activar la edición cuando se quiera, sin pedir consentimiento cada vez. No cambia lo que se puede hacer desde Google Tasks u otras aplicaciones. Tampoco modifica los permisos de Google Calendar. El marcador interno `dashboard:tasks:readonly` se conserva al reconectar Calendar y nunca se envía a Google como scope.
