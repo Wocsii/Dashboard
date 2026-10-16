@@ -128,7 +128,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
         ended_at: new Date(endedAt).toISOString(),
         duration_seconds: seconds,
         completed: completed && !s.indefinite,
-        task_id: taskId,
+        task_id: task?.id ?? null,
       })
     },
     [log, logEnabled, taskId, tasks, projects],

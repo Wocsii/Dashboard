@@ -41,7 +41,16 @@ export function createSupabaseRepository(): Repository {
 
     listFocusSessions: async (since) =>
       unwrap(await db.from('focus_sessions').select('*').gte('started_at', since).order('started_at', { ascending: false })),
-    createFocusSession: async (input) => unwrap(await db.from('focus_sessions').upsert({ ...input, user_id: await uid() }).select().single()),
+    createFocusSession: async (input) => {
+      const row = { ...input, user_id: await uid() }
+      const result = await db.from('focus_sessions').upsert(row).select().single()
+      // A deleted task can still be referenced by a restored timer or an offline save.
+      // Preserve the session under the same id, without the missing association.
+      if (row.task_id && result.error?.code === '23503' && result.error.message.includes('focus_sessions_task_id_fkey')) {
+        return unwrap(await db.from('focus_sessions').upsert({ ...row, task_id: null }).select().single())
+      }
+      return unwrap(result)
+    },
 
     getSettings: async () => {
       const row = unwrap(await db.from('user_settings').select('*').maybeSingle())

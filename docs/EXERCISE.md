@@ -23,3 +23,5 @@ Los guardados fallidos se reintentan y conservan una copia pendiente por cuenta 
 ## Base de datos
 
 Se reutilizan la configuración JSON y los registros de `20261016110000_exercise_projects.sql`; esta migración debe estar aplicada en Supabase. No hace falta una migración adicional para Estudio ni para las metas de tiempo.
+
+Si una tarea se elimina mientras su reloj o un guardado sin conexión sigue pendiente, el tiempo se conserva como sesión sin tarea asociada, con el mismo identificador. Los demás errores de permisos o de base de datos no se ocultan; Enfoque muestra el motivo y permite reintentar.
