@@ -7,6 +7,7 @@ import { ProgressRing } from '@/components/ui/Progress'
 import { Spinner } from '@/components/ui/States'
 import { formatMinutes } from '@/lib/stats'
 import { useStats } from './useStats'
+import { statsMessage } from './messages'
 
 function Tile({ icon: Icon, label, value, tone = 'white' }: { icon: LucideIcon; label: string; value: string | number; tone?: 'white' | 'sun' }) {
   return (
@@ -27,7 +28,7 @@ export function StatsPage() {
   if (s.loading) return <Spinner />
   return (
     <>
-      <PageHeader title="Estadísticas" subtitle="Cómo va tu semana, sin agobios" />
+      <PageHeader title="Estadísticas" subtitle={statsMessage(s)} />
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
         <Tile icon={CheckCircle2} label="Tareas terminadas" value={s.completed} />
         <Tile icon={CircleDashed} label="Tareas pendientes" value={s.pending} />
