@@ -40,3 +40,7 @@ En Ajustes → Google Tasks, cada cuenta elige **Solo lectura** o **Permitir edi
 En solo lectura se consultan listas y detalles, pero no se muestran controles para crear, mover, editar, completar o borrar. El servidor bloquea también todas las escrituras aunque una pestaña conserve una vista anterior. El modo se guarda en la cuenta y se actualiza entre dispositivos al recargar o con la actualización periódica.
 
 Es una preferencia de protección dentro de Mi espacio: conserva el permiso OAuth de Google para poder activar la edición cuando se quiera, sin pedir consentimiento cada vez. No cambia lo que se puede hacer desde Google Tasks u otras aplicaciones. Tampoco modifica los permisos de Google Calendar. El marcador interno `dashboard:tasks:readonly` se conserva al reconectar Calendar y nunca se envía a Google como scope.
+
+## Colores de columnas
+
+Al crear una columna se puede elegir amarillo, verde, rosa, azul, lila o coral. El color se muestra en el punto de la cabecera. Las columnas locales conservan su color junto con su configuración. Google Tasks no tiene un campo de color para las listas: esos colores se guardan por cuenta en este navegador, sin enviarlos a Google.

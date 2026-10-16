@@ -1,3 +1,5 @@
+import { ColumnColorPicker } from './ColumnColorPicker'
+import { projectColorVar, type ProjectColor } from '@/config/theme.config'
 import { TaskDialog } from '../tasks/TaskDialog'
 import { useProfile } from '../settings/hooks'
 import { Modal } from '@/components/ui/Modal'
@@ -63,10 +65,11 @@ const columnKeyboardCoordinates = (order: string[]): KeyboardCoordinateGetter =>
   return { x: rect.left + 8, y: rect.top + 8 }
 }
 
-function Column({ status, title, dot, ids, byId, projectMap, onOpen, onAdd }: {
+function Column({ status, title, dot, color, ids, byId, projectMap, onOpen, onAdd }: {
   status: string
   title: string
   dot: string
+  color?: ProjectColor
   ids: string[]
   byId: Map<string, Task>
   projectMap: Map<string, Project>
@@ -78,7 +81,7 @@ function Column({ status, title, dot, ids, byId, projectMap, onOpen, onAdd }: {
     <section aria-labelledby={`col-${status}`} className={cn('flex min-h-40 flex-col rounded-card bg-glass p-3 shadow-pill backdrop-blur-xl transition-colors', isOver && 'bg-glass-strong')}>
       <header className="mb-3 flex items-center justify-between px-1">
         <h2 id={`col-${status}`} className="flex items-center gap-2 text-sm font-semibold">
-          <span className={cn('size-2 rounded-full', dot)} aria-hidden />
+          <span className={cn('size-2 rounded-full', dot)} style={color ? { background: projectColorVar(color) } : undefined} aria-hidden />
           {title}
           <span className="rounded-full bg-card/80 px-1.5 text-[11px] font-medium text-muted">{ids.length}</span>
         </h2>
@@ -110,6 +113,7 @@ function LocalKanbanPage() {
 function LocalBoard({ userId }: { userId: string }) {
   const { config, setConfig, assign, storageError } = useLocalColumns(userId)
   const definitions = useMemo(() => [...defaultColumns, ...config.columns.map(c => ({ ...c, dot: 'bg-sky-400' }))], [config.columns])
+  const [columnColor, setColumnColor] = useState<ProjectColor>('sky')
   const [addingColumn, setAddingColumn] = useState(false)
   const [newCardColumn, setNewCardColumn] = useState<string | null>(null)
 
@@ -207,7 +211,7 @@ function LocalBoard({ userId }: { userId: string }) {
               <option value="all">Todos los proyectos</option>
               {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
-            <Button variant="light" onClick={() => setAddingColumn(true)}><Plus className="size-4" /> Añadir columna</Button>
+            <Button variant="light" onClick={() => { setColumnColor('sky'); setAddingColumn(true) }}><Plus className="size-4" /> Añadir columna</Button>
             <Button onClick={() => newTask({ project_id: projectFilter === 'all' ? null : projectFilter })}>
               <Plus className="size-4" /> Nueva tarjeta
             </Button>
@@ -229,12 +233,13 @@ function LocalBoard({ userId }: { userId: string }) {
         }}
       >
         <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {definitions.map(({ id, title, dot, status }) => (
+          {definitions.map(({ id, title, dot, status, color }) => (
             <Column
               key={id}
               status={id}
               title={title}
               dot={dot}
+              color={color}
               ids={columns[id] ?? []}
               byId={byId}
               projectMap={projectMap}
@@ -251,10 +256,11 @@ function LocalBoard({ userId }: { userId: string }) {
           const data = new FormData(event.currentTarget)
           const title = String(data.get('title') ?? '').trim()
           if (!title) return
-          setConfig(previous => ({ ...previous, columns: [...previous.columns, { id: `custom:${crypto.randomUUID()}`, title, status: data.get('status') as TaskStatus }] }))
+          setConfig(previous => ({ ...previous, columns: [...previous.columns, { id: `custom:${crypto.randomUUID()}`, title, status: data.get('status') as TaskStatus, color: columnColor }] }))
           setAddingColumn(false)
         }}>
           <Field label="Nombre de la columna">{id => <Input id={id} name="title" required maxLength={80} autoFocus placeholder="Por ejemplo, En revisión" />}</Field>
+          <ColumnColorPicker value={columnColor} onChange={setColumnColor} />
           <Field label="Estado de las tarjetas">{id => <Select id={id} name="status" defaultValue="todo">{Object.entries(copy.status).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</Select>}</Field>
           <p className="text-xs text-muted">El estado se aplica al añadir o mover tarjetas a esta columna. Las columnas personalizadas y su distribución se guardan en este navegador para tu cuenta.</p>
           <div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setAddingColumn(false)}>Cancelar</Button><Button type="submit" disabled={config.columns.length >= 100}>Crear columna</Button></div>
