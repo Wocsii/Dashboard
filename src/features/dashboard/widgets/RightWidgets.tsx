@@ -17,6 +17,8 @@ import { useTasks, useUpdateTask } from '../../tasks/hooks'
 import { DueBadge } from '../../tasks/TaskBits'
 import { useExerciseLogs } from '../../projects/exercise-hooks'
 import { exerciseSummary } from '../../projects/exercise'
+import { TaskRow } from '../../tasks/TaskRow'
+import { TaskFocusButton } from '../../focus/TaskFocusButton'
 import { useSettings } from '../../settings/hooks'
 
 /** Panel translúcido de tareas de hoy (como "Quick requests") */
@@ -24,7 +26,11 @@ export function TodayListWidget() {
   const { data: tasks = [] } = useTasks()
   const update = useUpdateTask()
   const { newTask, editTask } = useQuickActions()
-  const list = sortTasks(tasks.filter((t) => isDueToday(t) || isOverdue(t)), 'priority').slice(0, 6)
+  const { data: projects = [] } = useProjects()
+  const habitIds = new Set(projects.filter((p) => p.exercise_config).map((p) => p.id))
+  const activeHabits = new Set(projects.filter((p) => p.exercise_config && p.status === 'active').map((p) => p.id))
+  const habitTasks = tasks.filter((t) => activeHabits.has(t.project_id ?? ''))
+  const list = sortTasks(tasks.filter((t) => (isDueToday(t) || isOverdue(t)) && !t.tags.includes('habit-session') && (!t.project_id || !habitIds.has(t.project_id))), 'priority').sort((a,b) => Number(habitIds.has(a.project_id ?? '')) - Number(habitIds.has(b.project_id ?? ''))).slice(0, 6)
 
   return (
     <Card tone="glass" className="animate-rise">
@@ -45,11 +51,12 @@ export function TodayListWidget() {
               <span className="line-clamp-2 text-xs leading-snug font-medium">{t.title}</span>
               <DueBadge task={t} />
             </button>
-            <Play className="size-3 shrink-0 fill-ink text-ink" aria-hidden />
+            <TaskFocusButton task={t} visible />
           </li>
         ))}
       </ul>
-      {list.length === 0 && <p className="py-4 text-center text-xs text-muted">Nada pendiente para hoy ☀️</p>}
+      {habitTasks.length > 0 && <div className="mt-3 border-t border-line pt-3"><h3 className="text-xs font-semibold">Tareas de hábitos</h3><ul className="-mx-3 mt-2">{habitTasks.map((t) => <TaskRow key={t.id} task={t} project={projects.find((p) => p.id === t.project_id)} compact />)}</ul></div>}
+      {list.length === 0 && habitTasks.length === 0 && <p className="py-4 text-center text-xs text-muted">Nada pendiente para hoy ☀️</p>}
     </Card>
   )
 }
@@ -97,7 +104,7 @@ export function ActiveProjectsWidget() {
   const { data: tasks = [] } = useTasks()
   const { data:logs = [] } = useExerciseLogs(projects.some((p) => !!p.exercise_config))
   const { data:settings } = useSettings()
-  const active = projects.filter((p) => p.status === 'active').slice(0, 4)
+  const active = projects.filter((p) => p.status === 'active' && !p.exercise_config).slice(0, 4)
   return (
     <Card className="animate-rise">
       <div className="flex items-center justify-between">

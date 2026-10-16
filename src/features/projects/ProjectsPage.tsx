@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { CalendarRange, Dumbbell, Pencil, Plus } from 'lucide-react'
+import { CalendarRange, Dumbbell, Repeat, Pencil, Plus } from 'lucide-react'
 import { Button, IconButton } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Chip } from '@/components/ui/Chip'
@@ -21,6 +21,7 @@ import { useProjects } from './hooks'
 import { useSettings } from '../settings/hooks'
 import { useExerciseLogs } from './exercise-hooks'
 import { exerciseMetrics, exerciseSummary } from './exercise'
+import { HabitTracker } from './HabitTracker'
 import { ExercisePanel } from './ExercisePanel'
 
 const statusTone = { active: 'mint', paused: 'sun', completed: 'neutral' } as const
@@ -32,28 +33,29 @@ function ProjectCard({ project, tasks, selected, onSelect, logs, weekStartsOn }:
   const latest = [...logs].filter((log) => log.status === 'exercise').sort((a,b) => b.date.localeCompare(a.date))[0]
   return (
     <Card as="article" padded={false} className={cn('group h-full overflow-hidden transition-transform hover:-translate-y-0.5', selected && 'ring-2 ring-ink')}>
-      <button type="button" onClick={onSelect} className="flex h-full min-h-[280px] w-full flex-col p-5 text-left" aria-pressed={selected}>
+      <div onClick={onSelect} className="flex h-full min-h-[280px] w-full flex-col p-5 text-left" >
         <div className="mb-4 flex w-full items-center justify-between gap-2">
           <span className="grid size-9 place-items-center rounded-full text-sm font-semibold" style={{ background: projectColorVar(project.color) }} aria-hidden>
-            {config ? <Dumbbell className="size-4" /> : project.name.charAt(0).toUpperCase()}
+            {config ? config.kind === 'habit' ? <Repeat className="size-4" /> : <Dumbbell className="size-4" /> : project.name.charAt(0).toUpperCase()}
           </span>
           <Chip tone={statusTone[project.status]}>{copy.projectStatus[project.status]}</Chip>
         </div>
-        <h2 className="text-base font-semibold tracking-tight">{project.name}</h2>
+        <h2 className="text-base font-semibold tracking-tight"><button type="button" onClick={(e) => { e.stopPropagation(); onSelect() }} aria-pressed={selected}>{project.name}</button></h2>
         {project.description && <p className="mt-1 line-clamp-2 text-xs text-muted">{project.description}</p>}
         <div className="mt-auto flex w-full items-end justify-between gap-2 pt-5">
           <span className="text-3xl font-light tracking-tight">{summary ? `${summary.workouts}/${config!.weeklyTarget}` : `${percent}%`}</span>
           <span className="text-right text-[11px] text-muted">{summary ? `Esta semana · Racha ${summary.streak}` : `${done}/${total} tareas`}</span>
         </div>
-        <ProgressBar value={summary?.percent ?? percent} className="mt-2 w-full" color={projectColorVar(project.color)} label={`Progreso de ${project.name}`} />
-        {config && <p className="mt-3 min-h-4 text-[11px] text-muted">{config.metrics.slice(0,2).map(({ id }) => latest?.values[id] !== undefined ? `${exerciseMetrics[id].label}: ${latest.values[id]} ${exerciseMetrics[id].unit}` : exerciseMetrics[id].label).join(' · ') || 'Registro diario de ejercicio y descanso'}</p>}
+        {!config && <ProgressBar value={percent} className="mt-2 w-full" color={projectColorVar(project.color)} label={`Progreso de ${project.name}`} />}
+        {config && <HabitTracker project={project} />}
+        {config && <p className="mt-3 min-h-4 text-[11px] text-muted">{config.metrics.slice(0,2).map(({ id }) => latest?.values[id] !== undefined ? `${exerciseMetrics[id].label}: ${latest.values[id]} ${exerciseMetrics[id].unit}` : exerciseMetrics[id].label).join(' · ') || 'Registro diario del hábito'}</p>}
         {(project.start_date || project.due_date) && (
           <p className="mt-3 flex items-center gap-1.5 text-[11px] text-muted">
             <CalendarRange className="size-3" aria-hidden />
             {formatShort(project.start_date) || '—'} → {formatShort(project.due_date) || '—'}
           </p>
         )}
-      </button>
+      </div>
     </Card>
   )
 }
@@ -79,11 +81,11 @@ export function ProjectsPage() {
   return (
     <>
       <PageHeader
-        title="Proyectos"
+        title="Proyectos y hábitos"
         subtitle={`${counts.active} activos · ${counts.paused} pausados · ${counts.completed} completados`}
         actions={
           <Button onClick={newProject}>
-            <Plus className="size-4" /> Nuevo proyecto
+            <Plus className="size-4" /> Nuevo proyecto o hábito
           </Button>
         }
       />
@@ -104,9 +106,11 @@ export function ProjectsPage() {
 
       <div className="grid gap-5 xl:grid-cols-[1fr_380px]">
         <div className="grid content-start gap-4 sm:grid-cols-2 2xl:grid-cols-3">
-          {list.map((p) => (
+          {[false, true].map((habits) => <div key={String(habits)} className="contents">
+          {list.some((p) => !!p.exercise_config === habits) && <h2 className="sm:col-span-2 2xl:col-span-3 text-lg font-semibold">{habits ? 'Hábitos' : 'Proyectos'}</h2>}
+          {list.filter((p) => !!p.exercise_config === habits).map((p) => (
             <ProjectCard key={p.id} project={p} tasks={tasks} selected={p.id === selectedId} onSelect={() => setSelectedId(p.id === selectedId ? null : p.id)} logs={(exerciseLogs.data ?? []).filter((log) => log.project_id === p.id)} weekStartsOn={settings?.week_starts_on === 0 ? 0 : 1} />
-          ))}
+          ))}</div>)}
           {projects && list.length === 0 && (
             <Card className="sm:col-span-2"><EmptyState>{copy.empty.projects}</EmptyState></Card>
           )}
@@ -117,7 +121,7 @@ export function ProjectsPage() {
             <>
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="label">Proyecto</p>
+                  <p className="label">{selected.exercise_config ? 'Hábito' : 'Proyecto'}</p>
                   <h2 className="font-display text-3xl leading-tight">{selected.name}</h2>
                 </div>
                 <IconButton label="Editar proyecto" onClick={() => editProject(selected)}>
@@ -138,7 +142,7 @@ export function ProjectsPage() {
               {related.length === 0 && <EmptyState className="py-4">Sin tareas todavía</EmptyState>}
             </>
           ) : (
-            <EmptyState>Selecciona un proyecto para ver sus tareas</EmptyState>
+            <EmptyState>Selecciona un proyecto o hábito para ver sus tareas</EmptyState>
           )}
         </Card>
       </div>

@@ -14,6 +14,8 @@ import { useUpcomingCalendarProvider } from '../../calendar/CalendarProvider'
 import { CalendarStatusPanel } from '../../calendar/CalendarStatusPanel'
 import { eventWhen } from '../../calendar/format'
 import { usePomodoro } from '../../focus/PomodoroProvider'
+import { HabitTracker } from '../../projects/HabitTracker'
+import { useProjects } from '../../projects/hooks'
 import { useProjectMap } from '../../projects/hooks'
 import { useQuickActions } from '../../quick-actions'
 import { useStats } from '../../stats/useStats'
@@ -72,7 +74,7 @@ export function FocusTaskWidget() {
   const update = useUpdateTask()
   const { editTask } = useQuickActions()
   const pomodoro = usePomodoro()
-  const task = pickFocusTask(tasks)
+  const task = pickFocusTask(tasks.filter((t) => !t.tags.includes('habit-session')))
 
   if (!task)
     return (
@@ -190,4 +192,11 @@ export function UpcomingEventsWidget() {
       ))}
     </>
   )
+}
+
+export function HabitsWidget() {
+  const { data: projects = [] } = useProjects()
+  const habits = projects.filter((p) => p.exercise_config && p.status === 'active')
+  if (!habits.length) return null
+  return <Card className="animate-rise"><h2 className="text-[17px] font-semibold">Mis hábitos</h2><div className="mt-3 flex flex-col gap-4">{habits.map((p) => <section key={p.id} className="rounded-tile border border-line p-3"><Link to="/proyectos" className="text-sm font-semibold hover:underline">{p.name}</Link><HabitTracker project={p} timer /></section>)}</div></Card>
 }

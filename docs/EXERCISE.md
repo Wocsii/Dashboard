@@ -1,17 +1,13 @@
-# Proyectos de ejercicio
+# Proyectos y hábitos
 
-En Proyectos, crea o edita un proyecto y activa **Proyecto de ejercicio**. Elige de 1 a 7 entrenamientos semanales, las métricas visibles y sus metas opcionales. Desactivar la opción conserva el historial; volver a activarla permite consultarlo de nuevo.
+La sección Proyectos y hábitos separa los proyectos con porcentaje de las rutinas con un rastreador semanal. Al crear, activa **Crear como hábito**, elige General o Ejercicio y configura los días por semana. Los hábitos de ejercicio conservan las métricas y registros existentes.
 
-Los proyectos de ejercicio comparten la cuadrícula y el tamaño de tarjeta con los demás proyectos. Su progreso muestra entrenamientos de esta semana frente a la frecuencia elegida. La semana respeta el día de inicio de Ajustes.
+Inicio muestra Mis hábitos únicamente cuando hay hábitos activos. Puedes marcar hoy, corregir días anteriores o iniciar el reloj. Las tareas vinculadas aparecen juntas en el panel Para hoy. Sus checks registran el día, sin completar permanentemente la rutina.
 
-Selecciona la tarjeta para registrar ejercicio o descanso, introducir métricas, ver gráficos y crear tareas/sesiones. Hay un registro por proyecto y día: volver a guardar lo actualiza. Puedes elegir un día anterior para corregirlo o borrarlo. Los gráficos muestran los últimos diez registros de cada métrica; un campo vacío no se trata como cero.
+Iniciar el reloj de cualquier tarea vinculada a un hábito activo registra automáticamente ese día. Reanudar no duplica el registro ni borra las métricas; parar conserva el check. Los descansos mantienen la racha sin sumar completados. Los hábitos pausados desaparecen de Inicio y no permiten nuevos registros.
 
-Los descansos conservan la racha sin sumar entrenamientos. Un día sin registro la interrumpe; el día actual puede seguir pendiente. Cambiar la frecuencia modifica la meta semanal, sin alterar los registros anteriores.
+El rastreador respeta el inicio de semana de Ajustes y los colores de los temas día y noche. El histórico se conserva en demo y Supabase. Los hábitos no cuentan como proyectos activos; las tareas auxiliares del reloj no aumentan las tareas pendientes de las estadísticas.
 
-## Base de datos antes de publicar
+## Base de datos
 
-Aplica `supabase/migrations/20261016110000_exercise_projects.sql` a Supabase antes de desplegar el código. Añade la configuración al proyecto y una tabla de registros con controles de valores, aislamiento por usuario y borrado en cascada al eliminar el proyecto. No requiere cambiar las tareas existentes.
-
-Con el proyecto Supabase enlazado, usa `npm run db:push`. También puedes ejecutar el archivo de migración en el editor SQL de ese proyecto. No basta con publicar el frontend en Vercel.
-
-En modo demo se utiliza el repositorio local y no hace falta aplicar la migración.
+Se reutilizan la configuración JSON y los registros de `20261016110000_exercise_projects.sql`; esta migración debe estar aplicada en Supabase. No hace falta una migración adicional para los hábitos generales.

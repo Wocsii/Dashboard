@@ -11,10 +11,11 @@ import { useTasks } from '../tasks/hooks'
 
 /** Todas las métricas derivadas en un solo sitio (Inicio y Estadísticas) */
 export function useStats() {
-  const { data: tasks = [], isLoading: l1 } = useTasks()
+  const { data: allTasks = [], isLoading: l1 } = useTasks()
   const { data: sessions = [], isLoading: l2 } = useFocusSessions()
   const { data: projects = [] } = useProjects()
   const { data: settings } = useSettings()
+  const tasks = useMemo(() => allTasks.filter((t) => !t.tags.includes('habit-session')), [allTasks])
   const weekStartsOn = (settings?.week_starts_on ?? 1) as 0 | 1
 
   return useMemo(() => {
@@ -54,7 +55,7 @@ export function useStats() {
       completedThisWeek: week.reduce((a, d) => a + d.completed, 0),
       focusToday: focusMinutes(sessions, today, today),
       focusThisWeek: focusMinutes(sessions, weekStart, today),
-      activeProjects: projects.filter((p) => p.status === 'active').length,
+      activeProjects: projects.filter((p) => p.status === 'active' && !p.exercise_config).length,
       streak: productivityStreak(tasks, sessions, now),
       completedBars: toBars((d) => d.completed, (n) => `${n} tareas`),
       focusBars: toBars((d) => d.focusMinutes, formatMinutes),

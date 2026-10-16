@@ -20,7 +20,7 @@ export function ActiveProjectWidget() {
   const { data: tasks = [] } = useTasks()
   const { data:logs = [] } = useExerciseLogs(projects.some((p) => !!p.exercise_config))
   const { data:settings } = useSettings()
-  const active = projects.filter((p) => p.status === 'active')
+  const active = projects.filter((p) => p.status === 'active' && !p.exercise_config)
   const [chosen, setChosen] = useState(() => {
     try {
       return localStorage.getItem(PROJECT_KEY)

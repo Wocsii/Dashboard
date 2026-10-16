@@ -4,6 +4,7 @@
  * src/features/dashboard/widgets/registry.tsx. Mueve, quita o reordena libremente.
  */
 export type WidgetId =
+  | 'habits'
   | 'activeProject'
   | 'productivity'
   | 'weeklySummary'
@@ -17,7 +18,7 @@ export type WidgetId =
 
 export const dashboardLayout: { left: WidgetId[]; center: WidgetId[]; right: WidgetId[]; bottom: WidgetId[] } = {
   left: ['activeProject', 'productivity', 'weeklySummary'],
-  center: ['daySummary', 'focusTask', 'upcomingEvents'],
+  center: ['daySummary', 'habits', 'focusTask', 'upcomingEvents'],
   right: ['todayList', 'pomodoroMini', 'activeProjects'],
   bottom: ['weeklyChart'],
 }

@@ -1,5 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useToast } from '@/components/ui/Toast'
+import { useQueryClient } from '@tanstack/react-query'
+import { repo } from '@/data'
+import { todayISO } from '@/lib/dates'
+import type { Project, Task } from '@/types/domain'
+import { useProjects } from '../projects/hooks'
+import { useTasks } from '../tasks/hooks'
+import { exerciseLogsKey } from '../projects/exercise-hooks'
 import { copy } from '@/config/copy.es'
 import type { FocusKind } from '@/types/domain'
 import { useSettings } from '../settings/hooks'
@@ -87,6 +94,11 @@ async function once(id: string, fn: () => void) {
 export function PomodoroProvider({ children }: { children: ReactNode }) {
   const { data: settings } = useSettings()
   const log = useLogFocusSession()
+  const qc = useQueryClient()
+  const checking = useRef(new Set<string>())
+  const { data: projects } = useProjects()
+  const { data: tasks } = useTasks()
+  const linkedHabit = useRef<string | null>(null)
   const toast = useToast()
   const durations: P.Durations = useMemo(
     () => ({
@@ -176,6 +188,54 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   }, [stored.status])
 
   const remainingMs = P.remaining(state, now)
+
+  const currentProjectId = tasks?.find((t) => t.id === taskId)?.project_id
+  const currentProject = projects?.find((p) => p.id === currentProjectId)
+  useEffect(() => {
+    linkedHabit.current = currentProject?.exercise_config ? currentProject.id : null
+  }, [currentProject])
+  useEffect(() => qc.getQueryCache().subscribe((event) => {
+    if (event.type !== 'updated' || !['projects', 'tasks'].includes(String(event.query.queryKey[0]))) return
+    const projectRows = qc.getQueryData<Project[]>(['projects'])
+    const taskRows = qc.getQueryData<Task[]>(['tasks'])
+    if (!projectRows || !taskRows) return
+    const task = taskRows.find((t) => t.id === taskId)
+    const project = projectRows.find((p) => p.id === task?.project_id)
+    const removed = linkedHabit.current && !projectRows.some((p) => p.id === linkedHabit.current)
+    if ((project?.exercise_config && project.status !== 'active') || removed) {
+      const s = latest.current.state
+      if (s.status !== 'idle') {
+        logSession(s, false, Date.now())
+        setStored((previous) => ({ taskId: null, state: P.reset(previous.state, durations) }))
+      }
+      linkedHabit.current = null
+    }
+  }), [qc, taskId, logSession, durations])
+
+  // All timer entry points share this daily check-in, including resume and tab sync.
+  const habitDay = todayISO(new Date(now))
+  useEffect(() => {
+    if (stored.status !== 'running' || stored.mode !== 'focus' || !taskId) return
+    const key = `${taskId}:${habitDay}`
+    if (checking.current.has(key)) return
+    const pending = checking.current
+    pending.add(key)
+    let disposed = false
+    void (async () => {
+      const tasks = await repo().listTasks()
+      const task = tasks.find((t) => t.id === taskId)
+      if (!task?.project_id) return
+      const projects = await repo().listProjects()
+      const habit = projects.find((p) => p.id === task.project_id && p.exercise_config && p.status === 'active')
+      if (!habit) return
+      const logs = await repo().listExerciseLogs()
+      const current = logs.find((l) => l.project_id === habit.id && l.date === habitDay)
+      if (current?.status === 'exercise' || disposed) return
+      await repo().saveExerciseLog({ project_id: habit.id, date: habitDay, status: 'exercise', values: current?.values ?? {} })
+      await qc.invalidateQueries({ queryKey: exerciseLogsKey })
+    })().catch(() => { checking.current.delete(key); toast('No se pudo marcar el hábito. Puedes marcarlo desde Inicio.') })
+    return () => { disposed = true; pending.delete(key) }
+  }, [stored.status, stored.mode, taskId, habitDay, qc, toast])
 
   // Título de la pestaña
   useEffect(() => {

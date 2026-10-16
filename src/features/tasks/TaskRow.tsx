@@ -1,3 +1,5 @@
+import { useExerciseLogs, useExerciseMutations } from '../projects/exercise-hooks'
+import { todayISO } from '@/lib/dates'
 import { Star } from 'lucide-react'
 import { RoundCheck } from '@/components/ui/Checkbox'
 import { Chip } from '@/components/ui/Chip'
@@ -12,14 +14,23 @@ import { TaskFocusButton } from '../focus/TaskFocusButton'
 export function TaskRow({ task, project, compact }: { task: Task; project?: Project; compact?: boolean }) {
   const update = useUpdateTask()
   const { editTask } = useQuickActions()
-  const done = task.status === 'done'
+  const habit = !!project?.exercise_config
+  const { data: logs = [] } = useExerciseLogs(habit)
+  const { save, remove } = useExerciseMutations()
+  const entry = logs.find((l) => l.project_id === project?.id && l.date === todayISO())
+  const done = habit ? entry?.status === 'exercise' : task.status === 'done'
   return (
     <li className="group flex items-start gap-3 rounded-tile px-3 py-2.5 transition-colors hover:bg-sky-50/80">
       <div className="pt-0.5">
         <RoundCheck
           checked={done}
           label={done ? `Marcar "${task.title}" como pendiente` : `Completar "${task.title}"`}
-          onChange={(v) => update.mutate({ id: task.id, patch: { status: v ? 'done' : 'todo' } })}
+          onChange={(v) => {
+            if (!habit) { update.mutate({ id: task.id, patch: { status: v ? 'done' : 'todo' } }); return }
+            if (project!.status !== 'active' || save.isPending || remove.isPending) return
+            if (!v && entry) remove.mutate(entry.id)
+            else save.mutate({ project_id: project!.id, date: todayISO(), status: 'exercise', values: entry?.values ?? {} })
+          }}
         />
       </div>
       <button type="button" onClick={() => editTask(task)} className="min-w-0 flex-1 text-left">
@@ -38,7 +49,7 @@ export function TaskRow({ task, project, compact }: { task: Task; project?: Proj
           {!compact && task.tags.map((t) => <span key={t} className="text-[11px] text-muted">#{t}</span>)}
         </div>
       </button>
-      <TaskFocusButton task={task} />
+      <TaskFocusButton task={task} visible={habit} />
     </li>
   )
 }

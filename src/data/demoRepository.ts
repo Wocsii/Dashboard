@@ -83,6 +83,9 @@ export function createDemoRepository(initial?: SampleData): Repository {
     async deleteProject(projectId) {
       data.exerciseLogs = data.exerciseLogs!.filter((log) => log.project_id !== projectId)
       data.projects = data.projects.filter((p) => p.id !== projectId)
+      const sessionIds = new Set(data.tasks.filter((t) => t.project_id === projectId && t.tags.includes('habit-session')).map((t) => t.id))
+      data.tasks = data.tasks.filter((t) => !sessionIds.has(t.id))
+      data.focusSessions = data.focusSessions.map((s) => sessionIds.has(s.task_id ?? '') ? { ...s, task_id: null } : s)
       data.tasks = data.tasks.map((t) => (t.project_id === projectId ? { ...t, project_id: null } : t))
       save()
       return delay(undefined)

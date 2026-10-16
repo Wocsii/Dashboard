@@ -15,7 +15,7 @@ type Props = { open: boolean; onClose: () => void; project?: Project | null }
 
 export function ProjectDialog({ open, onClose, project }: Props) {
   return (
-    <Modal open={open} onClose={onClose} title={project ? 'Editar proyecto' : 'Nuevo proyecto'}>
+    <Modal open={open} onClose={onClose} title={project ? 'Editar proyecto o hábito' : 'Nuevo proyecto o hábito'}>
       <ProjectForm key={project?.id ?? 'new'} project={project} onDone={onClose} />
     </Modal>
   )
@@ -26,7 +26,7 @@ function ProjectForm({ project, onDone }: { project?: Project | null; onDone: ()
   const update = useUpdateProject()
   const remove = useDeleteProject()
   const [exercise, setExercise] = useState(!!project?.exercise_config)
-  const [config, setConfig] = useState<ExerciseConfig>(project?.exercise_config ?? { weeklyTarget:3,metrics:[{ id:'minutes' },{ id:'intensity' }] })
+  const [config, setConfig] = useState<ExerciseConfig>(project?.exercise_config ?? { kind:'habit',weeklyTarget:3,metrics:[] })
   const [error, setError] = useState('')
   const [form, setForm] = useState<ProjectInput>(() => ({
     name: project?.name ?? '',
@@ -54,7 +54,7 @@ function ProjectForm({ project, onDone }: { project?: Project | null; onDone: ()
   return (
     <form onSubmit={submit} className="flex flex-col gap-4 pt-1">
       <Field label="Nombre">
-        {(id) => <Input id={id} autoFocus required maxLength={120} value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="Mi proyecto bonito" />}
+        {(id) => <Input id={id} autoFocus required maxLength={120} value={form.name} onChange={(e) => set('name', e.target.value)} placeholder={exercise ? "Estudiar, gimnasio, leer…" : "Mi proyecto bonito"} />}
       </Field>
       <Field label="Descripción">
         {(id) => <TextArea id={id} value={form.description} onChange={(e) => set('description', e.target.value)} />}
@@ -62,11 +62,12 @@ function ProjectForm({ project, onDone }: { project?: Project | null; onDone: ()
       <div className="rounded-2xl bg-sky-50 p-4">
         <label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
           <input type="checkbox" role="switch" checked={exercise} onChange={(e) => setExercise(e.target.checked)} className="size-4 accent-ink" />
-          Proyecto de ejercicio
+          Crear como hábito
         </label>
         {exercise && <div className="mt-4 flex flex-col gap-4">
-          <Field label="Entrenamientos por semana">{(id) => <Input id={id} type="number" min={1} max={7} required value={config.weeklyTarget} onChange={(e) => setConfig({ ...config,weeklyTarget:Number(e.target.value) })} />}</Field>
-          <fieldset><legend className="mb-2 text-xs font-medium">Métricas que quieres ver</legend>
+          <Field label="Tipo de hábito">{(id) => <select id={id} className="rounded-xl bg-card p-2 text-sm" value={config.kind ?? 'exercise'} onChange={(e) => setConfig({ ...config,kind:e.target.value as 'habit' | 'exercise',metrics:e.target.value === 'habit' ? [] : [{ id:'minutes' },{ id:'intensity' }] })}><option value="habit">General (estudio, lectura…)</option><option value="exercise">Ejercicio / gimnasio</option></select>}</Field>
+          <Field label="Días por semana">{(id) => <Input id={id} type="number" min={1} max={7} required value={config.weeklyTarget} onChange={(e) => setConfig({ ...config,weeklyTarget:Number(e.target.value) })} />}</Field>
+          {config.kind !== 'habit' && <fieldset><legend className="mb-2 text-xs font-medium">Métricas que quieres ver</legend>
             <p className="mb-3 text-xs text-muted">Elige qué registrar y, si quieres, una meta para cada métrica.</p>
             <div className="flex flex-col gap-3">{(Object.keys(exerciseMetrics) as ExerciseMetric[]).map((id) => {
               const metric = exerciseMetrics[id], selected = config.metrics.find((m) => m.id === id)
@@ -75,8 +76,8 @@ function ProjectForm({ project, onDone }: { project?: Project | null; onDone: ()
                 {selected && <Input type="number" min={0} max={metric.max} step={id === 'repetitions' || id === 'intensity' ? 1 : 'any'} aria-label={`Meta de ${metric.label.toLowerCase()}`} placeholder="Meta opcional" value={selected.target ?? ''} onChange={(e) => setConfig({ ...config,metrics:config.metrics.map((m) => m.id === id ? { id,...(e.target.value === '' ? {} : { target:Number(e.target.value) }) } : m) })} />}
               </div>
             })}</div>
-          </fieldset>
-          <p className="text-xs text-muted">Puedes usar solo el registro diario o añadir métricas. Los descansos conservan la racha, pero no cuentan como entrenamientos.</p>
+          </fieldset>}
+          <p className="text-xs text-muted">Marca cada día completado o inicia el reloj de una tarea vinculada. Los descansos conservan la racha sin sumar días completados.</p>
         </div>}
       </div>
       <div className="flex flex-col gap-1.5">
@@ -107,14 +108,14 @@ function ProjectForm({ project, onDone }: { project?: Project | null; onDone: ()
           options={(Object.keys(copy.projectStatus) as ProjectStatus[]).map((v) => ({ value: v, label: copy.projectStatus[v] }))}
         />
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      {!exercise && <div className="grid grid-cols-2 gap-3">
         <Field label="Inicio">
           {(id) => <Input id={id} type="date" value={form.start_date ?? ''} onChange={(e) => set('start_date', e.target.value || null)} />}
         </Field>
         <Field label="Fecha límite">
           {(id) => <Input id={id} type="date" value={form.due_date ?? ''} onChange={(e) => set('due_date', e.target.value || null)} />}
         </Field>
-      </div>
+      </div>}
       <div className="mt-2 flex items-center justify-between gap-2 border-t border-line pt-4">
         {project ? (
           <ConfirmButton
@@ -131,7 +132,7 @@ function ProjectForm({ project, onDone }: { project?: Project | null; onDone: ()
         )}
         <div className="flex gap-2">
           <Button variant="ghost" onClick={onDone}>Cancelar</Button>
-          <Button type="submit" disabled={create.isPending || update.isPending}>{project ? 'Guardar' : 'Crear proyecto'}</Button>
+          <Button type="submit" disabled={create.isPending || update.isPending}>{project ? 'Guardar' : exercise ? 'Crear hábito' : 'Crear proyecto'}</Button>
         </div>
       </div>
       {error && <p role="alert" className="text-xs text-coral-accessible">{error}</p>}

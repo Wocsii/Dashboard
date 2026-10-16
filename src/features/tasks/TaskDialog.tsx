@@ -74,13 +74,11 @@ function TaskForm({ task, defaults, onDone }: { task?: Task | null; defaults?: T
         <Field label="Fecha límite">
           {(id) => <Input id={id} type="date" value={form.due_date ?? ''} onChange={(e) => set('due_date', e.target.value || null)} />}
         </Field>
-        <Field label="Proyecto">
+        <Field label="Proyecto o hábito">
           {(id) => (
             <Select id={id} value={form.project_id ?? ''} onChange={(e) => set('project_id', e.target.value || null)}>
-              <option value="">Sin proyecto</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
+              <option value="">Sin proyecto ni hábito</option>
+              {[false, true].map((habit) => <optgroup key={String(habit)} label={habit ? 'Hábitos' : 'Proyectos'}>{projects.filter((p) => !!p.exercise_config === habit).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup>)}
             </Select>
           )}
         </Field>
