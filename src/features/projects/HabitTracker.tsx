@@ -59,8 +59,8 @@ export function HabitTracker({ project, timer = false, compact = false }: { proj
     </div>}
     <div className={compact ? 'flex items-center gap-1' : 'mt-3 flex flex-wrap items-center justify-between gap-2'}>
       {!compact && <span className="text-[11px] text-muted">{entries.filter((l) => l.status === 'exercise' && l.date >= todayISO(start) && l.date <= today).length}/{project.exercise_config!.weeklyTarget} esta semana</span>}
-      <Button size="sm" variant="light" disabled={busy || project.status !== 'active'} onClick={() => check(today)}><Check className="size-3.5" />{done ? 'Hecho hoy' : 'Marcar hoy'}</Button>
-      {timer && <Button size="sm" variant="ghost" aria-label={compact ? active ? 'Pausar' : 'Iniciar reloj' : undefined} title={active ? 'Pausar reloj' : 'Iniciar reloj'} aria-pressed={active} disabled={busy || project.status !== 'active'} onClick={() => void startTimer()}>{active ? <Square className="size-3.5" /> : compact ? <Clock3 className="size-3.5" /> : <Play className="size-3.5" />}{!compact && (active ? 'Pausar' : 'Iniciar reloj')}</Button>}
+      <Button size="sm" variant="light" className={compact ? 'gap-1 px-2 text-[11px]' : undefined} disabled={busy || project.status !== 'active'} onClick={() => check(today)}><Check className="size-3.5" />{done ? 'Hecho hoy' : 'Marcar hoy'}</Button>
+      {timer && <Button size="sm" variant="ghost" className={compact ? 'size-8 px-0' : undefined} aria-label={compact ? active ? 'Pausar' : 'Iniciar reloj' : undefined} title={active ? 'Pausar reloj' : 'Iniciar reloj'} aria-pressed={active} disabled={busy || project.status !== 'active'} onClick={() => void startTimer()}>{active ? <Square className="size-3.5" /> : compact ? <Clock3 className="size-3.5" /> : <Play className="size-3.5" />}{!compact && (active ? 'Pausar' : 'Iniciar reloj')}</Button>}
     </div>
   </div>
 }

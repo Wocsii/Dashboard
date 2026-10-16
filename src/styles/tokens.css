@@ -34,6 +34,8 @@
 
   /* Acentos pastel */
   --color-sun: #f8c94a;          /* amarillo de la tarjeta de actividad */
+  --color-pin: #f8c94a;          /* Chinchetas amarillas en ambos temas */
+  --color-pin-outline: #8a6412;
   --color-sun-soft: #fdeeb8;
   --color-mint: #bfe6c6;
   --color-mint-strong: #2fcf7a;  /* chip "Reunión" */

@@ -49,7 +49,7 @@ export function DashboardPage() {
         </div>
       </header>
 
-      <div className="mt-5 grid gap-6 md:grid-cols-2 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.1fr)_minmax(0,0.95fr)]">
+      <div className="mt-5 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.1fr)_minmax(0,0.95fr)]">
         <Column ids={dashboardLayout.left} className="flex flex-col items-start gap-7 [&>*:last-child]:w-full [&>*:last-child]:max-w-sm" />
         <Column ids={dashboardLayout.center} className="flex flex-col gap-5 xl:px-2" />
         <Column ids={dashboardLayout.right} className="flex flex-col gap-5 md:col-span-2 xl:col-span-1" />

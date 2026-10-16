@@ -46,4 +46,22 @@ test('hábitos: creación, reloj, registro único y corrección diaria', async (
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'Mis hábitos' })).toHaveCount(0)
   await expect(page.getByRole('heading', { name: 'Tareas de hábitos' })).toHaveCount(0)
+  await page.evaluate(() => {
+    const key = 'mi-espacio:demo-data:v1'
+    const data = JSON.parse(localStorage.getItem(key)!)
+    const habit = data.projects.find((p: { name: string }) => p.name === 'Estudiar japonés')
+    habit.status = 'active'
+    data.projects.push({ ...habit, id: crypto.randomUUID(), name: 'Gimnasio', color: 'mint' })
+    localStorage.setItem(key, JSON.stringify(data))
+  })
+  await page.reload()
+  const habits = page.getByRole('region', { name: 'Mis hábitos', exact: true })
+  await expect(habits.getByRole('link')).toHaveCount(2)
+  await expect(page.getByRole('heading', { name: 'Proyectos activos', exact: true })).toHaveCount(0)
+  await habits.scrollIntoViewIfNeeded()
+  await page.screenshot({ path: '/tmp/habits-squares-mobile.png', fullPage: true })
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await habits.scrollIntoViewIfNeeded()
+  await page.screenshot({ path: '/tmp/habits-squares-desktop.png', fullPage: true })
+
 })

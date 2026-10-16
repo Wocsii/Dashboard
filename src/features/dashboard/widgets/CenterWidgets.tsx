@@ -1,11 +1,11 @@
-import { Check, ListChecks, Play, Target, Video } from 'lucide-react'
+import { Check, ListChecks, Pin, Play, Target, Video } from 'lucide-react'
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Chip } from '@/components/ui/Chip'
 import { ErrorNote, Spinner } from '@/components/ui/States'
 import { copy } from '@/config/copy.es'
-import { themeConfig } from '@/config/theme.config'
+import { projectColorVar, themeConfig } from '@/config/theme.config'
 import { formatShort, relativeDay } from '@/lib/dates'
 import { plural } from '@/lib/stats'
 import { isDueToday, isOverdue, pickFocusTask } from '@/lib/tasks'
@@ -198,5 +198,14 @@ export function HabitsWidget() {
   const { data: projects = [] } = useProjects()
   const habits = projects.filter((p) => p.exercise_config && p.status === 'active')
   if (!habits.length) return null
-  return <Card className="animate-rise"><h2 className="text-[17px] font-semibold">Mis hábitos</h2><div className="mt-3 flex flex-col gap-2">{habits.map((p) => <section key={p.id} className="flex items-center justify-between gap-2 rounded-tile border border-line px-3 py-2"><Link to="/proyectos" className="min-w-0 truncate text-sm font-semibold hover:underline" title={p.name}>{p.name}</Link><HabitTracker project={p} timer compact /></section>)}</div></Card>
+  return <section className="animate-rise px-1 pb-1" aria-label="Mis hábitos">
+    <h2 className="mb-4 text-[15px] font-semibold">Mis hábitos</h2>
+    <div className="grid grid-cols-2 gap-5">
+      {habits.map((p, i) => <Card key={p.id} as="section" padded={false} tilt={i % 2 === 0 ? -1.5 : 1.2} className="relative flex aspect-square min-w-0 flex-col items-start justify-between gap-2 px-2.5 pt-6 pb-3" style={{ background: `color-mix(in srgb, ${projectColorVar(p.color)} 18%, var(--color-card))` }}>
+        <Pin aria-hidden className="pointer-events-none absolute -top-3 left-1/2 size-6 -translate-x-1/2 -rotate-12 fill-pin text-pin-outline drop-shadow-sm" />
+        <Link to="/proyectos" className="line-clamp-3 w-full break-words text-sm font-semibold hover:underline" title={p.name}>{p.name}</Link>
+        <HabitTracker project={p} timer compact />
+      </Card>)}
+    </div>
+  </section>
 }
