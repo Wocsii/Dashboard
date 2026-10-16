@@ -196,7 +196,6 @@ function LocalBoard({ userId }: { userId: string }) {
     <>
       <PageHeader
         title="Tablero"
-        subtitle="Arrastra las tarjetas entre columnas"
         actions={
           <>
             <select
