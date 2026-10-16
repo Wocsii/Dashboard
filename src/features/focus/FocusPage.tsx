@@ -5,14 +5,14 @@ import { Infinity as InfinityIcon, Pause, Play, RotateCcw, SkipForward, Square }
 import { BarChart } from '@/components/ui/BarChart'
 import { Button, IconButton } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { Field, Input, Segmented, Select } from '@/components/ui/Field'
+import { Segmented, Select } from '@/components/ui/Field'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { ProgressRing } from '@/components/ui/Progress'
 import { copy } from '@/config/copy.es'
 import { dayLabel, formatLong, toISODate, todayISO, weekDays } from '@/lib/dates'
 import { focusMinutes, formatMinutes } from '@/lib/stats'
 import type { FocusKind } from '@/types/domain'
-import { useSettings, useUpdateSettings } from '../settings/hooks'
+import { useSettings } from '../settings/hooks'
 import { useTasks } from '../tasks/hooks'
 import { useFocusSessions } from './hooks'
 import { usePomodoro } from './PomodoroProvider'
@@ -43,43 +43,8 @@ export function PomodoroControls({ size = 'lg' }: { size?: 'md' | 'lg' }) {
   )
 }
 
-function DurationSettings() {
-  const { data: s } = useSettings()
-  const update = useUpdateSettings()
-  if (!s) return null
-  const num = (key: 'focus_minutes' | 'short_break_minutes' | 'long_break_minutes' | 'long_break_every', label: string, max: number) => (
-    <Field label={label}>
-      {(id) => (
-        <Input
-          id={id}
-          type="number"
-          min={1}
-          max={max}
-          defaultValue={s[key]}
-          onBlur={(e) => {
-            const v = Math.max(1, Math.min(max, Number(e.target.value) || s[key]))
-            if (v !== s[key]) update.mutate({ [key]: v })
-          }}
-        />
-      )}
-    </Field>
-  )
-  return (
-    <div className="grid grid-cols-2 gap-3">
-      {num('focus_minutes', 'Enfoque (min)', 180)}
-      {num('short_break_minutes', 'Descanso corto (min)', 60)}
-      {num('long_break_minutes', 'Descanso largo (min)', 90)}
-      {num('long_break_every', 'Descanso largo cada', 12)}
-      <label className="col-span-2 flex items-center gap-2 text-sm text-ink-soft">
-        <input type="checkbox" className="size-4 accent-ink" checked={s.log_focus_sessions} onChange={(e) => update.mutate({ log_focus_sessions: e.target.checked })} />
-        Registrar mi tiempo de concentración
-      </label>
-    </div>
-  )
-}
-
 export function FocusPage() {
-  const { state, remainingMs, durations, setMode, taskId, setTaskId, saveError, retrySave, saveConfirmed, startIndefinite } = usePomodoro()
+  const { state, remainingMs, durations, setMode, taskId, setTaskId, saveError, retrySave, startIndefinite } = usePomodoro()
   const { data: tasks = [] } = useTasks()
   const { data: sessions = [] } = useFocusSessions()
   const { data: settings } = useSettings()
@@ -94,7 +59,6 @@ export function FocusPage() {
   return (
     <>
       <PageHeader title="Enfoque" />
-      {saveConfirmed && <p role="status" className="mb-4 text-sm text-ink-soft">Tiempo guardado</p>}
       {saveError && <div role="alert" className="mb-5 rounded-card bg-blush p-4 text-sm"><p>No se pudo guardar el tiempo: {saveError}</p><p className="mt-1 text-xs">El registro se conserva pendiente en este navegador.</p><Button variant="light" size="sm" className="mt-3" onClick={retrySave}>Reintentar guardado</Button></div>}
       <div className="grid gap-5 lg:grid-cols-[1.3fr_1fr]">
         <Card tone="ivory" className="relative flex flex-col items-center gap-6 overflow-hidden py-10">
@@ -142,10 +106,6 @@ export function FocusPage() {
           <Card>
             <h2 className="mb-4 text-sm font-semibold">Añadir tiempo</h2>
             <ManualTimeEntry />
-            <details className="mt-5 border-t border-line pt-4">
-              <summary className="cursor-pointer text-sm font-medium">Duración y descansos del cronómetro</summary>
-              <div className="mt-4"><DurationSettings /></div>
-            </details>
             <div className="mt-5 flex items-center gap-3 border-t border-line pt-5">
               <IconButton label={state.indefinite && state.status === 'paused' ? 'Continuar cronómetro indefinido' : 'Iniciar cronómetro indefinido'} variant="sun" size="lg" disabled={!!state.indefinite && state.status === 'running'} onClick={startIndefinite} className="size-14">
                 <InfinityIcon className="size-6" />

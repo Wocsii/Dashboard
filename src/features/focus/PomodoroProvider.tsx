@@ -21,7 +21,6 @@ type Stored = { state: P.PomodoroState; taskId: string | null }
 type Ctx = {
   state: P.PomodoroState
   saveError: string | null
-  saveConfirmed: boolean
   retrySave: () => void
   remainingMs: number
   durations: P.Durations
@@ -241,7 +240,6 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     state,
     saveError: log.error ? `${log.error.message}${'code' in log.error && log.error.code ? ` (${log.error.code})` : ''}` : null,
     retrySave: log.retryPending,
-    saveConfirmed: log.isSuccess,
     remainingMs,
     durations,
     taskId,

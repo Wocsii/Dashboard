@@ -30,6 +30,6 @@ Si una tarea se elimina mientras su reloj o un guardado sin conexión sigue pend
 
 El recuadro blanco **Añadir tiempo** permite registrar minutos de enfoque o descanso realizados fuera del reloj, con su fecha. El enfoque se añade a las estadísticas; el descanso se muestra por separado y no suma concentración. El registro manual no cuenta como un Pomodoro completado y no modifica el cronómetro activo. Los registros usan los mismos guardados pendientes y reintentos; reintentar mantiene el identificador para no duplicar minutos.
 
-Pulsa los números del centro del reloj de enfoque para cambiar su duración (1–180 minutos). Guardar una duración diferente conserva el tramo anterior y prepara un bloque con la nueva duración, manteniendo si estaba corriendo o en pausa. Guardar sin cambiar los minutos deja el bloque como estaba. El tiempo transcurrido del modo indefinido no se edita.
+Pulsa los números del centro del reloj de enfoque para abrir el diálogo de duración (1–180 minutos), con botones de cinco minutos y accesos rápidos de 15, 25, 50 y 90 minutos. Guardar una duración diferente conserva el tramo anterior y prepara un bloque con la nueva duración, manteniendo si estaba corriendo o en pausa. Guardar sin cambiar los minutos deja el bloque como estaba. El tiempo transcurrido del modo indefinido no se edita.
 
-Al final del recuadro blanco, el botón circular amarillo con el símbolo de infinito inicia un cronómetro sin límite, con o sin tarea. Si estaba pausado, lo reanuda. **Duración y descansos del cronómetro** conserva los ajustes del Pomodoro en un desplegable.
+Al final del recuadro blanco, el botón circular amarillo con el símbolo de infinito inicia un cronómetro sin límite, con o sin tarea. Si estaba pausado, lo reanuda.
