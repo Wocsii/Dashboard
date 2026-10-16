@@ -11,6 +11,8 @@ import type { Project } from '@/types/domain'
 import { usePomodoro } from '../focus/PomodoroProvider'
 import { useSettings } from '../settings/hooks'
 import { tasksKey, useTasks } from '../tasks/hooks'
+import { useHabitProgress } from './useHabitProgress'
+import { goalLabel } from './study'
 import { useExerciseLogs, useExerciseMutations } from './exercise-hooks'
 
 export function HabitTracker({ project, timer = false, compact = false }: { project: Project; timer?: boolean; compact?: boolean }) {
@@ -25,11 +27,14 @@ export function HabitTracker({ project, timer = false, compact = false }: { proj
   const today = todayISO()
   const start = startOfWeek(new Date(), { weekStartsOn: settings?.week_starts_on === 0 ? 0 : 1 })
   const entries = logs.filter((l) => l.project_id === project.id)
-  const done = entries.find((l) => l.date === today && l.status === 'exercise')
+  const progress = useHabitProgress(project)
+  const goal = project.exercise_config?.timeGoal
+  const done = (!goal?.required || progress.reached) && entries.find((l) => l.date === today && l.status === 'exercise')
   const active = tasks.some((t) => t.project_id === project.id && t.id === focus.taskId) && focus.state.status === 'running'
   const busy = save.isPending || remove.isPending || starting
   function check(date: string) {
     const entry = entries.find((l) => l.date === date)
+    if (!progress.canCompleteDate(date)) { toast(`Meta pendiente: ${goalLabel(project.exercise_config!)}`); return }
     if (entry?.status === 'exercise') remove.mutate(entry.id, { onError: () => toast('No se pudo actualizar el hábito') })
     else save.mutate({ project_id: project.id, date, status: 'exercise', values: entry?.values ?? {} }, { onError: () => toast('No se pudo guardar el hábito') })
   }
@@ -42,7 +47,7 @@ export function HabitTracker({ project, timer = false, compact = false }: { proj
         task = await repo().createTask({ title: project.name, project_id: project.id, tags: ['habit-session'] })
         await qc.invalidateQueries({ queryKey: tasksKey })
       }
-      focus.startTaskFocus(task.id)
+      focus.startTaskFocus(task.id, { pomodoro:goal?.unit === 'pomodoros' })
     } catch { toast('No se pudo iniciar el hábito. Inténtalo de nuevo.') }
     finally { setStarting(false) }
   }
@@ -50,15 +55,16 @@ export function HabitTracker({ project, timer = false, compact = false }: { proj
     {!compact && <div className="grid grid-cols-7 gap-1" aria-label={`Semana de ${project.name}`}>
       {Array.from({ length: 7 }, (_, i) => {
         const day = addDays(start, i), date = todayISO(day)
-        const checked = entries.some((l) => l.date === date && l.status === 'exercise')
+        const checked = progress.completedDates.has(date)
         return <button key={date} type="button" disabled={busy || date > today || project.status !== 'active'} aria-label={`${project.name}, ${date}: ${checked ? 'completado' : 'pendiente'}`} aria-pressed={checked} onClick={() => check(date)} className="flex flex-col items-center gap-1 rounded-lg py-1 text-[10px] disabled:opacity-50">
           <span>{['D','L','M','X','J','V','S'][day.getDay()]}</span>
           <span className={`grid size-7 place-items-center rounded-full border ${date === today ? 'border-ink' : 'border-line'}`} style={{ background: checked ? projectColorVar(project.color) : undefined }}>{checked && <Check className="size-3.5" />}</span>
         </button>
       })}
     </div>}
+    {goal && <p className={compact ? 'mb-1 text-center text-[10px] text-muted' : 'mt-2 text-xs text-muted'} aria-label="Progreso de tiempo">{goal.unit === 'pomodoros' ? progress.pomodoros : Math.floor(goal.unit === 'hours' ? progress.minutes / 60 * 10 : progress.minutes) / (goal.unit === 'hours' ? 10 : 1)} / {goalLabel(project.exercise_config!)}</p>}
     <div className={compact ? 'flex items-center gap-1' : 'mt-3 flex flex-wrap items-center justify-between gap-2'}>
-      {!compact && <span className="text-[11px] text-muted">{entries.filter((l) => l.status === 'exercise' && l.date >= todayISO(start) && l.date <= today).length}/{project.exercise_config!.weeklyTarget} esta semana</span>}
+      {!compact && <span className="text-[11px] text-muted">{[...progress.completedDates].filter((date) => date >= todayISO(start) && date <= today).length}/{project.exercise_config!.weeklyTarget} esta semana</span>}
       <Button size="sm" variant="light" className={compact ? 'gap-1 bg-sun-soft px-2 text-[11px] hover:bg-sun' : undefined} disabled={busy || project.status !== 'active'} onClick={() => check(today)}><Check className="size-3.5" />{done ? 'Hecho hoy' : 'Marcar hoy'}</Button>
       {timer && <Button size="sm" variant="ghost" className={compact ? 'size-8 bg-sun-soft px-0 text-ink hover:bg-sun' : undefined} aria-label={compact ? active ? 'Pausar' : 'Iniciar reloj' : undefined} title={active ? 'Pausar reloj' : 'Iniciar reloj'} aria-pressed={active} disabled={busy || project.status !== 'active'} onClick={() => void startTimer()}>{active ? <Square className="size-3.5" /> : compact ? <Clock3 className="size-3.5" /> : <Play className="size-3.5" />}{!compact && (active ? 'Pausar' : 'Iniciar reloj')}</Button>}
     </div>

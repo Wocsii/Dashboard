@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Check, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ConfirmButton } from '@/components/ui/ConfirmButton'
-import { Field, Input, Segmented, TextArea } from '@/components/ui/Field'
+import { Field, Input, Select, Segmented, TextArea } from '@/components/ui/Field'
 import { Modal } from '@/components/ui/Modal'
 import { copy } from '@/config/copy.es'
 import { projectColors, projectColorVar } from '@/config/theme.config'
@@ -26,7 +26,7 @@ function ProjectForm({ project, onDone }: { project?: Project | null; onDone: ()
   const update = useUpdateProject()
   const remove = useDeleteProject()
   const [exercise, setExercise] = useState(!!project?.exercise_config)
-  const [config, setConfig] = useState<ExerciseConfig>(project?.exercise_config ?? { kind:'habit',weeklyTarget:3,metrics:[] })
+  const [config, setConfig] = useState<ExerciseConfig>(project?.exercise_config ?? { kind:'habit',countAsFocus:true,weeklyTarget:3,metrics:[] })
   const [error, setError] = useState('')
   const [form, setForm] = useState<ProjectInput>(() => ({
     name: project?.name ?? '',
@@ -65,9 +65,31 @@ function ProjectForm({ project, onDone }: { project?: Project | null; onDone: ()
           Crear como hábito
         </label>
         {exercise && <div className="mt-4 flex flex-col gap-4">
-          <Field label="Tipo de hábito">{(id) => <select id={id} className="rounded-xl bg-card p-2 text-sm" value={config.kind ?? 'exercise'} onChange={(e) => setConfig({ ...config,kind:e.target.value as 'habit' | 'exercise',metrics:e.target.value === 'habit' ? [] : [{ id:'minutes' },{ id:'intensity' }] })}><option value="habit">General (estudio, lectura…)</option><option value="exercise">Ejercicio / gimnasio</option></select>}</Field>
+          <Field label="Tipo de hábito">{(id) => <Select id={id} value={config.kind ?? 'exercise'} onChange={(e) => {
+            const kind = e.target.value as 'habit' | 'exercise' | 'study'
+            setConfig({ ...config, kind, metrics: kind === 'study' ? [{ id:'minutes' }, { id:'repetitions' }] : kind === 'exercise' ? [{ id:'minutes' },{ id:'intensity' }] : [], volume: kind === 'study' ? config.volume ?? { unit:'páginas' } : undefined })
+          }}><option value="habit">General / otro hábito</option><option value="study">Estudio</option><option value="exercise">Ejercicio / gimnasio</option></Select>}</Field>
+          <div className="rounded-tile border border-line bg-card p-3">
+            <p className="mb-2 text-sm font-semibold">¿Contabilizar su tiempo como tiempo de enfoque?</p>
+            <Segmented label="Contabilizar como enfoque" value={config.countAsFocus === false ? 'no' : 'yes'} onChange={(v) => setConfig({ ...config,countAsFocus:v === 'yes' })} options={[{ value:'yes',label:'Sí' },{ value:'no',label:'No' }]} />
+            <p className="mt-2 text-xs text-muted">El reloj siempre registra el tiempo del hábito. Elige si también suma a tus estadísticas de enfoque.</p>
+          </div>
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!config.timeGoal} onChange={(e) => setConfig({ ...config,timeGoal:e.target.checked ? { amount:30,unit:'minutes',required:false } : undefined })} className="size-4 accent-ink" />Establecer una meta diaria de tiempo</label>
+          {config.timeGoal && <div className="flex flex-col gap-3 rounded-tile bg-card p-3">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Meta diaria">{(id) => <Input id={id} type="number" required min={config.timeGoal!.unit === 'hours' ? 0.1 : 1} step={config.timeGoal!.unit === 'hours' ? 0.1 : 1} value={config.timeGoal!.amount} onChange={(e) => setConfig({ ...config,timeGoal:{ ...config.timeGoal!,amount:Number(e.target.value) } })} />}</Field>
+              <Field label="Unidad de tiempo">{(id) => <Select id={id} value={config.timeGoal!.unit} onChange={(e) => setConfig({ ...config,timeGoal:{ ...config.timeGoal!,amount: e.target.value === 'minutes' ? 30 : 1,unit:e.target.value as 'minutes' | 'hours' | 'pomodoros' } })}><option value="minutes">Minutos</option><option value="hours">Horas</option><option value="pomodoros">Pomodoros completados</option></Select>}</Field>
+            </div>
+            <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={config.timeGoal.required} onChange={(e) => setConfig({ ...config,timeGoal:{ ...config.timeGoal!,required:e.target.checked } })} className="size-4 accent-ink" />Exigir la meta para completar el día</label>
+            <p className="text-xs text-muted">El reloj actualiza el progreso automáticamente. Los Pomodoros cuentan al terminar un bloque completo de enfoque.</p>
+          </div>}
+          {config.kind === 'study' && <fieldset className="flex flex-col gap-3"><legend className="mb-2 text-sm font-semibold">Volumen de trabajo</legend>
+            <Field label="Unidad de trabajo">{(id) => <Select id={id} value={config.volume?.unit ?? 'páginas'} onChange={(e) => setConfig({ ...config,volume:{ ...config.volume,unit:e.target.value } })}><option>páginas</option><option>ejercicios</option><option>temas</option><option>capítulos</option></Select>}</Field>
+            <Field label="Meta diaria de trabajo (opcional)">{(id) => <Input id={id} type="number" min={1} step={1} placeholder="Sin meta" value={config.volume?.target ?? ''} onChange={(e) => setConfig({ ...config,volume:{ unit:config.volume?.unit ?? 'páginas',target:e.target.value ? Number(e.target.value) : undefined } })} />}</Field>
+            <p className="text-xs text-muted">En Estudio solo registrarás tiempo y volumen de trabajo.</p>
+          </fieldset>}
           <Field label="Días por semana">{(id) => <Input id={id} type="number" min={1} max={7} required value={config.weeklyTarget} onChange={(e) => setConfig({ ...config,weeklyTarget:Number(e.target.value) })} />}</Field>
-          {config.kind !== 'habit' && <fieldset><legend className="mb-2 text-xs font-medium">Métricas que quieres ver</legend>
+          {(config.kind === 'exercise' || !config.kind) && <fieldset><legend className="mb-2 text-xs font-medium">Métricas que quieres ver</legend>
             <p className="mb-3 text-xs text-muted">Elige qué registrar y, si quieres, una meta para cada métrica.</p>
             <div className="flex flex-col gap-3">{(Object.keys(exerciseMetrics) as ExerciseMetric[]).map((id) => {
               const metric = exerciseMetrics[id], selected = config.metrics.find((m) => m.id === id)
@@ -77,7 +99,7 @@ function ProjectForm({ project, onDone }: { project?: Project | null; onDone: ()
               </div>
             })}</div>
           </fieldset>}
-          <p className="text-xs text-muted">Marca cada día completado o inicia el reloj de una tarea vinculada. Los descansos conservan la racha sin sumar días completados.</p>
+          <p className="text-xs text-muted">Marca cada día completado o inicia el reloj de una tarea vinculada. Si la meta de tiempo es obligatoria, se completará al alcanzarla. Los descansos conservan la racha sin sumar días completados.</p>
         </div>}
       </div>
       <div className="flex flex-col gap-1.5">

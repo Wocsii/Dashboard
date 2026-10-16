@@ -9,9 +9,15 @@ import { formatShort, todayISO } from '@/lib/dates'
 import type { ExerciseLog, ExerciseLogInput, Project } from '@/types/domain'
 import { exerciseMetrics, exerciseSummary, metricHistory } from './exercise'
 import { useExerciseLogs, useExerciseMutations } from './exercise-hooks'
+import { StudyPanel } from './StudyPanel'
+import { useHabitProgress } from './useHabitProgress'
 import { useSettings } from '../settings/hooks'
 
 export function ExercisePanel({ project }: { project: Project }) {
+  return project.exercise_config?.kind === 'study' ? <StudyPanel project={project} /> : <ExerciseDetails project={project} />
+}
+
+function ExerciseDetails({ project }: { project: Project }) {
   const query = useExerciseLogs()
   const { data:settings } = useSettings()
   const [date,setDate] = useState(todayISO)
@@ -43,12 +49,14 @@ export function ExercisePanel({ project }: { project: Project }) {
 
 function ExerciseEntry({ project,date,current }: { project:Project; date:string; current?:ExerciseLog }) {
   const { save,remove } = useExerciseMutations()
+  const progress = useHabitProgress(project,date)
   const [values,setValues] = useState<ExerciseLogInput['values']>(current?.values ?? {})
   const [error,setError] = useState('')
   const [saved,setSaved] = useState(false)
   const busy = save.isPending || remove.isPending
   async function checkIn(status: ExerciseLogInput['status'], metrics = current?.values ?? {}) {
     setError(''); setSaved(false)
+    if (status === 'exercise' && project.exercise_config?.timeGoal?.required && !progress.reached) { setError('Alcanza la meta de tiempo antes de completar el día.'); return }
     try {
       await save.mutateAsync({ project_id:project.id,date,status,values:status === 'rest' ? {} : metrics })
       setSaved(true)

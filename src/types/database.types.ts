@@ -10,7 +10,7 @@ export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent'
 export type ProjectStatus = 'active' | 'paused' | 'completed'
 export type FocusKind = 'focus' | 'short_break' | 'long_break'
 export type ExerciseMetric = 'weight' | 'repetitions' | 'minutes' | 'intensity' | 'distance'
-export type ExerciseConfig = { kind?: 'habit' | 'exercise'; weeklyTarget: number; metrics: { id: ExerciseMetric; target?: number }[] }
+export type ExerciseConfig = { kind?: 'habit' | 'exercise' | 'study'; countAsFocus?: boolean; timeGoal?: { amount: number; unit: 'minutes' | 'hours' | 'pomodoros'; required: boolean }; volume?: { unit: string; target?: number }; weeklyTarget: number; metrics: { id: ExerciseMetric; target?: number }[] }
 type ExerciseLogRow = { id: string; user_id: string; project_id: string; date: string; status: 'exercise' | 'rest'; values: Partial<Record<ExerciseMetric, number>> } & Timestamps
 
 type ProfileRow = { id: string; display_name: string | null; timezone: string } & Timestamps

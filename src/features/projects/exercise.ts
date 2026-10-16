@@ -1,5 +1,5 @@
 import { addDays, format, parseISO, startOfDay, startOfWeek } from 'date-fns'
-import type { ExerciseLog, ExerciseMetric } from '@/types/domain'
+import type { ExerciseConfig, ExerciseLog, ExerciseMetric } from '@/types/domain'
 
 export const exerciseMetrics: Record<ExerciseMetric, { label: string; unit: string; max?: number }> = {
   weight: { label:'Peso',unit:'kg' },
@@ -28,4 +28,12 @@ export function metricHistory(logs: ExerciseLog[], metric: ExerciseMetric) {
   return logs.filter((log) => log.status === 'exercise' && log.values[metric] !== undefined)
     .sort((a,b) => a.date.localeCompare(b.date)).slice(-10)
     .map((log) => ({ label:format(parseISO(log.date),'d/M'),full:log.date,value:log.values[metric]!,display:`${log.values[metric]} ${exerciseMetrics[metric].unit}` }))
+}
+
+export function habitMetric(config: ExerciseConfig, id: ExerciseMetric) {
+  if (config.kind === 'study') {
+    if (id === 'minutes') return { label:'Tiempo de estudio',unit:'min' }
+    if (id === 'repetitions') return { label:'Volumen de trabajo',unit:config.volume?.unit ?? 'páginas' }
+  }
+  return exerciseMetrics[id]
 }

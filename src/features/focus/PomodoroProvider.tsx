@@ -6,11 +6,12 @@ import { todayISO } from '@/lib/dates'
 import type { Project, Task } from '@/types/domain'
 import { useProjects } from '../projects/hooks'
 import { useTasks } from '../tasks/hooks'
-import { exerciseLogsKey } from '../projects/exercise-hooks'
+import { habitDailyProgress, timerSessionId } from '../projects/study'
+import { exerciseLogsKey, useExerciseLogs } from '../projects/exercise-hooks'
 import { copy } from '@/config/copy.es'
 import type { FocusKind } from '@/types/domain'
 import { useSettings } from '../settings/hooks'
-import { useLogFocusSession } from './hooks'
+import { useFocusSessions, useLogFocusSession } from './hooks'
 import * as P from './pomodoro'
 
 const STATE_KEY = 'mi-espacio:pomodoro:v1'
@@ -24,13 +25,14 @@ type Ctx = {
   remainingMs: number
   durations: P.Durations
   taskId: string | null
+  liveSession: { id: string; taskId: string; seconds: number; startedAt: number } | undefined
   setTaskId: (id: string | null) => void
   start: () => void
   pause: () => void
   reset: () => void
   skip: () => void
   setMode: (m: FocusKind) => void
-  startTaskFocus: (id: string) => void
+  startTaskFocus: (id: string, options?: { pomodoro: boolean }) => void
 }
 
 const PomodoroContext = createContext<Ctx | null>(null)
@@ -96,6 +98,8 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   const log = useLogFocusSession()
   const qc = useQueryClient()
   const checking = useRef(new Set<string>())
+  const { data: sessions = [] } = useFocusSessions({ includeExcluded: true })
+  const { data: habitLogs = [] } = useExerciseLogs()
   const { data: projects } = useProjects()
   const { data: tasks } = useTasks()
   const linkedHabit = useRef<string | null>(null)
@@ -139,9 +143,15 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
 
   const logSession = useCallback(
     (s: P.PomodoroState, completed: boolean, endedAt: number) => {
-      if (!logEnabled || s.mode !== 'focus' || !s.startedAt) return
+      const task = tasks?.find((t) => t.id === taskId)
+      const habit = projects?.find((p) => p.id === task?.project_id)?.exercise_config
+      if ((!logEnabled && !habit) || s.mode !== 'focus' || !s.startedAt) return
       const seconds = completed ? Math.round(P.minutesToMs(durations.focus) / 1000) : P.elapsedSeconds(s, endedAt)
-      if (seconds < 60) return
+      if (seconds < (habit ? 1 : 60)) return
+      if (habit) {
+        log.mutate({ id: timerSessionId(s.startedAt, taskId!), kind: 'focus', started_at: new Date(s.startedAt).toISOString(), ended_at: new Date(endedAt).toISOString(), duration_seconds: seconds, completed: completed && !s.indefinite, task_id: taskId })
+        return
+      }
       void once(String(s.startedAt), () =>
         log.mutate({
           kind: 'focus',
@@ -153,7 +163,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
         }),
       )
     },
-    [durations.focus, log, logEnabled, taskId],
+    [durations.focus, log, logEnabled, taskId, tasks, projects],
   )
 
   // Parado: el tiempo restante sigue a las duraciones configuradas
@@ -168,7 +178,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       toast(msg)
       if ('Notification' in window && Notification.permission === 'granted') new Notification(msg)
     },
-    [durations, logSession, toast],
+    [durations, logSession, toast, setStored],
   )
 
   // Tick: actualiza el reloj y cierra el bloque al llegar a cero
@@ -212,30 +222,43 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     }
   }), [qc, taskId, logSession, durations])
 
-  // All timer entry points share this daily check-in, including resume and tab sync.
+  const liveSession = taskId && state.startedAt && state.mode === 'focus' && state.status !== 'idle'
+    ? { id: timerSessionId(state.startedAt, taskId), taskId, seconds: P.elapsedSeconds(state, now), startedAt: state.startedAt }
+    : undefined
+  const progress = currentProject?.exercise_config ? habitDailyProgress(currentProject, tasks ?? [], sessions, habitLogs, todayISO(new Date(now)), liveSession) : null
   const habitDay = todayISO(new Date(now))
+  const shouldCheck = !!currentProject?.exercise_config && currentProject.status === 'active' &&
+    (currentProject.exercise_config.timeGoal?.required ? !!progress?.reached : stored.status === 'running' && stored.mode === 'focus')
   useEffect(() => {
-    if (stored.status !== 'running' || stored.mode !== 'focus' || !taskId) return
-    const key = `${taskId}:${habitDay}`
-    if (checking.current.has(key)) return
+    if (!shouldCheck || !currentProject) return
+    const key = `${currentProject.id}:${habitDay}`
     const pending = checking.current
+    if (pending.has(key)) return
     pending.add(key)
     let disposed = false
     void (async () => {
-      const tasks = await repo().listTasks()
-      const task = tasks.find((t) => t.id === taskId)
-      if (!task?.project_id) return
-      const projects = await repo().listProjects()
-      const habit = projects.find((p) => p.id === task.project_id && p.exercise_config && p.status === 'active')
-      if (!habit) return
       const logs = await repo().listExerciseLogs()
-      const current = logs.find((l) => l.project_id === habit.id && l.date === habitDay)
+      const current = logs.find((l) => l.project_id === currentProject.id && l.date === habitDay)
       if (current?.status === 'exercise' || disposed) return
-      await repo().saveExerciseLog({ project_id: habit.id, date: habitDay, status: 'exercise', values: current?.values ?? {} })
+      await repo().saveExerciseLog({ project_id: currentProject.id, date: habitDay, status: 'exercise', values: current?.values ?? {} })
       await qc.invalidateQueries({ queryKey: exerciseLogsKey })
-    })().catch(() => { checking.current.delete(key); toast('No se pudo marcar el hábito. Puedes marcarlo desde Inicio.') })
+    })().catch(() => { pending.delete(key); toast('No se pudo marcar el hábito. Inténtalo de nuevo.') })
     return () => { disposed = true; pending.delete(key) }
-  }, [stored.status, stored.mode, taskId, habitDay, qc, toast])
+  }, [shouldCheck, currentProject, habitDay, qc, toast])
+
+  const persistTimer = useRef(() => {})
+  useEffect(() => {
+    persistTimer.current = () => {
+      if (currentProject?.exercise_config && state.status !== 'idle') logSession(state, false, Date.now())
+    }
+  })
+  useEffect(() => {
+    if (stored.status !== 'running') return
+    const id = setInterval(() => persistTimer.current(), 5000)
+    const flush = () => persistTimer.current()
+    window.addEventListener('pagehide', flush)
+    return () => { clearInterval(id); window.removeEventListener('pagehide', flush) }
+  }, [stored.status])
 
   // Título de la pestaña
   useEffect(() => {
@@ -248,16 +271,25 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     remainingMs,
     durations,
     taskId,
-    startTaskFocus: (id) => {
-      if (taskId === id && state.indefinite && state.status === 'running') return
+    liveSession,
+    startTaskFocus: (id, options) => {
+      const habit = projects?.find((p) => p.id === tasks?.find((t) => t.id === id)?.project_id)
+      const indefinite = options ? !options.pomodoro : habit?.exercise_config?.timeGoal?.unit !== 'pomodoros'
+      if (taskId === id && !!state.indefinite === indefinite && state.status !== 'idle') {
+        const t = Date.now(); setNow(t)
+        setStored((s) => ({ ...s, state: P.start(s.state, t) })); return
+      }
       const t = Date.now()
       logSession(state, false, t)
       setNow(t)
-      setStored({ taskId:id, state:P.start({ ...P.initialState(durations), completedFocus:state.completedFocus, indefinite:true }, t) })
+      setStored({ taskId:id, state:P.start({ ...P.initialState(durations), completedFocus:state.completedFocus, indefinite }, t) })
     },
     setTaskId: (id) => {
       if (id === taskId) return
-      if (!state.indefinite) { setStored((s) => ({ ...s,taskId:id })); return }
+      if (!state.indefinite) {
+        logSession(state, false, Date.now())
+        setStored((s) => ({ taskId:id,state: s.state.status === 'idle' ? s.state : P.reset(s.state,durations) })); return
+      }
       const t = Date.now()
       logSession(state, false, t)
       setNow(t)
@@ -272,7 +304,10 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
         state: P.start(s.state.status === 'idle' ? { ...s.state, remainingMs: P.minutesToMs(durations[s.state.mode]) } : s.state, t),
       }))
     },
-    pause: () => setStored((s) => ({ ...s, state: P.pause(s.state, Date.now()) })),
+    pause: () => {
+      persistTimer.current()
+      setStored((s) => ({ ...s, state: P.pause(s.state, Date.now()) }))
+    },
     reset: () => {
       logSession(state, false, Date.now())
       setStored((s) => ({ ...s, state: P.reset(s.state, durations) }))
@@ -282,7 +317,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       setStored((s) => ({ ...s, state: s.state.indefinite ? P.reset(s.state, durations) : P.complete(s.state, durations) }))
     },
     setMode: (m) => {
-      if (state.indefinite) logSession(state, false, Date.now())
+      if (state.status !== 'idle') logSession(state, false, Date.now())
       setStored((s) => ({ ...s, state: P.setMode(s.state, m, durations) }))
     },
   }

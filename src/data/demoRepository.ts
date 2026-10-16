@@ -132,7 +132,7 @@ export function createDemoRepository(initial?: SampleData): Repository {
     listFocusSessions: (since) => delay(data.focusSessions.filter((s) => s.started_at >= since)),
     async createFocusSession(input) {
       const s: FocusSession = { id: id(), user_id: DEMO_USER_ID, created_at: now(), ...input }
-      data.focusSessions.push(s)
+      data.focusSessions = [...data.focusSessions.filter((row) => row.id !== s.id), s]
       save()
       return delay(s)
     },

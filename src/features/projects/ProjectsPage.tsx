@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { CalendarRange, Dumbbell, Repeat, Pencil, Plus } from 'lucide-react'
+import { BookOpen, CalendarRange, Dumbbell, Repeat, Pencil, Plus } from 'lucide-react'
 import { Button, IconButton } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Chip } from '@/components/ui/Chip'
@@ -20,7 +20,10 @@ import { TaskRow } from '../tasks/TaskRow'
 import { useProjects } from './hooks'
 import { useSettings } from '../settings/hooks'
 import { useExerciseLogs } from './exercise-hooks'
-import { exerciseMetrics, exerciseSummary } from './exercise'
+import { habitMetric, exerciseSummary } from './exercise'
+import { useFocusSessions } from '../focus/hooks'
+import { usePomodoro } from '../focus/PomodoroProvider'
+import { habitDailyProgress } from './study'
 import { HabitTracker } from './HabitTracker'
 import { ExercisePanel } from './ExercisePanel'
 
@@ -29,14 +32,17 @@ const statusTone = { active: 'mint', paused: 'sun', completed: 'neutral' } as co
 function ProjectCard({ project, tasks, selected, onSelect, logs, weekStartsOn }: { project: Project; tasks: Task[]; selected: boolean; onSelect: () => void; logs:ExerciseLog[]; weekStartsOn:0 | 1 }) {
   const { done, total, percent } = projectProgress(project, tasks)
   const config = project.exercise_config
-  const summary = config ? exerciseSummary(logs,config.weeklyTarget,new Date(),weekStartsOn) : null
+  const { data: sessions = [] } = useFocusSessions({ includeExcluded:true })
+  const { liveSession } = usePomodoro()
+  const completedLogs = config?.timeGoal?.required ? logs.filter((l) => l.status === 'rest' || habitDailyProgress(project,tasks,sessions,logs,l.date,liveSession).reached) : logs
+  const summary = config ? exerciseSummary(completedLogs,config.weeklyTarget,new Date(),weekStartsOn) : null
   const latest = [...logs].filter((log) => log.status === 'exercise').sort((a,b) => b.date.localeCompare(a.date))[0]
   return (
     <Card as="article" padded={false} className={cn('group h-full overflow-hidden transition-transform hover:-translate-y-0.5', selected && 'ring-2 ring-ink')}>
       <div onClick={onSelect} className="flex h-full min-h-[280px] w-full flex-col p-5 text-left" >
         <div className="mb-4 flex w-full items-center justify-between gap-2">
           <span className="grid size-9 place-items-center rounded-full text-sm font-semibold" style={{ background: projectColorVar(project.color) }} aria-hidden>
-            {config ? config.kind === 'habit' ? <Repeat className="size-4" /> : <Dumbbell className="size-4" /> : project.name.charAt(0).toUpperCase()}
+            {config ? config.kind === 'study' ? <BookOpen className="size-4" /> : config.kind === 'habit' ? <Repeat className="size-4" /> : <Dumbbell className="size-4" /> : project.name.charAt(0).toUpperCase()}
           </span>
           <Chip tone={statusTone[project.status]}>{copy.projectStatus[project.status]}</Chip>
         </div>
@@ -48,7 +54,7 @@ function ProjectCard({ project, tasks, selected, onSelect, logs, weekStartsOn }:
         </div>
         {!config && <ProgressBar value={percent} className="mt-2 w-full" color={projectColorVar(project.color)} label={`Progreso de ${project.name}`} />}
         {config && <HabitTracker project={project} />}
-        {config && <p className="mt-3 min-h-4 text-[11px] text-muted">{config.metrics.slice(0,2).map(({ id }) => latest?.values[id] !== undefined ? `${exerciseMetrics[id].label}: ${latest.values[id]} ${exerciseMetrics[id].unit}` : exerciseMetrics[id].label).join(' · ') || 'Registro diario del hábito'}</p>}
+        {config && <p className="mt-3 min-h-4 text-[11px] text-muted">{config.metrics.slice(0,2).map(({ id }) => latest?.values[id] !== undefined ? `${habitMetric(config,id).label}: ${latest.values[id]} ${habitMetric(config,id).unit}` : habitMetric(config,id).label).join(' · ') || 'Registro diario del hábito'}</p>}
         {(project.start_date || project.due_date) && (
           <p className="mt-3 flex items-center gap-1.5 text-[11px] text-muted">
             <CalendarRange className="size-3" aria-hidden />

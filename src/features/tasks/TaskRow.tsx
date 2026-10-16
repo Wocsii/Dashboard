@@ -1,3 +1,5 @@
+import { useToast } from '@/components/ui/Toast'
+import { useHabitProgress } from '../projects/useHabitProgress'
 import { useExerciseLogs, useExerciseMutations } from '../projects/exercise-hooks'
 import { todayISO } from '@/lib/dates'
 import { Star } from 'lucide-react'
@@ -15,10 +17,12 @@ export function TaskRow({ task, project, compact }: { task: Task; project?: Proj
   const update = useUpdateTask()
   const { editTask } = useQuickActions()
   const habit = !!project?.exercise_config
+  const progress = useHabitProgress(project)
+  const toast = useToast()
   const { data: logs = [] } = useExerciseLogs(habit)
   const { save, remove } = useExerciseMutations()
   const entry = logs.find((l) => l.project_id === project?.id && l.date === todayISO())
-  const done = habit ? entry?.status === 'exercise' : task.status === 'done'
+  const done = habit ? entry?.status === 'exercise' && (!project?.exercise_config?.timeGoal?.required || progress.reached) : task.status === 'done'
   return (
     <li className="group flex items-start gap-3 rounded-tile px-3 py-2.5 transition-colors hover:bg-sky-50/80">
       <div className="pt-0.5">
@@ -28,6 +32,7 @@ export function TaskRow({ task, project, compact }: { task: Task; project?: Proj
           onChange={(v) => {
             if (!habit) { update.mutate({ id: task.id, patch: { status: v ? 'done' : 'todo' } }); return }
             if (project!.status !== 'active' || save.isPending || remove.isPending) return
+            if (v && project!.exercise_config?.timeGoal?.required && !progress.reached) { toast('Alcanza la meta de tiempo para completar el hábito.'); return }
             if (!v && entry) remove.mutate(entry.id)
             else save.mutate({ project_id: project!.id, date: todayISO(), status: 'exercise', values: entry?.values ?? {} })
           }}

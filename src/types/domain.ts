@@ -16,7 +16,7 @@ export type UserSettings = Tables<'user_settings'>
 export type TaskInput = Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'due_date' | 'tags' | 'project_id' | 'is_focus'>
 export type ProjectInput = Pick<Project, 'name' | 'description' | 'color' | 'status' | 'start_date' | 'due_date' | 'exercise_config'>
 export type NoteInput = Pick<Note, 'title' | 'content' | 'pinned'>
-export type FocusSessionInput = Pick<FocusSession, 'kind' | 'started_at' | 'ended_at' | 'duration_seconds' | 'completed' | 'task_id'>
+export type FocusSessionInput = Pick<FocusSession, 'kind' | 'started_at' | 'ended_at' | 'duration_seconds' | 'completed' | 'task_id'> & { id?: string }
 export type SettingsInput = Partial<Omit<UserSettings, 'user_id' | 'created_at' | 'updated_at'>>
 
 export type CalendarProvider = 'google' | 'apple'
