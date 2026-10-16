@@ -1,5 +1,5 @@
 import { Mascot } from '@/components/ui/Mascot'
-import { Pause, Play, RotateCcw, SkipForward } from 'lucide-react'
+import { Pause, Play, RotateCcw, SkipForward, Square } from 'lucide-react'
 import { BarChart } from '@/components/ui/BarChart'
 import { Button, IconButton } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -34,8 +34,8 @@ export function PomodoroControls({ size = 'lg' }: { size?: 'md' | 'lg' }) {
         {running ? <Pause className="size-4" /> : <Play className="size-4" />}
         {running ? 'Pausar' : state.status === 'paused' ? 'Continuar' : 'Empezar'}
       </Button>
-      <IconButton label="Saltar al siguiente bloque" variant="light" size={size} onClick={skip}>
-        <SkipForward className="size-4" />
+      <IconButton label={state.indefinite ? 'Finalizar enfoque' : 'Saltar al siguiente bloque'} variant="light" size={size} onClick={skip}>
+        {state.indefinite ? <Square className="size-4" /> : <SkipForward className="size-4" />}
       </IconButton>
     </div>
   )
@@ -98,10 +98,10 @@ export function FocusPage() {
             onChange={setMode}
             options={(['focus', 'short_break', 'long_break'] as const).map((m) => ({ value: m, label: copy.focusKind[m] }))}
           />
-          <ProgressRing value={1 - remainingMs / total} size={260} stroke={12} color={modeColor[state.mode]}>
+          <ProgressRing value={state.indefinite ? 0 : 1 - remainingMs / total} size={260} stroke={12} color={modeColor[state.mode]}>
             <div className="text-center">
               <p className="text-6xl font-light tracking-tight tabular-nums" aria-live="off">{formatClock(remainingMs)}</p>
-              <p className="mt-1 text-xs text-muted">{copy.focusKind[state.mode]}</p>
+              <p className="mt-1 text-xs text-muted">{state.indefinite ? 'Enfoque sin límite · Tiempo transcurrido' : copy.focusKind[state.mode]}</p>
             </div>
           </ProgressRing>
           <PomodoroControls />

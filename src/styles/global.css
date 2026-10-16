@@ -55,3 +55,9 @@
 [data-theme='night'] .soft-scroll { scrollbar-color: rgb(173 194 223 / 0.35) transparent; }
 
 [data-theme='night'] .decorative-leaf { filter: brightness(0.65) saturate(0.75); }
+
+@media (hover: hover) and (pointer: fine) {
+  .task-focus-button { opacity: 0; pointer-events: none; }
+  .group:hover .task-focus-button,
+  .group:focus-within .task-focus-button { opacity: 1; pointer-events: auto; }
+}

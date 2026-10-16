@@ -4,6 +4,16 @@ import { renderApp } from '@/test/render'
 import { TasksPage } from './TasksPage'
 
 describe('TasksPage', () => {
+  it('inicia y detiene enfoque indefinido en una tarea sin abrir el editor', async () => {
+    const user = userEvent.setup()
+    renderApp(<TasksPage />)
+    await user.click(await screen.findByRole('button', { name:'Activar enfoque indefinido: Llamar al dentista' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    const saved = JSON.parse(localStorage.getItem('mi-espacio:pomodoro:v1')!)
+    expect(saved).toMatchObject({ taskId:'t6',state:{ mode:'focus',status:'running',indefinite:true,endsAt:null } })
+    await user.click(screen.getByRole('button', { name:'Detener enfoque: Llamar al dentista' }))
+    expect(JSON.parse(localStorage.getItem('mi-espacio:pomodoro:v1')!).state.status).toBe('idle')
+  })
   it('muestra secciones de vencidas y de hoy', async () => {
     renderApp(<TasksPage />)
     expect(await screen.findByRole('heading', { name: /Vencidas/ })).toBeInTheDocument()

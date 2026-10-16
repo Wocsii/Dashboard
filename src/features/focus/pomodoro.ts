@@ -19,6 +19,8 @@ export type PomodoroState = {
   /** ms acumulados realmente corriendo en este bloque */
   elapsedMs: number
   completedFocus: number
+  indefinite?: boolean
+  runningSince?: number | null
 }
 
 export const minutesToMs = (m: number) => Math.round(m * 60_000)
@@ -28,22 +30,24 @@ export function initialState(d: Durations, mode: FocusKind = 'focus'): PomodoroS
 }
 
 export function remaining(s: PomodoroState, now: number): number {
+  if (s.indefinite) return s.elapsedMs + (s.status === 'running' ? Math.max(0, now - (s.runningSince ?? now)) : 0)
   return s.status === 'running' && s.endsAt ? Math.max(0, s.endsAt - now) : s.remainingMs
 }
 
 export function start(s: PomodoroState, now: number): PomodoroState {
   if (s.status === 'running') return s
-  return { ...s, status: 'running', endsAt: now + s.remainingMs, startedAt: s.startedAt ?? now }
+  return { ...s, status: 'running', endsAt: s.indefinite ? null : now + s.remainingMs, startedAt: s.startedAt ?? now, runningSince: now }
 }
 
 export function pause(s: PomodoroState, now: number): PomodoroState {
   if (s.status !== 'running') return s
+  if (s.indefinite) return { ...s, status:'paused', endsAt:null, runningSince:null, elapsedMs:remaining(s, now) }
   const left = remaining(s, now)
   return { ...s, status: 'paused', endsAt: null, remainingMs: left, elapsedMs: s.elapsedMs + (s.remainingMs - left) }
 }
 
 export function reset(s: PomodoroState, d: Durations): PomodoroState {
-  return { ...s, status: 'idle', endsAt: null, remainingMs: minutesToMs(d[s.mode]), startedAt: null, elapsedMs: 0 }
+  return { ...initialState(d, s.mode), completedFocus:s.completedFocus }
 }
 
 export function setMode(s: PomodoroState, mode: FocusKind, d: Durations): PomodoroState {
@@ -63,6 +67,7 @@ export function complete(s: PomodoroState, d: Durations): PomodoroState {
 
 /** Segundos realmente concentrados en el bloque (para registrar sesiones interrumpidas) */
 export function elapsedSeconds(s: PomodoroState, now: number): number {
+  if (s.indefinite) return Math.round(remaining(s, now) / 1000)
   const runningPart = s.status === 'running' ? s.remainingMs - remaining(s, now) : 0
   return Math.round((s.elapsedMs + runningPart) / 1000)
 }

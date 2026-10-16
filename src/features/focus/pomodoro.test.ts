@@ -3,6 +3,17 @@ import * as P from './pomodoro'
 const d: P.Durations = { focus: 25, short_break: 5, long_break: 15, longBreakEvery: 4 }
 
 describe('pomodoro', () => {
+  it('counts unlimited focus upwards and excludes paused time', () => {
+    let s = P.start({ ...P.initialState(d),indefinite:true }, 1000)
+    expect(s.endsAt).toBeNull()
+    expect(P.elapsedSeconds(s, 3601000)).toBe(3600)
+    s = P.pause(s, 61000)
+    expect(P.elapsedSeconds(s, 3601000)).toBe(60)
+    s = P.start(s, 4000000)
+    expect(P.elapsedSeconds(s, 4060000)).toBe(120)
+    expect(P.reset(s, d)).toMatchObject({ status:'idle',elapsedMs:0,remainingMs:1500000 })
+    expect(P.reset(s, d).indefinite).toBeUndefined()
+  })
   it('cuenta hacia atrás por marcas de tiempo', () => {
     let s = P.start(P.initialState(d), 0)
     expect(P.remaining(s, 60_000)).toBe(24 * 60_000)

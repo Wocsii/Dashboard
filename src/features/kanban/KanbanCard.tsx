@@ -4,19 +4,22 @@ import { AlignLeft } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import type { Project, Task } from '@/types/domain'
 import { DueBadge, PriorityChip, ProjectDot } from '../tasks/TaskBits'
+import { TaskFocusButton } from '../focus/TaskFocusButton'
 
 export function KanbanCardView({ task, project, dragging, overlay }: { task: Task; project?: Project; dragging?: boolean; overlay?: boolean }) {
   return (
     <div
       className={cn(
-        'rounded-tile bg-card p-3.5 shadow-soft transition-shadow',
+        'group rounded-tile bg-card p-3.5 shadow-soft transition-shadow',
         dragging && 'opacity-40',
         overlay && 'rotate-2 shadow-float',
       )}
     >
       <div className="flex items-start justify-between gap-2">
         <p className={cn('text-sm leading-snug font-medium', task.status === 'done' && 'text-muted line-through')}>{task.title}</p>
-        {task.status !== 'done' && <PriorityChip priority={task.priority} />}
+        <div className={cn('flex min-h-7 shrink-0 items-center gap-1', !overlay && 'pr-8')}>
+          {task.status !== 'done' && <PriorityChip priority={task.priority} />}
+        </div>
       </div>
       {task.description && (
         <p className="mt-1.5 flex items-start gap-1 text-xs text-muted">
@@ -38,7 +41,7 @@ export function KanbanCard({ task, project, onOpen }: { task: Task; project?: Pr
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id, data: { status: task.status } })
   return (
     <li
-      className="list-none"
+      className="group relative list-none"
     >
       <div
         ref={setNodeRef}
@@ -56,6 +59,7 @@ export function KanbanCard({ task, project, onOpen }: { task: Task; project?: Pr
       >
         <KanbanCardView task={task} project={project} dragging={isDragging} />
       </div>
+      {!isDragging && <div className="absolute top-3.5 right-3.5"><TaskFocusButton task={task} /></div>}
     </li>
   )
 }

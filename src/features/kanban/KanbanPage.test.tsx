@@ -26,9 +26,21 @@ describe('KanbanPage', () => {
   it('abre el editor al pulsar Enter en una tarjeta', async () => {
     const user = userEvent.setup()
     renderApp(<KanbanPage />)
-    const card = await screen.findByRole('button', { name: /Comparar vuelos/ })
+    const card = await screen.findByRole('button', { name: /^Comparar vuelos/ })
     card.focus()
     await user.keyboard('{Enter}')
     expect(await screen.findByRole('dialog')).toHaveTextContent('Editar tarea')
+  })
+
+  it('activa el enfoque desde la tarjeta con teclado sin abrir el editor', async () => {
+    const user = userEvent.setup()
+    renderApp(<KanbanPage />)
+    const focus = await screen.findByRole('button', { name:'Activar enfoque indefinido: Comparar vuelos' })
+    focus.focus()
+    await user.keyboard('{Enter}')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name:'Detener enfoque: Comparar vuelos' })).toHaveAttribute('aria-pressed', 'true')
+    const saved = JSON.parse(localStorage.getItem('mi-espacio:pomodoro:v1')!)
+    expect(saved.state).toMatchObject({ mode:'focus',status:'running',indefinite:true,endsAt:null })
   })
 })

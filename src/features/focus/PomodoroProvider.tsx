@@ -23,6 +23,7 @@ type Ctx = {
   reset: () => void
   skip: () => void
   setMode: (m: FocusKind) => void
+  startTaskFocus: (id: string) => void
 }
 
 const PomodoroContext = createContext<Ctx | null>(null)
@@ -178,7 +179,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
 
   // Título de la pestaña
   useEffect(() => {
-    const base = document.title.replace(/^\d\d:\d\d · [^·]+ · /, '')
+    const base = document.title.replace(/^\d{2,}:\d\d · [^·]+ · /, '')
     document.title = state.status === 'running' ? `${P.formatClock(remainingMs)} · ${copy.focusKind[state.mode]} · ${base}` : base
   }, [remainingMs, state.status, state.mode])
 
@@ -187,7 +188,21 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     remainingMs,
     durations,
     taskId,
-    setTaskId: (id) => setStored((s) => ({ ...s, taskId: id })),
+    startTaskFocus: (id) => {
+      if (taskId === id && state.indefinite && state.status === 'running') return
+      const t = Date.now()
+      logSession(state, false, t)
+      setNow(t)
+      setStored({ taskId:id, state:P.start({ ...P.initialState(durations), completedFocus:state.completedFocus, indefinite:true }, t) })
+    },
+    setTaskId: (id) => {
+      if (id === taskId) return
+      if (!state.indefinite) { setStored((s) => ({ ...s,taskId:id })); return }
+      const t = Date.now()
+      logSession(state, false, t)
+      setNow(t)
+      setStored((s) => ({ taskId:id, state:s.state.indefinite ? P.start({ ...P.initialState(durations), completedFocus:s.state.completedFocus, indefinite:true }, t) : P.reset(s.state, durations) }))
+    },
     start: () => {
       if ('Notification' in window && Notification.permission === 'default') void Notification.requestPermission()
       const t = Date.now()
@@ -204,9 +219,12 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     },
     skip: () => {
       logSession(state, false, Date.now())
-      setStored((s) => ({ ...s, state: P.complete(s.state, durations) }))
+      setStored((s) => ({ ...s, state: s.state.indefinite ? P.reset(s.state, durations) : P.complete(s.state, durations) }))
     },
-    setMode: (m) => setStored((s) => ({ ...s, state: P.setMode(s.state, m, durations) })),
+    setMode: (m) => {
+      if (state.indefinite) logSession(state, false, Date.now())
+      setStored((s) => ({ ...s, state: P.setMode(s.state, m, durations) }))
+    },
   }
 
   return <PomodoroContext.Provider value={value}>{children}</PomodoroContext.Provider>

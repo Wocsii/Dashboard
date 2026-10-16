@@ -7,6 +7,7 @@ import type { Project, Task } from '@/types/domain'
 import { useQuickActions } from '../quick-actions'
 import { useUpdateTask } from './hooks'
 import { DueBadge, PriorityChip, ProjectDot } from './TaskBits'
+import { TaskFocusButton } from '../focus/TaskFocusButton'
 
 export function TaskRow({ task, project, compact }: { task: Task; project?: Project; compact?: boolean }) {
   const update = useUpdateTask()
@@ -37,6 +38,7 @@ export function TaskRow({ task, project, compact }: { task: Task; project?: Proj
           {!compact && task.tags.map((t) => <span key={t} className="text-[11px] text-muted">#{t}</span>)}
         </div>
       </button>
+      <TaskFocusButton task={task} />
     </li>
   )
 }

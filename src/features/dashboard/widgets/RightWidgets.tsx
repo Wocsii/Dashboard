@@ -55,11 +55,11 @@ export function TodayListWidget() {
 export function PomodoroMiniWidget() {
   const { state, remainingMs, durations, start, pause } = usePomodoro()
   const running = state.status === 'running'
-  const progress = 1 - remainingMs / minutesToMs(durations[state.mode])
+  const progress = state.indefinite ? 0 : 1 - remainingMs / minutesToMs(durations[state.mode])
   const bars = 28
   return (
     <Card tone="glass" className="animate-rise relative">
-      <span className="rounded-full bg-sky-300/70 px-2.5 py-0.5 text-[10.5px] font-semibold text-ink">{copy.focusKind[state.mode]}</span>
+      <span className="rounded-full bg-sky-300/70 px-2.5 py-0.5 text-[10.5px] font-semibold text-ink">{state.indefinite ? 'Enfoque sin límite' : copy.focusKind[state.mode]}</span>
       <div className="mt-3 flex items-center justify-between gap-3">
         <Link to="/enfoque" className="font-display text-[34px] leading-[0.95] hover:underline">
           {state.status === 'idle' ? (

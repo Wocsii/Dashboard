@@ -27,7 +27,7 @@ test('crear una tarea desde el inicio la guarda y aparece en Tareas tras recarga
 
 test('el Kanban mueve una tarjeta con el teclado y persiste', async ({ page }) => {
   await page.getByRole('link', { name: 'Tablero', exact: true }).click()
-  const card = page.getByRole('button', { name: /Llamar al dentista/ })
+  const card = page.getByRole('button', { name: /^Llamar al dentista/ })
   await expect(card).toBeVisible()
   await page.waitForLoadState('networkidle')
   await card.focus()
@@ -45,7 +45,7 @@ test('el Kanban mueve una tarjeta con el teclado y persiste', async ({ page }) =
 
 test('el Kanban mueve una tarjeta arrastrando con el ratón', async ({ page }) => {
   await page.getByRole('link', { name: 'Tablero', exact: true }).click()
-  const card = page.getByRole('button', { name: /Comparar vuelos/ })
+  const card = page.getByRole('button', { name: /^Comparar vuelos/ })
   const target = page.getByRole('region', { name: /Completada/ })
   const a = (await card.boundingBox())!
   const b = (await target.boundingBox())!

@@ -7,6 +7,7 @@ import { setRepository } from '@/data'
 import { createDemoRepository } from '@/data/demoRepository'
 import { QuickActionsProvider } from '@/features/quick-actions'
 import { buildSampleData } from '@/mocks/sample-data'
+import { PomodoroProvider } from '@/features/focus/PomodoroProvider'
 
 /** Renderiza con todos los proveedores y un repositorio demo nuevo (devuelto para inspeccionarlo) */
 export function renderApp(ui: ReactElement, { route = '/' } = {}) {
@@ -18,7 +19,7 @@ export function renderApp(ui: ReactElement, { route = '/' } = {}) {
     <QueryClientProvider client={qc}>
       <ToastProvider>
         <MemoryRouter initialEntries={[route]}>
-          <QuickActionsProvider>{ui}</QuickActionsProvider>
+          <PomodoroProvider><QuickActionsProvider>{ui}</QuickActionsProvider></PomodoroProvider>
         </MemoryRouter>
       </ToastProvider>
     </QueryClientProvider>,
