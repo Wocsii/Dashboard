@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/Card'
 import { Chip } from '@/components/ui/Chip'
 import { ErrorNote, Spinner } from '@/components/ui/States'
 import { copy } from '@/config/copy.es'
-import { projectColorVar, themeConfig } from '@/config/theme.config'
+import { themeConfig } from '@/config/theme.config'
 import { formatShort, relativeDay } from '@/lib/dates'
 import { plural } from '@/lib/stats'
 import { isDueToday, isOverdue, pickFocusTask } from '@/lib/tasks'
@@ -200,10 +200,10 @@ export function HabitsWidget() {
   if (!habits.length) return null
   return <section className="animate-rise px-1 pb-1" aria-label="Mis hábitos">
     <h2 className="mb-4 text-[15px] font-semibold">Mis hábitos</h2>
-    <div className="grid grid-cols-2 gap-5">
-      {habits.map((p, i) => <Card key={p.id} as="section" padded={false} tilt={i % 2 === 0 ? -1.5 : 1.2} className="relative flex aspect-square min-w-0 flex-col items-start justify-between gap-2 px-2.5 pt-6 pb-3" style={{ background: `color-mix(in srgb, ${projectColorVar(p.color)} 18%, var(--color-card))` }}>
-        <Pin aria-hidden className="pointer-events-none absolute -top-3 left-1/2 size-6 -translate-x-1/2 -rotate-12 fill-pin text-pin-outline drop-shadow-sm" />
-        <Link to="/proyectos" className="line-clamp-3 w-full break-words text-sm font-semibold hover:underline" title={p.name}>{p.name}</Link>
+    <div className="mx-auto grid w-full max-w-[19.5rem] grid-cols-2 gap-4">
+      {habits.map((p, i) => <Card key={p.id} as="section" padded={false} tilt={i % 2 === 0 ? -1.5 : 1.2} className="relative flex aspect-square min-w-0 flex-col items-center justify-between gap-2 px-2 pt-5 pb-2.5">
+        <Pin aria-hidden className="pointer-events-none absolute -top-[13px] left-1/2 size-[26px] -translate-x-1/2 -rotate-12 fill-pin text-pin-outline drop-shadow-sm" />
+        <Link to="/proyectos" className="line-clamp-2 w-full break-words text-center font-display text-2xl leading-none hover:underline" title={p.name}>{p.name}</Link>
         <HabitTracker project={p} timer compact />
       </Card>)}
     </div>
