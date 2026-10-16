@@ -15,13 +15,13 @@ export const GOOGLE_SCOPES = [
 const TOKEN_URL = 'https://oauth2.googleapis.com/token'
 const API = 'https://www.googleapis.com/calendar/v3'
 
-export function buildAuthUrl(state: string, loginHint?: string | null): string {
+export function buildAuthUrl(state: string, loginHint?: string | null, tasks = false): string {
   const env = serverEnv()
   const p = new URLSearchParams({
     client_id: env.googleClientId!,
     redirect_uri: env.googleRedirectUri!,
     response_type: 'code',
-    scope: GOOGLE_SCOPES.join(' '),
+    scope: (tasks ? [...GOOGLE_SCOPES, 'https://www.googleapis.com/auth/tasks'] : GOOGLE_SCOPES).join(' '),
     access_type: 'offline', // para recibir refresh_token
     prompt: 'consent', // garantiza refresh_token aunque ya se hubiera concedido antes
     include_granted_scopes: 'true',
@@ -62,10 +62,10 @@ export function emailFromIdToken(idToken?: string): string | null {
   }
 }
 
-export async function saveConnection(userId: string, t: TokenResponse) {
+export async function saveConnection(userId: string, t: TokenResponse, tasks = false) {
   const env = serverEnv()
   const db = supabaseAdmin()
-  const { data: existing } = await db.from('google_connections').select('refresh_token_encrypted').eq('user_id', userId).maybeSingle()
+  const { data: existing } = await db.from('google_connections').select('refresh_token_encrypted, scopes').eq('user_id', userId).maybeSingle()
   const refresh = t.refresh_token ? encrypt(t.refresh_token, env.tokenKey!) : existing?.refresh_token_encrypted
   if (!refresh) throw new HttpError(400, 'bad_request', 'Google no devolvió un refresh token. Vuelve a intentarlo.')
   const { error } = await db.from('google_connections').upsert({
@@ -74,7 +74,7 @@ export async function saveConnection(userId: string, t: TokenResponse) {
     refresh_token_encrypted: refresh,
     access_token_encrypted: encrypt(t.access_token, env.tokenKey!),
     access_token_expires_at: new Date(Date.now() + t.expires_in * 1000).toISOString(),
-    scopes: t.scope.split(' '),
+    scopes: [...t.scope.split(' '), ...(tasks || existing?.scopes?.includes('dashboard:tasks:enabled') ? ['dashboard:tasks:enabled'] : [])],
     status: 'ok',
     connected_at: new Date().toISOString(),
   })

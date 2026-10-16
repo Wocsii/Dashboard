@@ -1,3 +1,4 @@
+import { GoogleTasksSettings } from '../google-tasks/GoogleTasksSettings'
 import { useEffect } from 'react'
 import { useSearchParams } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
@@ -95,10 +96,11 @@ export function SettingsPage() {
 
   // Resultado de volver de Google (?calendar=connected|denied|...)
   useEffect(() => {
-    const r = params.get('calendar')
+    const tasks = params.get('tasks')
+    const r = tasks ?? params.get('calendar')
     if (!r) return
     const [msg, tone] = calendarMessages[r] ?? calendarMessages.error
-    toast(msg, tone)
+    toast(tasks ? msg.replaceAll('Google Calendar', 'Google Tasks') : msg, tone)
     setParams({}, { replace: true })
   }, [params, setParams, toast])
 
@@ -108,6 +110,7 @@ export function SettingsPage() {
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="flex flex-col gap-5">
           <Card><AppearanceSettings /></Card>
+          <Card><h2 className="mb-4 text-sm font-semibold">Google Tasks · Kanban</h2><GoogleTasksSettings /></Card>
           <Card>
             <h2 className="mb-4 text-sm font-semibold">Próximos eventos de Inicio</h2>
             <UpcomingEventsSettings />

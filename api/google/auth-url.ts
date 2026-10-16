@@ -7,6 +7,7 @@ import { handle, HttpError, json, requireUser } from '../_lib/http.js'
 export const GET = handle(async (req) => {
   if (!isGoogleConfigured()) throw new HttpError(501, 'not_configured', 'Google Calendar no está configurado')
   const user = await requireUser(req)
-  const state = signState({ uid: user.id, nonce: newNonce(), exp: Date.now() + 10 * 60_000 }, serverEnv().stateSecret!)
-  return json({ url: buildAuthUrl(state, user.email) })
+  const tasks = new URL(req.url).searchParams.get('service') === 'tasks'
+  const state = signState({ uid: user.id, nonce: newNonce(), exp: Date.now() + 10 * 60_000, ...(tasks ? { service: 'tasks' as const } : {}) }, serverEnv().stateSecret!)
+  return json({ url: buildAuthUrl(state, user.email, tasks) })
 })

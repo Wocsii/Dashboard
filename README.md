@@ -24,6 +24,7 @@ Sin variables de entorno la app arranca en **modo demo**, con datos de ejemplo g
 |---|---|
 | [docs/INSTALL.md](docs/INSTALL.md) | Instalar en local y crear el proyecto de Supabase |
 | [docs/DEPLOY.md](docs/DEPLOY.md) | Subir a GitHub y desplegar en Vercel |
+| [docs/GOOGLE_TASKS.md](docs/GOOGLE_TASKS.md) | Conectar Google Tasks y mostrar sus listas como columnas del kanban |
 | [docs/GOOGLE_CALENDAR.md](docs/GOOGLE_CALENDAR.md) | Crear credenciales de Google Cloud y conectar el calendario |
 | [docs/EXTENSION.md](docs/EXTENSION.md) | Instalar la extensión de nueva pestaña |
 | [docs/CUSTOMIZE.md](docs/CUSTOMIZE.md) | Cambiar colores, fondo, textos y widgets desde la terminal |

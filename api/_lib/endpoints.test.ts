@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { randomBytes } from 'node:crypto'
+import { buildAuthUrl } from './google'
 import { signState } from './crypto'
 import { GET as callback } from '../google/callback'
 import { GET as status } from '../google/status'
@@ -51,4 +52,16 @@ describe('endpoints de Google Calendar', () => {
     const res = await callback(new Request('http://x/api/google/callback?error=access_denied'))
     expect(res.headers.get('location')).toBe('http://localhost:5173/ajustes?calendar=denied')
   })
+  it('solicita el permiso de Tasks únicamente al conectar Tasks', () => {
+    Object.assign(process.env, configured)
+    expect(new URL(buildAuthUrl('state')).searchParams.get('scope')).not.toContain('/auth/tasks')
+    expect(new URL(buildAuthUrl('state', null, true)).searchParams.get('scope')).toContain('/auth/tasks')
+  })
+  it('vuelve al panel de Tasks cuando se cancela su consentimiento', async () => {
+    Object.assign(process.env, configured)
+    const state = signState({ uid: 'u', nonce: 'n', exp: Date.now() + 60000, service: 'tasks' }, configured.OAUTH_STATE_SECRET)
+    const res = await callback(new Request(`http://x/api/google/callback?error=access_denied&state=${state}`))
+    expect(res.headers.get('location')).toBe('http://localhost:5173/ajustes?tasks=denied')
+  })
+
 })

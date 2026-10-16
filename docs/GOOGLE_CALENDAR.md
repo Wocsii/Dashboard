@@ -103,7 +103,7 @@ No hace falta crear otro proyecto de Google ni cambiar las claves de Vercel o la
 
 Los cambios hechos desde Google se recargan al volver a enfocar el dashboard, cada minuto o con **Actualizar calendario**. No se trata de una sincronización instantánea mediante webhooks.
 
-Google Tasks, gestión de archivos de Drive y fotografías de contactos no se integran: requieren servicios o permisos distintos. Los calendarios de cumpleaños y otros calendarios de solo lectura no se pueden editar.
+Google Tasks tiene una conexión opcional propia en Ajustes; consulta [GOOGLE_TASKS.md](GOOGLE_TASKS.md). La gestión de archivos de Drive y las fotografías de contactos no se integran. Los calendarios de cumpleaños y otros calendarios de solo lectura no se pueden editar.
 
 ## Modo demo y validación
 

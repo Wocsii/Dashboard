@@ -1,3 +1,6 @@
+import { Link } from 'react-router'
+import { useGoogleTasksStatus } from '../google-tasks/api'
+import { GoogleTasksBoard } from '../google-tasks/GoogleTasksBoard'
 import { useMemo, useRef, useState } from 'react'
 import {
   closestCorners,
@@ -99,7 +102,7 @@ function Column({ status, dot, ids, byId, projectMap, onOpen, onAdd }: {
   )
 }
 
-export function KanbanPage() {
+function LocalKanbanPage() {
   const { data: tasks, isLoading, error, refetch } = useTasks()
   const { data: projects = [] } = useProjects()
   const projectMap = useProjectMap()
@@ -227,4 +230,13 @@ export function KanbanPage() {
       </DndContext>
     </>
   )
+}
+
+export function KanbanPage() {
+  const status = useGoogleTasksStatus()
+  if (status.isLoading) return <Spinner />
+  if (status.error) return <ErrorNote error={status.error} onRetry={() => void status.refetch()} />
+  if (status.data?.state === 'connected') return <GoogleTasksBoard />
+  if (status.data?.state === 'needs_reauth') return <><PageHeader title="Tablero" /><p>Vuelve a conectar Google Tasks desde <Link to="/ajustes" className="underline">Ajustes</Link> para ver tus listas.</p></>
+  return <LocalKanbanPage />
 }
