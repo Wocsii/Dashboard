@@ -13,18 +13,18 @@ export async function tasksCall<T>(path: string, body?: unknown): Promise<T> {
   return data
 }
 export function useGoogleTasksStatus() {
-  return useQuery({ queryKey: ['google-tasks', 'status'], queryFn: (): Promise<TasksStatus> => isDemo ? Promise.resolve({ state: 'disconnected' }) : tasksCall('/api/google/tasks?view=status'), refetchInterval: 60_000 })
+  return useQuery({ queryKey: ['google-tasks', 'status'], queryFn: (): Promise<TasksStatus> => isDemo ? Promise.resolve({ state: 'disconnected' }) : tasksCall('/api/google/status?service=tasks&view=status'), refetchInterval: 60_000 })
 }
 export function useGoogleBoard(enabled: boolean) {
   return useQuery({ queryKey: ['google-tasks', 'board'], enabled, queryFn: async () => {
-    const result = await tasksCall<{ columns?: GoogleColumn[]; state?: string }>('/api/google/tasks')
+    const result = await tasksCall<{ columns?: GoogleColumn[]; state?: string }>('/api/google/status?service=tasks')
     if (!result.columns) throw new Error('La conexión con Google Tasks ha cambiado. Revisa Ajustes')
     return result.columns
   }, refetchInterval: 60_000 })
 }
 export function useGoogleTasksMutation() {
   const qc = useQueryClient()
-  return useMutation({ mutationFn: (command: unknown) => tasksCall('/api/google/tasks', command), onSuccess: async () => { await qc.invalidateQueries({ queryKey: ['google-tasks'] }) } })
+  return useMutation({ mutationFn: (command: unknown) => tasksCall('/api/google/status?service=tasks', command), onSuccess: async () => { await qc.invalidateQueries({ queryKey: ['google-tasks'] }) } })
 }
 export async function connectGoogleTasks() {
   const { url } = await tasksCall<{ url: string }>('/api/google/auth-url?service=tasks')

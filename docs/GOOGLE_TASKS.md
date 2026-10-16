@@ -23,7 +23,7 @@ Se reutilizan el cliente OAuth, la URL de callback y las variables existentes de
 
 ## Conexión y seguridad
 
-Los endpoints exigen sesión de Supabase y usan el usuario autenticado. Los tokens permanecen cifrados en el servidor en `google_connections`. El marcador interno `dashboard:tasks:enabled` dentro del array de scopes existente recuerda si se activó el tablero; nunca se envía como scope a Google. El servidor exige además el scope real de Tasks en cada operación.
+Tasks comparte la función `/api/google/status?service=tasks` con Calendar para conservar las 12 funciones del despliegue. Los endpoints exigen sesión de Supabase y usan el usuario autenticado. Los tokens permanecen cifrados en el servidor en `google_connections`. El marcador interno `dashboard:tasks:enabled` dentro del array de scopes existente recuerda si se activó el tablero; nunca se envía como scope a Google. El servidor exige además el scope real de Tasks en cada operación.
 
 Desconectar Tasks elimina solo ese marcador: no borra listas/tareas ni desconecta Calendar. El permiso OAuth se conserva hasta revocarlo en Google; una revocación de la autorización compartida puede afectar también Calendar. Desconectar Calendar revoca la conexión Google compartida, incluido Tasks. Una reconexión de Calendar conserva la elección de Tasks y comprueba que siga existiendo su permiso.
 

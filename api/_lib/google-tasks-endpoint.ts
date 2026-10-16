@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { isGoogleConfigured } from '../_lib/env.js'
-import { handle, HttpError, json, requireUser, supabaseAdmin } from '../_lib/http.js'
-import { tasksConnection, tasksPages, tasksRequest, TASKS_ENABLED, TASKS_SCOPE } from '../_lib/google-tasks.js'
+import { isGoogleConfigured } from './env.js'
+import { handle, HttpError, json, requireUser, supabaseAdmin } from './http.js'
+import { tasksConnection, tasksPages, tasksRequest, TASKS_ENABLED, TASKS_SCOPE } from './google-tasks.js'
 
 const id = z.string().min(1).max(2048)
 const data = z.object({ title: z.string().trim().min(1).max(1024), notes: z.string().max(8192), due: z.string().regex(/^\d{4}-\d{2}-\d{2}T00:00:00\.000Z$/).nullable(), status: z.enum(['needsAction', 'completed']) })

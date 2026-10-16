@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { HttpError } from './http'
 import { tasksPages, tasksRequest, TASKS_ENABLED, TASKS_SCOPE } from './google-tasks'
-import { POST } from '../google/tasks'
+import { POST } from './google-tasks-endpoint'
 
 const mocks = vi.hoisted(() => ({ scopes: ['https://www.googleapis.com/auth/tasks', 'dashboard:tasks:enabled'], token: vi.fn(), user: vi.fn() }))
 vi.mock('./google.js', () => ({ getAccessToken: mocks.token }))
@@ -30,12 +30,12 @@ describe('Google Tasks server', () => {
     expect(fetcher.mock.calls[0][1].headers['If-Match']).toBe('version')
   })
   it('valida los comandos antes de enviar datos a Google', async () => {
-    const res = await POST(new Request('http://x/api/google/tasks', { method: 'POST', body: JSON.stringify({ action: 'save', list: 'list', data: { title: '' } }) }))
+    const res = await POST(new Request('http://x/api/google/status?service=tasks', { method: 'POST', body: JSON.stringify({ action: 'save', list: 'list', data: { title: '' } }) }))
     expect(res.status).toBe(400)
   })
   it('exige autenticación para escribir', async () => {
     mocks.user.mockRejectedValueOnce(new HttpError(401, 'unauthorized', 'Sesión no válida'))
-    const res = await POST(new Request('http://x/api/google/tasks', { method: 'POST', body: '{}' }))
+    const res = await POST(new Request('http://x/api/google/status?service=tasks', { method: 'POST', body: '{}' }))
     expect(res.status).toBe(401)
   })
 })
