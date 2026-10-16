@@ -77,7 +77,7 @@ function DurationSettings() {
 }
 
 export function FocusPage() {
-  const { state, remainingMs, durations, setMode, taskId, setTaskId, saveError, retrySave } = usePomodoro()
+  const { state, remainingMs, durations, setMode, taskId, setTaskId, saveError, retrySave, saveConfirmed } = usePomodoro()
   const { data: tasks = [] } = useTasks()
   const { data: sessions = [] } = useFocusSessions()
   const { data: settings } = useSettings()
@@ -90,6 +90,7 @@ export function FocusPage() {
   return (
     <>
       <PageHeader title="Enfoque" subtitle={`Bloques completados en esta sesión: ${state.completedFocus}`} />
+      {saveConfirmed && <p role="status" className="mb-4 text-sm text-ink-soft">Tiempo guardado</p>}
       {saveError && <div role="alert" className="mb-5 rounded-card bg-blush p-4 text-sm"><p>No se pudo guardar el tiempo: {saveError}</p><p className="mt-1 text-xs">El registro se conserva pendiente en este navegador.</p><Button variant="light" size="sm" className="mt-3" onClick={retrySave}>Reintentar guardado</Button></div>}
       <div className="grid gap-5 lg:grid-cols-[1.3fr_1fr]">
         <Card tone="ivory" className="relative flex flex-col items-center gap-6 overflow-hidden py-10">
