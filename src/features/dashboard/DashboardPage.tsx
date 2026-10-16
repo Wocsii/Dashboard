@@ -27,10 +27,10 @@ export function DashboardPage() {
   const now = new Date()
   return (
     <>
-      {/* Cabecera: avatar + saludo serif · título centrado · acciones rápidas */}
+      {/* Cabecera: mascota alegre + saludo serif · título centrado · acciones rápidas */}
       <header className="grid items-center gap-4 border-b border-ink/5 pb-5 lg:grid-cols-[1fr_auto_1fr]">
         <div className="flex min-w-0 items-center gap-4">
-          <Mascot variant="avatar" className="size-14 shrink-0 rounded-full object-cover shadow-pill ring-2 ring-card" />
+          <Mascot variant="greeting" className="character-outline size-24 shrink-0 object-contain sm:size-28" />
           <div className="min-w-0">
             <h1 className="font-display text-5xl leading-[0.9] break-words tracking-tight">{name ? `¡Buenas, ${name}!` : themeConfig.greeting}</h1>
             <p className="mt-1.5 text-xs text-ink-soft">

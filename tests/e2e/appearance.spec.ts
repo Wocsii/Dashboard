@@ -11,7 +11,7 @@ test('modo noche: cambia toda la interfaz, conserva la elección y vuelve al dí
   await page.getByRole('radio', { name: 'Noche', exact: true }).click()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'night')
   await page.getByRole('link', { name: 'Inicio', exact: true }).click()
-  await expect(page.locator('header img').first()).toHaveAttribute('src', /avatar-night/)
+  await expect(page.locator('header img').first()).toHaveAttribute('src', /greeting-night/)
   await expect(page.locator('.night-moon')).toHaveCSS('opacity', '1')
   await page.reload()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'night')

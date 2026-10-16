@@ -24,6 +24,8 @@ export const themeConfig = {
     leaf: '/assets/generated/leaf.webp',
     avatarNight: '/assets/generated/personaje-avatar-night.png',
     heroNight: '/assets/generated/personaje-hero-night.png',
+    greeting: '/assets/generated/personaje-greeting.png',
+    greetingNight: '/assets/generated/personaje-greeting-night.png',
   },
 
   /** Inclinación de las tarjetas apiladas del centro (grados). 0 = rectas */
