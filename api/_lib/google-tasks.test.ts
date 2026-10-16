@@ -29,6 +29,16 @@ describe('Google Tasks server', () => {
     await expect(tasksRequest('user', '/lists/list/tasks/task', 'PATCH', { title: 'Nueva' }, 'version')).rejects.toMatchObject({ code: 'conflict' })
     expect(fetcher.mock.calls[0][1].headers['If-Match']).toBe('version')
   })
+  it.each([
+    ['SERVICE_DISABLED', 'not_configured'],
+    ['accessNotConfigured', 'not_configured'],
+    ['ACCESS_TOKEN_SCOPE_INSUFFICIENT', 'needs_permission'],
+    ['insufficientPermissions', 'needs_permission'],
+    ['other', 'forbidden'],
+  ])('distingue el rechazo %s sin mostrar datos privados', async (reason, code) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ error: { message: 'private response', errors: [{ reason }], details: [{ reason }] } }, { status: 403 })))
+    await expect(tasksRequest('user', '/users/@me/lists')).rejects.toMatchObject({ code, message: expect.not.stringContaining('private response') })
+  })
   it('valida los comandos antes de enviar datos a Google', async () => {
     const res = await POST(new Request('http://x/api/google/status?service=tasks', { method: 'POST', body: JSON.stringify({ action: 'save', list: 'list', data: { title: '' } }) }))
     expect(res.status).toBe(400)
