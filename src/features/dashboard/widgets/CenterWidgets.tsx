@@ -201,7 +201,7 @@ export function HabitsWidget() {
   return <section className="animate-rise px-1 pb-1" aria-label="Mis hábitos">
     <h2 className="mb-4 text-[15px] font-semibold">Mis hábitos</h2>
     <div className="mx-auto grid w-full max-w-[19.5rem] grid-cols-2 gap-4">
-      {habits.map((p, i) => <Card key={p.id} as="section" padded={false} tilt={i % 2 === 0 ? -1.5 : 1.2} className="relative flex aspect-square min-w-0 flex-col items-center justify-between gap-2 px-2 pt-5 pb-2.5">
+      {habits.map((p, i) => <Card key={p.id} as="section" padded={false} tilt={i % 2 === 0 ? -1.5 : 1.2} className="relative flex aspect-square min-w-0 shadow-pinned flex-col items-center justify-between gap-2 px-2 pt-5 pb-2.5">
         <Pin aria-hidden className="pointer-events-none absolute -top-[13px] left-1/2 size-[26px] -translate-x-1/2 -rotate-12 fill-pin text-pin-outline drop-shadow-sm" />
         <Link to="/proyectos" className="line-clamp-2 w-full break-words text-center font-display text-2xl leading-none hover:underline" title={p.name}>{p.name}</Link>
         <HabitTracker project={p} timer compact />

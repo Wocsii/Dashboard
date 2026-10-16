@@ -56,6 +56,7 @@
   /* Sombras suaves azuladas */
   --shadow-soft: 0 1px 2px rgb(40 70 110 / 0.08), 0 22px 46px -18px rgb(40 70 110 / 0.31);
   --shadow-float: 0 2px 6px rgb(40 70 110 / 0.08), 0 30px 60px -24px rgb(40 70 110 / 0.35);
+  --shadow-pinned: 1px 2px 3px rgb(40 55 75 / 0.12), 5px 10px 14px -4px rgb(40 55 75 / 0.24);
   --shadow-pill: 0 1px 2px rgb(40 70 110 / 0.06), 0 7px 20px -10px rgb(40 70 110 / 0.22);
 
   /* Animaciones */
@@ -118,6 +119,7 @@
   --project-coral: #69443f;
   --shadow-soft: 0 2px 4px rgb(3 8 20 / 0.18), 0 22px 46px -18px rgb(3 8 20 / 0.55);
   --shadow-float: 0 3px 8px rgb(3 8 20 / 0.25), 0 30px 60px -24px rgb(3 8 20 / 0.65);
+  --shadow-pinned: 1px 2px 4px rgb(3 8 20 / 0.32), 5px 10px 14px -4px rgb(3 8 20 / 0.5);
   --shadow-pill: 0 2px 10px rgb(3 8 20 / 0.3);
   --event-tint: 22%;
   --event-border-tint: 40%;
