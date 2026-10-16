@@ -48,7 +48,8 @@ export function useCalendarEvents(start: Date, end: Date, enabled: boolean, labe
         throw e
       }
     },
-    enabled, staleTime: 60_000, refetchInterval: 60_000,
+    // Keep visited ranges available while fresh events load in the background.
+    enabled, staleTime: 60_000, gcTime: 30 * 60_000, refetchInterval: 60_000,
     retry: (n, e) => !(e instanceof CalendarApiError && e.code !== 'network') && n < 2,
   })
 }

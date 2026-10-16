@@ -66,7 +66,7 @@ export function CalendarBoard(props: Props) {
 
   const shownEvents = resizePreview ? events.map((event) => event.id === resizePreview.id ? { ...event, end: new Date(resizePreview.end).toISOString() } : event) : events
   const columns = { gridTemplateColumns: `48px repeat(${dates.length}, minmax(0, 1fr))` }
-  return <div ref={scroll} className="soft-scroll max-h-[min(620px,calc(100dvh-320px))] min-h-[380px] overflow-auto rounded-b-[25px] bg-sky-50/70" aria-label={view === 'week' ? 'Agenda semanal' : 'Agenda diaria'}>
+  return <div ref={scroll} className="soft-scroll min-h-[max(380px,min(620px,calc(100dvh-320px)))] flex-1 basis-0 overflow-auto rounded-b-[25px] bg-sky-50/70" aria-label={view === 'week' ? 'Agenda semanal' : 'Agenda diaria'}>
     <div className={view === 'week' ? 'min-w-[720px]' : 'min-w-[300px]'}>
       <div className="sticky top-0 z-20 bg-card shadow-[0_1px_0_#1213160a]">
         <div className="grid items-center gap-1.5 px-2 py-3" style={columns}>

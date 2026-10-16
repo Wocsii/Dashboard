@@ -28,10 +28,16 @@ function wallTime(iso: string, zone: string) {
   const get = (name: string) => parts.find((p) => p.type === name)?.value
   return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}`
 }
-function timeISO(time: ICAL.Time, calendar: CalendarInfo) {
+function eventTimeZone(time: ICAL.Time, calendar: CalendarInfo, property?: ICAL.Property | null): string {
+  if (time.zone === ICAL.Timezone.utcTimezone) return 'UTC'
+  // ical.js treats a TZID without an embedded VTIMEZONE as floating.
+  // Read the original parameter before falling back to the collection zone.
+  return property?.getFirstParameter('tzid') || (time.zone.tzid !== 'floating' ? time.zone.tzid : calendar.timeZone ?? 'UTC')
+}
+function timeISO(time: ICAL.Time, calendar: CalendarInfo, property?: ICAL.Property | null) {
   if (time.isDate) return time.toString()
   if (time.zone === ICAL.Timezone.utcTimezone || time.zone.component) return time.toJSDate().toISOString()
-  const zone = calendar.timeZone ?? 'UTC'
+  const zone = eventTimeZone(time, calendar, property)
   const target = Date.parse(`${time.toString().replace(/Z$/,'')}Z`)
   let guess = target
   for (let i = 0; i < 4; i++) {
@@ -55,12 +61,12 @@ export function normalizeAppleObject(object: DAVCalendarObject, calendar: Calend
     return {
       id:`apple:${Buffer.from(object.url).toString('base64url')}:${event.uid}:${recurrenceId ?? ''}`,
       provider:'apple', calendarId:calendar.id, appleObjectUrl:object.url, appleUid:event.uid, appleRecurrenceId:recurrenceId,
-      title:event.summary || '(Sin título)', start:timeISO(event.startDate,calendar), end:timeISO(event.endDate,calendar), allDay:event.startDate.isDate,
+      title:event.summary || '(Sin título)', start:timeISO(event.startDate,calendar,component.getFirstProperty('dtstart')), end:timeISO(event.endDate,calendar,component.getFirstProperty('dtend') ?? component.getFirstProperty('dtstart')), allDay:event.startDate.isDate,
       description:event.description ?? '', location:event.location ?? '', color:colors[colorId] ?? calendar.color, colorId,
       category:value(component,'x-dashboard-category'), etag:object.etag, writable:calendar.writable,
       recurringEventId:recurrenceId || event.isRecurring() ? event.uid : undefined,
       recurrence:event.isRecurring() ? component.getAllProperties('rrule').map((p) => p.toICALString()) : undefined,
-      timeZone:calendar.timeZone ?? (event.startDate.zone.tzid === 'floating' ? 'UTC' : event.startDate.zone.tzid), reminderMinutes:minutes,
+      timeZone:eventTimeZone(event.startDate,calendar,component.getFirstProperty('dtstart')), reminderMinutes:minutes,
       attendees:component.getAllProperties('attendee').map((p) => ({ email:String(p.getFirstValue() ?? '').replace(/^mailto:/i,''), displayName:p.getFirstParameter('cn') || undefined, responseStatus:p.getFirstParameter('partstat')?.toLowerCase() })),
     }
   })

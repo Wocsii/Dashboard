@@ -1,5 +1,6 @@
 import { DAVClient, type DAVCalendar } from 'tsdav'
 import { HttpError } from './http.js'
+import { CalendarCache } from './calendar-cache.js'
 
 /** Never send an iCloud credential to a host supplied by a browser or a redirect. */
 export function trustedAppleUrl(value: string): URL {
@@ -55,9 +56,14 @@ export async function appleClient(email: string, password: string) {
 }
 
 const calendarProps = { 'd:displayname': {}, 'c:calendar-description': {}, 'c:calendar-timezone': {}, 'ca:calendar-color': {}, 'd:current-user-privilege-set': {} }
+const collections = new WeakMap<DAVClient, CalendarCache<DAVCalendar[]>>()
 export async function appleCollections(client: DAVClient) {
-  const calendars = await client.fetchCalendars({ props: calendarProps, projectedProps: { currentUserPrivilegeSet: true } })
-  return calendars.filter((calendar) => { trustedAppleUrl(calendar.url); return !calendar.components?.length || calendar.components.includes('VEVENT') })
+  let cache = collections.get(client)
+  if (!cache) { cache = new CalendarCache<DAVCalendar[]>(60_000, 1); collections.set(client, cache) }
+  return cache.get('collections', async () => {
+    const calendars = await client.fetchCalendars({ props: calendarProps, projectedProps: { currentUserPrivilegeSet: true } })
+    return calendars.filter((calendar) => { trustedAppleUrl(calendar.url); return !calendar.components?.length || calendar.components.includes('VEVENT') })
+  })
 }
 function containsKey(value: unknown, key: string): boolean {
   if (!value || typeof value !== 'object') return false

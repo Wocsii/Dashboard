@@ -1,6 +1,7 @@
 import { decrypt, encrypt } from './crypto.js'
 import { serverEnv } from './env.js'
 import { HttpError, supabaseAdmin } from './http.js'
+import { CalendarCache } from './calendar-cache.js'
 
 export const GOOGLE_WRITE_SCOPE = 'https://www.googleapis.com/auth/calendar.events'
 /** Lista de calendarios y lectura/escritura de eventos; no modifica permisos de calendarios. */
@@ -229,7 +230,14 @@ export async function listCalendars(userId: string) {
   }))
 }
 
+const calendarLists = new CalendarCache<GCalendarListEntry[]>(60_000)
 async function allCalendars(userId: string) {
+  // Check the connection even on cache hits; disconnect/reconnect must take effect.
+  const token = await getAccessToken(userId)
+  return calendarLists.get(JSON.stringify([userId, token]), () => loadCalendars(userId))
+}
+
+async function loadCalendars(userId: string) {
   const result: GCalendarListEntry[] = []
   let pageToken: string | undefined
   do {

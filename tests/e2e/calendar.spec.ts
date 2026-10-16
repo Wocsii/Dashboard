@@ -6,6 +6,22 @@ test.beforeEach(async ({ page }) => {
   await page.reload()
 })
 
+test('la agenda llega al borde inferior y permite recorrer las 24 horas', async ({ page }) => {
+  for (const viewport of [{ width:1440,height:900 }, { width:1440,height:720 }, { width:390,height:844 }]) {
+    await page.setViewportSize(viewport)
+    const agenda = page.getByLabel('Agenda semanal')
+    await expect(agenda).toBeVisible()
+    const region = page.getByRole('region', { name:'Calendario de Google' })
+    await expect.poll(async () => {
+      const board = await agenda.boundingBox(), container = await region.boundingBox()
+      return board && container ? Math.abs(board.y + board.height - container.y - container.height) : 100
+    }).toBeLessThan(2)
+    await agenda.evaluate((element) => { element.scrollTop = element.scrollHeight })
+    await expect(agenda.getByText('23:00', { exact:true })).toBeVisible()
+    expect(await agenda.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true)
+  }
+})
+
 test('calendario: crear, editar duración, filtrar y borrar un evento', async ({ page }) => {
   await page.getByRole('button', { name: 'Nuevo evento', exact: true }).click()
   const dialog = page.getByRole('dialog')

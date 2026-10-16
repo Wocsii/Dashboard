@@ -77,8 +77,8 @@ export function CalendarVisualPage() {
     {status.error && <ErrorNote error={status.error} onRetry={() => void status.refetch()} />}
     <div className="overflow-hidden rounded-[30px] border-[6px] border-card/80 bg-sky-100 shadow-float lg:flex">
       <div className={`${sideOpen ? 'block' : 'hidden'} lg:block`}><CalendarSidebar date={date} onSelect={(day) => { setDate(day); setSideOpen(false) }} calendars={calendars.data ?? []} visibleIds={visibleIds} onToggle={toggleCalendar} events={allEvents} onEdit={(event) => setDialog({ date, event })} name={profile?.display_name || 'Mi calendario'} weekStartsOn={weekStartsOn} category={category} onCategory={setCategory} pending={updateSettings.isPending} /></div>
-      <section aria-label={provider === 'apple' ? 'Calendario de Apple' : 'Calendario de Google'} className="min-w-0 flex-1 rounded-[24px] bg-card">
-        <header className="flex flex-col gap-4 px-5 pt-6 pb-5 sm:px-6">
+      <section aria-label={provider === 'apple' ? 'Calendario de Apple' : 'Calendario de Google'} className="flex min-w-0 flex-1 flex-col rounded-[24px] bg-card">
+        <header className="flex shrink-0 flex-col gap-4 px-5 pt-6 pb-5 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-xl font-medium tracking-tight capitalize xl:text-2xl">{title}</h2>
             <div className="[&_[aria-checked=true]]:bg-sky-200 [&_[aria-checked=true]]:text-ink"><Segmented<CalendarView> label="Vista del calendario" value={view} onChange={setView} size="sm" options={[{ value:'month', label:'Mes' },{ value:'week', label:'Semana' },{ value:'day', label:'Día' }]} /></div>
@@ -95,8 +95,8 @@ export function CalendarVisualPage() {
           {!canWrite && provider === 'google' && <div className="mx-5 mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-sky-50 px-4 py-3"><p className="max-w-md text-xs text-ink-soft">Tu calendario está conectado en modo lectura. Activa la edición para añadir y mover eventos.</p><Button variant="sun" size="sm" onClick={() => void calendarApi.connect().catch((error: Error) => toast(error.message, 'error'))}>Activar edición</Button></div>}
           {calendars.error && <div className="px-5 pb-4"><ErrorNote error={calendars.error} onRetry={() => void calendars.refetch()} /></div>}
           {events.error && <div className="px-5 pb-4"><ErrorNote error={events.error} onRetry={() => void events.refetch()} /></div>}
-          {events.isPending ? <Spinner label="Preparando tus planes…" /> : <CalendarBoard dates={dates} view={view} selected={date} events={shownEvents} canWrite={canWrite} busy={save.isPending} onSelect={selectDay} onEdit={(event) => setDialog({ date, event })} onCreate={create} onChange={(event, input) => void changeEvent(event,input)} />}
           {!events.isPending && shownEvents.length === 0 && <p className="px-5 py-3 text-center text-[11px] text-muted">{visibleIds.length === 0 ? 'Selecciona un calendario para ver sus eventos.' : category ? 'No hay eventos de esta categoría en el período.' : 'Tu agenda tiene espacio. Añade tu próximo plan.'}</p>}
+          {events.isPending ? <Spinner label="Preparando tus planes…" /> : <CalendarBoard dates={dates} view={view} selected={date} events={shownEvents} canWrite={canWrite} busy={save.isPending} onSelect={selectDay} onEdit={(event) => setDialog({ date, event })} onCreate={create} onChange={(event, input) => void changeEvent(event,input)} />}
         </>}
       </section>
     </div>

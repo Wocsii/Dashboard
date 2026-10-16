@@ -14,6 +14,20 @@ const event = (body = '') => `BEGIN:VEVENT\r\nUID:event-one\r\nDTSTART:20261015T
 const data: CalendarEventInput = { calendarId:info.id,title:'Nuevo plan',description:'Mis notas',location:'Biblioteca',start:'2026-10-15T10:00:00Z',end:'2026-10-15T11:00:00Z',allDay:false,timeZone:'UTC',attendees:[],category:'Personal' }
 
 describe('iCloud calendar objects', () => {
+  it.each([
+    ['20261016', '2026-10-16T11:00:00.000Z', '2026-10-16T12:00:00.000Z'],
+    ['20261216', '2026-12-16T12:00:00.000Z', '2026-12-16T13:00:00.000Z'],
+  ])('reads a Madrid 13–14 event without VTIMEZONE on %s', (day, start, end) => {
+    const normalized = normalizeAppleObject({ url:objectUrl, data:ics(`BEGIN:VEVENT\r\nUID:local\r\nDTSTART;TZID=Europe/Madrid:${day}T130000\r\nDTEND;TZID=Europe/Madrid:${day}T140000\r\nEND:VEVENT`) }, { ...info,timeZone:'America/New_York' })[0]
+    expect(normalized).toMatchObject({ start, end, timeZone:'Europe/Madrid' })
+    expect(new Intl.DateTimeFormat('en-GB', { timeZone:'Europe/Madrid',hour:'2-digit',minute:'2-digit' }).format(new Date(normalized.start))).toBe('13:00')
+  })
+  it('keeps UTC events unchanged and uses the calendar zone for truly floating events', () => {
+    const utc = normalizeAppleObject({ url:objectUrl,data:ics(event()) }, { ...info,timeZone:'Europe/Madrid' })[0]
+    expect(utc).toMatchObject({ start:'2026-10-15T08:00:00.000Z',timeZone:'UTC' })
+    const floating = normalizeAppleObject({ url:objectUrl,data:ics(event().replaceAll('Z\r\n','\r\n')) }, { ...info,timeZone:'Europe/Madrid' })[0]
+    expect(floating.start).toBe('2026-10-15T06:00:00.000Z')
+  })
   it('normalizes names, permissions, all-day dates and provider identifiers', () => {
     expect(appleWritable(calendar)).toBe(true)
     expect(appleWritable({ ...calendar,projectedProps:{ currentUserPrivilegeSet:{ privilege:{ read:{} } } } })).toBe(false)
