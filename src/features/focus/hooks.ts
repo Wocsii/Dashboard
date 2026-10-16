@@ -44,10 +44,10 @@ export function useLogFocusSession() {
       confirmSession(userId, queued)
       return saved
     },
-    onError: () => {
+    onError: (error) => {
       if (Date.now() - lastError.current > 30_000) {
         lastError.current = Date.now()
-        toast('No se pudo guardar el tiempo. Se conserva pendiente y se reintentará al recuperar la conexión o volver a esta pestaña.', 'error')
+        toast(`No se pudo guardar el tiempo: ${error.message}. El registro queda pendiente.`, 'error')
       }
     },
     onSuccess: (s) => qc.setQueryData<FocusSession[]>(focusKey, (l = []) => [s, ...l.filter((row) => row.id !== s.id)]),
@@ -64,5 +64,8 @@ export function useLogFocusSession() {
     window.addEventListener('focus', retryPending)
     return () => { window.removeEventListener('online', retryPending); window.removeEventListener('focus', retryPending) }
   }, [profile, mutate, qc])
-  return mutation
+  return { ...mutation, retryPending: () => {
+    if (!profile || mutation.isPending) return
+    for (const session of pendingSessions(profile.id)) mutate(session)
+  } }
 }

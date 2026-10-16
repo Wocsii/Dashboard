@@ -2,8 +2,8 @@ import { requireSupabase } from '@/lib/supabase'
 import type { Repository } from './repository'
 
 /** Lanza el error de PostgREST con un mensaje legible */
-function unwrap<T>({ data, error }: { data: T | null; error: { message: string } | null }): T {
-  if (error) throw new Error(error.message)
+function unwrap<T>({ data, error }: { data: T | null; error: { message: string; code?: string } | null }): T {
+  if (error) throw Object.assign(new Error(error.message), { code: error.code })
   return data as T
 }
 
