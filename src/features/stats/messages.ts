@@ -9,16 +9,16 @@ type StatsSnapshot = {
 }
 
 const messages = {
-  empty: ['Lienzo en blanco, café opcional.', 'Tu primera victoria está a un clic.', 'Cero presión, mil posibles comienzos.'],
-  quiet: ['Modo tortuga también llega a la meta.', 'Motor al ralentí. Un pasito y arrancamos.', 'Una semana tranquila también tiene su encanto.'],
-  overdue: ['Esas fechas piden una mudanza. Tú puedes.', 'Reprogramar también es tener un plan.', 'Un pendiente menos, un suspiro más.'],
-  cleared: ['Lista limpia. Hazte la ola.', 'Pendientes a cero. Bailecito merecido.', 'Todo tachado. Aplausos de bolsillo para ti.'],
-  streak: ['Esa racha ya pide nombre artístico.', 'Pasito a pasito, montando un numerito.', 'La constancia te sienta de cine.'],
-  productive: ['La lista de tareas te empieza a temer.', 'Tanto tachar merece un rotulador de oro.', 'Tu semana viene con confeti incluido.'],
-  focused: ['Tu concentración ya tiene club de fans.', 'Ese cerebro se ha ganado un recreo.', 'Modo enfoque con matrícula de honor.'],
-  balanced: ['Tachas, te concentras… solo falta la capa.', 'Un poquito de todo, un montón de mérito.', 'Vas sumando sin hacer ruido. Qué arte.'],
-  progress: ['Una tarea menos, una miniovación más.', 'Esos tachones son pequeñas obras de arte.', 'Vas despejando camino. Sin excavadora.'],
-  starting: ['Ya hay minutos en la hucha. Bien ahí.', 'El cerebro ya ha salido a calentar.', 'Primeros minutos: el motor ya hace brum.'],
+  empty: ['Todo empieza por una tarea pequeña.', 'Cuando quieras, damos el primer paso.', 'Aquí empieza tu próxima pequeña victoria.'],
+  quiet: ['Poco a poco también se avanza.', 'Una semana tranquila. Tú marcas el ritmo.', 'Vamos con calma, que esto no es una carrera.'],
+  overdue: ['Toca ajustar alguna fecha y seguir.', 'Una cosa cada vez. La lista puede esperar.', 'Las fechas se pueden mover. Sin dramas.'],
+  cleared: ['Todo al día. Ahora sí, un respiro.', 'Sin pendientes. Esto merece un descansito.', 'Lista terminada. Qué gusto da tachar.'],
+  streak: ['Varios días sumando. Vas muy bien.', 'Qué bien te está sentando la constancia.', 'Otro día más. Ya le estás cogiendo el truco.'],
+  productive: ['Has avanzado mucho esta semana. Buen trabajo.', 'Muchas tareas menos. Se nota el trabajo.', 'Buena semana. La lista ya respira un poco.'],
+  focused: ['Buen rato de enfoque. Ahora toca estirarse.', 'Has dedicado tiempo a lo importante. Bien hecho.', 'Mucha concentración. Un descanso también cuenta.'],
+  balanced: ['Tareas hechas y tiempo bien dedicado. Buen ritmo.', 'Vas sumando avances, sin hacerlo todo de golpe.', 'Buen equilibrio. Así da gusto avanzar.'],
+  progress: ['Ya hay tareas terminadas. Vas por buen camino.', 'Una menos en la lista. Eso siempre alegra.', 'Poco a poco, la lista se va acortando.'],
+  starting: ['Ya has sacado un rato para concentrarte.', 'Esos minutos también cuentan. Sigue a tu ritmo.', 'Ya has sumado un rato. No está nada mal.'],
 } as const
 
 export function statsMessageCategory(s: StatsSnapshot): keyof typeof messages {
