@@ -40,7 +40,6 @@ export function CalendarPage() {
     <>
       <PageHeader
         title="Calendario"
-        subtitle={providerName}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Link to="/calendario/visual" className="inline-flex h-10 items-center gap-2 rounded-full bg-sun px-4 text-sm font-medium text-ink shadow-pill hover:brightness-95"><CalendarDays className="size-4" /> Ver calendario visual</Link>
