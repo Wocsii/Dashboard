@@ -198,5 +198,5 @@ export function HabitsWidget() {
   const { data: projects = [] } = useProjects()
   const habits = projects.filter((p) => p.exercise_config && p.status === 'active')
   if (!habits.length) return null
-  return <Card className="animate-rise"><h2 className="text-[17px] font-semibold">Mis hábitos</h2><div className="mt-3 flex flex-col gap-4">{habits.map((p) => <section key={p.id} className="rounded-tile border border-line p-3"><Link to="/proyectos" className="text-sm font-semibold hover:underline">{p.name}</Link><HabitTracker project={p} timer /></section>)}</div></Card>
+  return <Card className="animate-rise"><h2 className="text-[17px] font-semibold">Mis hábitos</h2><div className="mt-3 flex flex-col gap-2">{habits.map((p) => <section key={p.id} className="flex items-center justify-between gap-2 rounded-tile border border-line px-3 py-2"><Link to="/proyectos" className="min-w-0 truncate text-sm font-semibold hover:underline" title={p.name}>{p.name}</Link><HabitTracker project={p} timer compact /></section>)}</div></Card>
 }
