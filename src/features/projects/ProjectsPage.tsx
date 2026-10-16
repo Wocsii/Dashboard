@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { CalendarRange, Pencil, Plus } from 'lucide-react'
+import { CalendarRange, Dumbbell, Pencil, Plus } from 'lucide-react'
 import { Button, IconButton } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Chip } from '@/components/ui/Chip'
@@ -13,32 +13,40 @@ import { formatShort } from '@/lib/dates'
 import { projectProgress } from '@/lib/stats'
 import { sortTasks } from '@/lib/tasks'
 import { cn } from '@/lib/cn'
-import type { Project, ProjectStatus, Task } from '@/types/domain'
+import type { ExerciseLog, Project, ProjectStatus, Task } from '@/types/domain'
 import { useQuickActions } from '../quick-actions'
 import { useTasks } from '../tasks/hooks'
 import { TaskRow } from '../tasks/TaskRow'
 import { useProjects } from './hooks'
+import { useSettings } from '../settings/hooks'
+import { useExerciseLogs } from './exercise-hooks'
+import { exerciseMetrics, exerciseSummary } from './exercise'
+import { ExercisePanel } from './ExercisePanel'
 
 const statusTone = { active: 'mint', paused: 'sun', completed: 'neutral' } as const
 
-function ProjectCard({ project, tasks, selected, onSelect }: { project: Project; tasks: Task[]; selected: boolean; onSelect: () => void }) {
+function ProjectCard({ project, tasks, selected, onSelect, logs, weekStartsOn }: { project: Project; tasks: Task[]; selected: boolean; onSelect: () => void; logs:ExerciseLog[]; weekStartsOn:0 | 1 }) {
   const { done, total, percent } = projectProgress(project, tasks)
+  const config = project.exercise_config
+  const summary = config ? exerciseSummary(logs,config.weeklyTarget,new Date(),weekStartsOn) : null
+  const latest = [...logs].filter((log) => log.status === 'exercise').sort((a,b) => b.date.localeCompare(a.date))[0]
   return (
-    <Card as="article" padded={false} className={cn('group overflow-hidden transition-transform hover:-translate-y-0.5', selected && 'ring-2 ring-ink')}>
-      <button type="button" onClick={onSelect} className="block w-full p-5 text-left" aria-pressed={selected}>
-        <div className="mb-4 flex items-center justify-between gap-2">
+    <Card as="article" padded={false} className={cn('group h-full overflow-hidden transition-transform hover:-translate-y-0.5', selected && 'ring-2 ring-ink')}>
+      <button type="button" onClick={onSelect} className="flex h-full min-h-[280px] w-full flex-col p-5 text-left" aria-pressed={selected}>
+        <div className="mb-4 flex w-full items-center justify-between gap-2">
           <span className="grid size-9 place-items-center rounded-full text-sm font-semibold" style={{ background: projectColorVar(project.color) }} aria-hidden>
-            {project.name.charAt(0).toUpperCase()}
+            {config ? <Dumbbell className="size-4" /> : project.name.charAt(0).toUpperCase()}
           </span>
           <Chip tone={statusTone[project.status]}>{copy.projectStatus[project.status]}</Chip>
         </div>
         <h2 className="text-base font-semibold tracking-tight">{project.name}</h2>
         {project.description && <p className="mt-1 line-clamp-2 text-xs text-muted">{project.description}</p>}
-        <div className="mt-5 flex items-end justify-between">
-          <span className="text-3xl font-light tracking-tight">{percent}%</span>
-          <span className="text-[11px] text-muted">{done}/{total} tareas</span>
+        <div className="mt-auto flex w-full items-end justify-between gap-2 pt-5">
+          <span className="text-3xl font-light tracking-tight">{summary ? `${summary.workouts}/${config!.weeklyTarget}` : `${percent}%`}</span>
+          <span className="text-right text-[11px] text-muted">{summary ? `Esta semana · Racha ${summary.streak}` : `${done}/${total} tareas`}</span>
         </div>
-        <ProgressBar value={percent} className="mt-2" color={projectColorVar(project.color)} label={`Progreso de ${project.name}`} />
+        <ProgressBar value={summary?.percent ?? percent} className="mt-2 w-full" color={projectColorVar(project.color)} label={`Progreso de ${project.name}`} />
+        {config && <p className="mt-3 min-h-4 text-[11px] text-muted">{config.metrics.slice(0,2).map(({ id }) => latest?.values[id] !== undefined ? `${exerciseMetrics[id].label}: ${latest.values[id]} ${exerciseMetrics[id].unit}` : exerciseMetrics[id].label).join(' · ') || 'Registro diario de ejercicio y descanso'}</p>}
         {(project.start_date || project.due_date) && (
           <p className="mt-3 flex items-center gap-1.5 text-[11px] text-muted">
             <CalendarRange className="size-3" aria-hidden />
@@ -53,6 +61,8 @@ function ProjectCard({ project, tasks, selected, onSelect }: { project: Project;
 export function ProjectsPage() {
   const { data: projects, isLoading, error, refetch } = useProjects()
   const { data: tasks = [] } = useTasks()
+  const { data:settings } = useSettings()
+  const exerciseLogs = useExerciseLogs(projects?.some((p) => !!p.exercise_config) ?? false)
   const { newProject, editProject, newTask } = useQuickActions()
   const [tab, setTab] = useState<ProjectStatus>('active')
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -95,7 +105,7 @@ export function ProjectsPage() {
       <div className="grid gap-5 xl:grid-cols-[1fr_380px]">
         <div className="grid content-start gap-4 sm:grid-cols-2 2xl:grid-cols-3">
           {list.map((p) => (
-            <ProjectCard key={p.id} project={p} tasks={tasks} selected={p.id === selectedId} onSelect={() => setSelectedId(p.id === selectedId ? null : p.id)} />
+            <ProjectCard key={p.id} project={p} tasks={tasks} selected={p.id === selectedId} onSelect={() => setSelectedId(p.id === selectedId ? null : p.id)} logs={(exerciseLogs.data ?? []).filter((log) => log.project_id === p.id)} weekStartsOn={settings?.week_starts_on === 0 ? 0 : 1} />
           ))}
           {projects && list.length === 0 && (
             <Card className="sm:col-span-2"><EmptyState>{copy.empty.projects}</EmptyState></Card>
@@ -115,8 +125,9 @@ export function ProjectsPage() {
                 </IconButton>
               </div>
               {selected.description && <p className="mt-2 text-sm whitespace-pre-line text-ink-soft">{selected.description}</p>}
+              {selected.exercise_config && <ExercisePanel key={selected.id} project={selected} />}
               <div className="mt-5 flex items-center justify-between">
-                <h3 className="text-sm font-semibold">Tareas relacionadas</h3>
+                <h3 className="text-sm font-semibold">{selected.exercise_config ? 'Sesiones y tareas' : 'Tareas relacionadas'}</h3>
                 <Button size="sm" variant="light" onClick={() => newTask({ project_id: selected.id })}>
                   <Plus className="size-3.5" /> Tarea
                 </Button>

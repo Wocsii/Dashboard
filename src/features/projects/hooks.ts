@@ -3,6 +3,7 @@ import { repo } from '@/data'
 import { useListMutation } from '@/data/optimistic'
 import type { Project, ProjectInput } from '@/types/domain'
 import { tasksKey } from '../tasks/hooks'
+import { exerciseLogsKey } from './exercise-hooks'
 
 export const projectsKey = ['projects'] as const
 
@@ -47,5 +48,5 @@ export function useDeleteProject() {
     apply: (list, id) => list.filter((p) => p.id !== id),
     errorMessage: 'No se pudo borrar el proyecto',
   })
-  return { ...m, mutate: (id: string) => m.mutate(id, { onSettled: () => qc.invalidateQueries({ queryKey: tasksKey }) }) }
+  return { ...m, mutate: (id: string) => m.mutate(id, { onSettled: () => { void qc.invalidateQueries({ queryKey: tasksKey }); void qc.invalidateQueries({ queryKey:exerciseLogsKey }) } }) }
 }

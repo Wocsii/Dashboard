@@ -2,6 +2,18 @@ import { buildSampleData } from '@/mocks/sample-data'
 import { createDemoRepository } from './demoRepository'
 
 describe('repositorio demo', () => {
+  it('saves one exercise check-in per day, persists metrics and cascades project deletion', async () => {
+    const repo = createDemoRepository(buildSampleData())
+    const project = await repo.createProject({ name:'Fuerza',exercise_config:{ weeklyTarget:3,metrics:[{ id:'weight',target:60 }] } })
+    const first = await repo.saveExerciseLog({ project_id:project.id,date:'2026-10-16',status:'exercise',values:{ weight:62 } })
+    await repo.saveExerciseLog({ project_id:project.id,date:'2026-10-16',status:'rest',values:{} })
+    expect(await repo.listExerciseLogs()).toEqual([expect.objectContaining({ id:first.id,status:'rest',values:{} })])
+    const again = createDemoRepository()
+    expect((await again.listProjects()).find((p) => p.id === project.id)?.exercise_config?.weeklyTarget).toBe(3)
+    expect((await again.listExerciseLogs())[0].status).toBe('rest')
+    await repo.deleteProject(project.id)
+    expect(await repo.listExerciseLogs()).toEqual([])
+  })
   beforeEach(() => localStorage.clear())
 
   it('crea, edita, completa y borra tareas imitando los triggers de la BD', async () => {

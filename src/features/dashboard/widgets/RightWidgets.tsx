@@ -15,6 +15,9 @@ import { useProjects } from '../../projects/hooks'
 import { useQuickActions } from '../../quick-actions'
 import { useTasks, useUpdateTask } from '../../tasks/hooks'
 import { DueBadge } from '../../tasks/TaskBits'
+import { useExerciseLogs } from '../../projects/exercise-hooks'
+import { exerciseSummary } from '../../projects/exercise'
+import { useSettings } from '../../settings/hooks'
 
 /** Panel translúcido de tareas de hoy (como "Quick requests") */
 export function TodayListWidget() {
@@ -92,6 +95,8 @@ export function PomodoroMiniWidget() {
 export function ActiveProjectsWidget() {
   const { data: projects = [] } = useProjects()
   const { data: tasks = [] } = useTasks()
+  const { data:logs = [] } = useExerciseLogs(projects.some((p) => !!p.exercise_config))
+  const { data:settings } = useSettings()
   const active = projects.filter((p) => p.status === 'active').slice(0, 4)
   return (
     <Card className="animate-rise">
@@ -102,6 +107,7 @@ export function ActiveProjectsWidget() {
       <ul className="mt-3 flex flex-col gap-3.5">
         {active.map((p) => {
           const { percent, done, total } = projectProgress(p, tasks)
+          const exercise = p.exercise_config ? exerciseSummary(logs.filter((log) => log.project_id === p.id),p.exercise_config.weeklyTarget,new Date(),settings?.week_starts_on === 0 ? 0 : 1) : null
           return (
             <li key={p.id}>
               <div className="mb-1.5 flex items-center justify-between text-xs">
@@ -109,9 +115,9 @@ export function ActiveProjectsWidget() {
                   <span className="size-2 shrink-0 rounded-full" style={{ background: projectColorVar(p.color) }} aria-hidden />
                   <span className="truncate">{p.name}</span>
                 </span>
-                <span className="text-muted">{done}/{total}</span>
+                <span className="text-muted">{exercise ? `${exercise.workouts}/${p.exercise_config!.weeklyTarget} esta semana` : `${done}/${total}`}</span>
               </div>
-              <ProgressBar value={percent} color={projectColorVar(p.color)} label={`Progreso de ${p.name}`} />
+              <ProgressBar value={exercise?.percent ?? percent} color={projectColorVar(p.color)} label={`Progreso de ${p.name}`} />
             </li>
           )
         })}

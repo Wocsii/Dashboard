@@ -1,5 +1,7 @@
 import type {
   FocusSession,
+  ExerciseLog,
+  ExerciseLogInput,
   FocusSessionInput,
   Note,
   NoteInput,
@@ -26,6 +28,9 @@ export interface Repository {
   createProject(input: Partial<ProjectInput> & { name: string }): Promise<Project>
   updateProject(id: string, patch: Partial<ProjectInput>): Promise<Project>
   deleteProject(id: string): Promise<void>
+  listExerciseLogs(): Promise<ExerciseLog[]>
+  saveExerciseLog(input: ExerciseLogInput): Promise<ExerciseLog>
+  deleteExerciseLog(id: string): Promise<void>
 
   listNotes(): Promise<Note[]>
   createNote(input?: Partial<NoteInput>): Promise<Note>

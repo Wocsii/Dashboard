@@ -26,6 +26,9 @@ export function createSupabaseRepository(): Repository {
     createProject: async (input) => unwrap(await db.from('projects').insert(input).select().single()),
     updateProject: async (id, patch) => unwrap(await db.from('projects').update(patch).eq('id', id).select().single()),
     deleteProject: async (id) => void unwrap(await db.from('projects').delete().eq('id', id)),
+    listExerciseLogs: async () => unwrap(await db.from('exercise_logs').select('*').order('date')),
+    saveExerciseLog: async (input) => unwrap(await db.from('exercise_logs').upsert({ ...input,user_id:await uid() }, { onConflict:'project_id,date' }).select().single()),
+    deleteExerciseLog: async (id) => void unwrap(await db.from('exercise_logs').delete().eq('id',id)),
 
     listNotes: async () =>
       unwrap(await db.from('notes').select('*').order('pinned', { ascending: false }).order('updated_at', { ascending: false })),

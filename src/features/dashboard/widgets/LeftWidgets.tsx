@@ -8,6 +8,9 @@ import { formatHoursCompact, projectProgress } from '@/lib/stats'
 import { useProjects } from '../../projects/hooks'
 import { useStats } from '../../stats/useStats'
 import { useTasks } from '../../tasks/hooks'
+import { useExerciseLogs } from '../../projects/exercise-hooks'
+import { exerciseSummary } from '../../projects/exercise'
+import { useSettings } from '../../settings/hooks'
 
 const PROJECT_KEY = 'mi-espacio:dashboard-project'
 
@@ -15,6 +18,8 @@ const PROJECT_KEY = 'mi-espacio:dashboard-project'
 export function ActiveProjectWidget() {
   const { data: projects = [] } = useProjects()
   const { data: tasks = [] } = useTasks()
+  const { data:logs = [] } = useExerciseLogs(projects.some((p) => !!p.exercise_config))
+  const { data:settings } = useSettings()
   const active = projects.filter((p) => p.status === 'active')
   const [chosen, setChosen] = useState(() => {
     try {
@@ -26,6 +31,7 @@ export function ActiveProjectWidget() {
   const project = active.find((p) => p.id === chosen) ?? active[0]
   if (!project) return null
   const { percent } = projectProgress(project, tasks)
+  const exercise = project.exercise_config ? exerciseSummary(logs.filter((log) => log.project_id === project.id),project.exercise_config.weeklyTarget,new Date(),settings?.week_starts_on === 0 ? 0 : 1) : null
 
   return (
     <div className="relative inline-flex max-w-full items-center gap-3 rounded-full bg-glass py-2 pr-4 pl-2 shadow-pill backdrop-blur-xl">
@@ -34,7 +40,7 @@ export function ActiveProjectWidget() {
       </span>
       <span className="min-w-0">
         <span className="block truncate text-sm font-semibold">{project.name}</span>
-        <span className="block truncate text-[11px] text-muted">Proyecto activo · {percent}% hecho</span>
+        <span className="block truncate text-[11px] text-muted">{exercise ? `Ejercicio · ${exercise.workouts}/${project.exercise_config!.weeklyTarget} esta semana` : `Proyecto activo · ${percent}% hecho`}</span>
       </span>
       <ChevronDown className="size-4 shrink-0 text-ink-soft" aria-hidden />
       <select

@@ -1,4 +1,4 @@
-import type { FocusSession, Note, Profile, Project, Task, UserSettings } from '@/types/domain'
+import type { ExerciseLog, FocusSession, Note, Profile, Project, Task, UserSettings } from '@/types/domain'
 import { buildSampleData, DEMO_USER_ID, type SampleData } from '@/mocks/sample-data'
 import type { Repository } from './repository'
 
@@ -16,7 +16,8 @@ function load(): SampleData {
 
 /** Repositorio en memoria + localStorage. Imita los triggers de la BD (updated_at, completed_at). */
 export function createDemoRepository(initial?: SampleData): Repository {
-  const data = initial ?? load()
+  const data = (initial ?? load()) as SampleData & { exerciseLogs?: ExerciseLog[] }
+  data.exerciseLogs ??= []
   const save = () => {
     try {
       localStorage.setItem(KEY, JSON.stringify(data))
@@ -80,8 +81,24 @@ export function createDemoRepository(initial?: SampleData): Repository {
       return delay(data.projects[i])
     },
     async deleteProject(projectId) {
+      data.exerciseLogs = data.exerciseLogs!.filter((log) => log.project_id !== projectId)
       data.projects = data.projects.filter((p) => p.id !== projectId)
       data.tasks = data.tasks.map((t) => (t.project_id === projectId ? { ...t, project_id: null } : t))
+      save()
+      return delay(undefined)
+    },
+
+    listExerciseLogs: () => delay(data.exerciseLogs!),
+    async saveExerciseLog(input) {
+      if (!data.projects.some((p) => p.id === input.project_id && p.exercise_config)) throw notFound('Proyecto de ejercicio')
+      const previous = data.exerciseLogs!.find((log) => log.project_id === input.project_id && log.date === input.date)
+      const log: ExerciseLog = { id:previous?.id ?? id(),user_id:DEMO_USER_ID,created_at:previous?.created_at ?? now(),updated_at:now(),...input }
+      data.exerciseLogs = [...data.exerciseLogs!.filter((row) => row.id !== log.id),log]
+      save()
+      return delay(log)
+    },
+    async deleteExerciseLog(logId) {
+      data.exerciseLogs = data.exerciseLogs!.filter((log) => log.id !== logId)
       save()
       return delay(undefined)
     },

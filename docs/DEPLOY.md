@@ -1,5 +1,7 @@
 # Despliegue: GitHub y Vercel
 
+Para publicar los proyectos de ejercicio, aplica primero la migración `20261016110000_exercise_projects.sql` en Supabase. Consulta [EXERCISE.md](EXERCISE.md).
+
 La app vive en la nube. Una vez desplegada **no necesitas tener el repositorio descargado** para usarla: entras desde cualquier ordenador iniciando sesión con Google.
 
 ## 1. Subir a GitHub

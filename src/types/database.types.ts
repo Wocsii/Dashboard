@@ -9,6 +9,9 @@ export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'done'
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent'
 export type ProjectStatus = 'active' | 'paused' | 'completed'
 export type FocusKind = 'focus' | 'short_break' | 'long_break'
+export type ExerciseMetric = 'weight' | 'repetitions' | 'minutes' | 'intensity' | 'distance'
+export type ExerciseConfig = { weeklyTarget: number; metrics: { id: ExerciseMetric; target?: number }[] }
+type ExerciseLogRow = { id: string; user_id: string; project_id: string; date: string; status: 'exercise' | 'rest'; values: Partial<Record<ExerciseMetric, number>> } & Timestamps
 
 type ProfileRow = { id: string; display_name: string | null; timezone: string } & Timestamps
 type SettingsRow = {
@@ -31,6 +34,7 @@ type ProjectRow = {
   status: ProjectStatus
   start_date: string | null
   due_date: string | null
+  exercise_config?: ExerciseConfig | null
 } & Timestamps
 type TaskRow = {
   id: string
@@ -83,6 +87,7 @@ export type Database = {
       profiles: Table<ProfileRow, 'id'>
       user_settings: Table<SettingsRow, never>
       projects: Table<ProjectRow, 'name'>
+      exercise_logs: Table<ExerciseLogRow, 'project_id' | 'date' | 'status'>
       tasks: Table<TaskRow, 'title'>
       notes: Table<NoteRow, never>
       focus_sessions: Table<FocusSessionRow, 'started_at' | 'ended_at' | 'duration_seconds'>

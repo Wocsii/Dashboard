@@ -4,6 +4,9 @@ export type { TaskStatus, TaskPriority, ProjectStatus, FocusKind } from './datab
 
 export type Task = Tables<'tasks'>
 export type Project = Tables<'projects'>
+export type ExerciseLog = Tables<'exercise_logs'>
+export type { ExerciseConfig, ExerciseMetric } from './database.types'
+export type ExerciseLogInput = Pick<ExerciseLog, 'project_id' | 'date' | 'status' | 'values'>
 export type Note = Tables<'notes'>
 export type FocusSession = Tables<'focus_sessions'>
 export type Profile = Tables<'profiles'>
@@ -11,7 +14,7 @@ export type UserSettings = Tables<'user_settings'>
 
 /** Campos que el usuario edita en una tarea */
 export type TaskInput = Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'due_date' | 'tags' | 'project_id' | 'is_focus'>
-export type ProjectInput = Pick<Project, 'name' | 'description' | 'color' | 'status' | 'start_date' | 'due_date'>
+export type ProjectInput = Pick<Project, 'name' | 'description' | 'color' | 'status' | 'start_date' | 'due_date' | 'exercise_config'>
 export type NoteInput = Pick<Note, 'title' | 'content' | 'pinned'>
 export type FocusSessionInput = Pick<FocusSession, 'kind' | 'started_at' | 'ended_at' | 'duration_seconds' | 'completed' | 'task_id'>
 export type SettingsInput = Partial<Omit<UserSettings, 'user_id' | 'created_at' | 'updated_at'>>
