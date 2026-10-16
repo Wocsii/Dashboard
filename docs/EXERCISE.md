@@ -25,3 +25,11 @@ Los guardados fallidos se reintentan y conservan una copia pendiente por cuenta 
 Se reutilizan la configuración JSON y los registros de `20261016110000_exercise_projects.sql`; esta migración debe estar aplicada en Supabase. No hace falta una migración adicional para Estudio ni para las metas de tiempo.
 
 Si una tarea se elimina mientras su reloj o un guardado sin conexión sigue pendiente, el tiempo se conserva como sesión sin tarea asociada, con el mismo identificador. Los demás errores de permisos o de base de datos no se ocultan; Enfoque muestra el motivo y permite reintentar.
+
+## Enfoque: registro manual y controles
+
+El recuadro blanco **Añadir tiempo** permite registrar minutos de enfoque o descanso realizados fuera del reloj, con su fecha. El enfoque se añade a las estadísticas; el descanso se muestra por separado y no suma concentración. El registro manual no cuenta como un Pomodoro completado y no modifica el cronómetro activo. Los registros usan los mismos guardados pendientes y reintentos; reintentar mantiene el identificador para no duplicar minutos.
+
+Pulsa los números del centro del reloj de enfoque para cambiar su duración (1–180 minutos). Guardar una duración diferente conserva el tramo anterior y prepara un bloque con la nueva duración, manteniendo si estaba corriendo o en pausa. Guardar sin cambiar los minutos deja el bloque como estaba. El tiempo transcurrido del modo indefinido no se edita.
+
+Al final del recuadro blanco, el botón circular amarillo con el símbolo de infinito inicia un cronómetro sin límite, con o sin tarea. Si estaba pausado, lo reanuda. **Duración y descansos del cronómetro** conserva los ajustes del Pomodoro en un desplegable.

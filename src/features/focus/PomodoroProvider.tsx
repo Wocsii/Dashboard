@@ -29,6 +29,8 @@ type Ctx = {
   liveSession: { id: string; taskId: string; seconds: number; startedAt: number } | undefined
   setTaskId: (id: string | null) => void
   start: () => void
+  startIndefinite: () => void
+  setFocusDuration: (minutes: number) => void
   pause: () => void
   reset: () => void
   skip: () => void
@@ -266,6 +268,26 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       logSession(state, false, t)
       setNow(t)
       setStored((s) => ({ taskId:id, state:s.state.indefinite ? P.start({ ...P.initialState(durations), completedFocus:s.state.completedFocus, indefinite:true }, t) : P.reset(s.state, durations) }))
+    },
+    startIndefinite: () => {
+      const current = latest.current.state
+      const t = Date.now()
+      setNow(t)
+      if (current.indefinite && current.mode === 'focus' && current.status !== 'idle') {
+        setStored(s => ({ ...s, state: P.start(current, t) }))
+        return
+      }
+      logSession(current, false, t)
+      setStored(s => ({ ...s, state: P.start({ ...P.initialState(durations), completedFocus: current.completedFocus, indefinite: true }, t) }))
+    },
+    setFocusDuration: (minutes) => {
+      if (!Number.isInteger(minutes) || minutes < 1 || minutes > 180) return
+      const current = latest.current.state
+      const t = Date.now()
+      logSession(current, false, t)
+      const next = { ...P.initialState({ ...durations, focus: minutes }), completedFocus: current.completedFocus }
+      setNow(t)
+      setStored(s => ({ ...s, state: current.status === 'running' ? P.start(next, t) : { ...next, status: current.status } }))
     },
     start: () => {
       if ('Notification' in window && Notification.permission === 'default') void Notification.requestPermission()

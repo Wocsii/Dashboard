@@ -1,5 +1,7 @@
+import { FocusClock } from './FocusClock'
+import { ManualTimeEntry } from './ManualTimeEntry'
 import { Mascot } from '@/components/ui/Mascot'
-import { Pause, Play, RotateCcw, SkipForward, Square } from 'lucide-react'
+import { Infinity as InfinityIcon, Pause, Play, RotateCcw, SkipForward, Square } from 'lucide-react'
 import { BarChart } from '@/components/ui/BarChart'
 import { Button, IconButton } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -14,7 +16,7 @@ import { useSettings, useUpdateSettings } from '../settings/hooks'
 import { useTasks } from '../tasks/hooks'
 import { useFocusSessions } from './hooks'
 import { usePomodoro } from './PomodoroProvider'
-import { formatClock, minutesToMs } from './pomodoro'
+import { minutesToMs } from './pomodoro'
 
 const modeColor: Record<FocusKind, string> = {
   focus: 'var(--color-ink)',
@@ -77,7 +79,7 @@ function DurationSettings() {
 }
 
 export function FocusPage() {
-  const { state, remainingMs, durations, setMode, taskId, setTaskId, saveError, retrySave, saveConfirmed } = usePomodoro()
+  const { state, remainingMs, durations, setMode, taskId, setTaskId, saveError, retrySave, saveConfirmed, startIndefinite } = usePomodoro()
   const { data: tasks = [] } = useTasks()
   const { data: sessions = [] } = useFocusSessions()
   const { data: settings } = useSettings()
@@ -86,6 +88,8 @@ export function FocusPage() {
   const perDay = days.map((d) => focusMinutes(sessions, toISODate(d), toISODate(d)))
   const weekTotal = perDay.reduce((a, b) => a + b, 0)
   const today = todayISO()
+  const weekDates = new Set(days.map(toISODate))
+  const restMinutes = Math.round(sessions.filter(s => s.kind !== 'focus' && weekDates.has(toISODate(new Date(s.started_at)))).reduce((sum, s) => sum + s.duration_seconds, 0) / 60)
 
   return (
     <>
@@ -102,7 +106,7 @@ export function FocusPage() {
           />
           <ProgressRing value={state.indefinite ? 0 : 1 - remainingMs / total} size={260} stroke={12} color={modeColor[state.mode]}>
             <div className="text-center">
-              <p className="text-6xl font-light tracking-tight tabular-nums" aria-live="off">{formatClock(remainingMs)}</p>
+              <FocusClock />
               <p className="mt-1 text-xs text-muted">{state.indefinite ? 'Enfoque sin límite · Tiempo transcurrido' : copy.focusKind[state.mode]}</p>
             </div>
           </ProgressRing>
@@ -121,6 +125,7 @@ export function FocusPage() {
             <p className="text-sm font-semibold">Esta semana</p>
             <p className="mt-2 text-5xl font-light tracking-tight">{formatMinutes(weekTotal)}</p>
             <p className="text-xs text-ink-soft">de concentración</p>
+            {restMinutes > 0 && <p className="mt-1 text-xs text-ink-soft">{formatMinutes(restMinutes)} de descanso registrados</p>}
             <BarChart
               className="mt-5"
               title="Minutos de enfoque por día"
@@ -135,8 +140,18 @@ export function FocusPage() {
             />
           </Card>
           <Card>
-            <p className="mb-4 text-sm font-semibold">Duraciones</p>
-            <DurationSettings />
+            <h2 className="mb-4 text-sm font-semibold">Añadir tiempo</h2>
+            <ManualTimeEntry />
+            <details className="mt-5 border-t border-line pt-4">
+              <summary className="cursor-pointer text-sm font-medium">Duración y descansos del cronómetro</summary>
+              <div className="mt-4"><DurationSettings /></div>
+            </details>
+            <div className="mt-5 flex items-center gap-3 border-t border-line pt-5">
+              <IconButton label={state.indefinite && state.status === 'paused' ? 'Continuar cronómetro indefinido' : 'Iniciar cronómetro indefinido'} variant="sun" size="lg" disabled={!!state.indefinite && state.status === 'running'} onClick={startIndefinite} className="size-14">
+                <InfinityIcon className="size-6" />
+              </IconButton>
+              <span className="text-sm font-medium">{state.indefinite && state.status === 'running' ? 'Cronómetro indefinido en marcha' : state.indefinite && state.status === 'paused' ? 'Continuar cronómetro indefinido' : 'Iniciar cronómetro indefinido'}</span>
+            </div>
           </Card>
         </div>
       </div>
