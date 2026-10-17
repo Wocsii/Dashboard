@@ -1,3 +1,4 @@
+import { isGoogleFocusTask } from '../google-tasks/task-link'
 import { useQuery } from '@tanstack/react-query'
 import { repo } from '@/data'
 import { useListMutation } from '@/data/optimistic'
@@ -5,8 +6,8 @@ import type { Task, TaskInput } from '@/types/domain'
 
 export const tasksKey = ['tasks'] as const
 
-export function useTasks() {
-  return useQuery({ queryKey: tasksKey, queryFn: () => repo().listTasks() })
+export function useTasks({ includeGoogleFocus = false } = {}) {
+  return useQuery({ queryKey: tasksKey, queryFn: () => repo().listTasks(), select: tasks => includeGoogleFocus ? tasks : tasks.filter(task => !isGoogleFocusTask(task)) })
 }
 
 type Patch = Partial<TaskInput> & { position?: number }

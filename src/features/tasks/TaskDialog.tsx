@@ -1,3 +1,4 @@
+import { TaskWorkedTime } from '../focus/TaskWorkedTime'
 import { useState, type FormEvent } from 'react'
 import { Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -18,6 +19,7 @@ const empty: TaskInput = { title: '', description: '', status: 'todo', priority:
 export function TaskDialog({ open, onClose, task, defaults, onCreated }: Props) {
   return (
     <Modal open={open} onClose={onClose} title={task ? 'Editar tarea' : 'Nueva tarea'}>
+      {task && <TaskWorkedTime taskId={task.id} />}
       {/* key: reinicia el formulario al cambiar de tarea */}
       <TaskForm key={task?.id ?? 'new'} task={task} defaults={defaults} onCreated={onCreated} onDone={onClose} />
     </Modal>

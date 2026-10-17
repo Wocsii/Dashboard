@@ -45,7 +45,7 @@ export function PomodoroControls({ size = 'lg' }: { size?: 'md' | 'lg' }) {
 
 export function FocusPage() {
   const { state, remainingMs, durations, setMode, taskId, setTaskId, saveError, retrySave, startIndefinite } = usePomodoro()
-  const { data: tasks = [] } = useTasks()
+  const { data: tasks = [] } = useTasks({ includeGoogleFocus: true })
   const { data: sessions = [] } = useFocusSessions()
   const { data: settings } = useSettings()
   const total = minutesToMs(durations[state.mode])

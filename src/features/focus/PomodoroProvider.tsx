@@ -76,7 +76,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   const { data: sessions = [] } = useFocusSessions({ includeExcluded: true })
   const { data: habitLogs = [] } = useExerciseLogs()
   const { data: projects } = useProjects()
-  const { data: tasks } = useTasks()
+  const { data: tasks } = useTasks({ includeGoogleFocus: true })
   const linkedHabit = useRef<string | null>(null)
   const toast = useToast()
   const durations: P.Durations = useMemo(

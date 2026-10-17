@@ -1,64 +1,31 @@
-import { useState } from 'react'
 import { Link } from 'react-router'
-import { ChevronDown, Flame, Timer, CheckCircle2, ArrowUpRight } from 'lucide-react'
+import { Infinity as InfinityIcon, Flame, Timer, CheckCircle2, ArrowUpRight } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { copy } from '@/config/copy.es'
-import { projectColorVar, themeConfig } from '@/config/theme.config'
-import { formatHoursCompact, projectProgress } from '@/lib/stats'
-import { useProjects } from '../../projects/hooks'
+import { themeConfig } from '@/config/theme.config'
+import { formatHoursCompact } from '@/lib/stats'
 import { useStats } from '../../stats/useStats'
-import { useTasks } from '../../tasks/hooks'
-import { useExerciseLogs } from '../../projects/exercise-hooks'
-import { exerciseSummary } from '../../projects/exercise'
-import { useSettings } from '../../settings/hooks'
 
-const PROJECT_KEY = 'mi-espacio:dashboard-project'
+import { usePomodoro } from '../../focus/PomodoroProvider'
 
-/** Píldora translúcida con el proyecto destacado (como "VinteX Project" en la referencia) */
+/** Control del cronómetro en la misma píldora del proyecto destacado. */
 export function ActiveProjectWidget() {
-  const { data: projects = [] } = useProjects()
-  const { data: tasks = [] } = useTasks()
-  const { data:logs = [] } = useExerciseLogs(projects.some((p) => !!p.exercise_config))
-  const { data:settings } = useSettings()
-  const active = projects.filter((p) => p.status === 'active' && !p.exercise_config)
-  const [chosen, setChosen] = useState(() => {
-    try {
-      return localStorage.getItem(PROJECT_KEY)
-    } catch {
-      return null
-    }
-  })
-  const project = active.find((p) => p.id === chosen) ?? active[0]
-  if (!project) return null
-  const { percent } = projectProgress(project, tasks)
-  const exercise = project.exercise_config ? exerciseSummary(logs.filter((log) => log.project_id === project.id),project.exercise_config.weeklyTarget,new Date(),settings?.week_starts_on === 0 ? 0 : 1) : null
-
+  const { state, startIndefinite } = usePomodoro()
+  const running = !!state.indefinite && state.status === 'running'
+  const label = running ? 'Cronómetro indefinido en marcha' : state.indefinite && state.status === 'paused' ? 'Continuar cronómetro indefinido' : 'Iniciar cronómetro indefinido'
   return (
-    <div className="relative inline-flex max-w-full items-center gap-3 rounded-full bg-glass py-2 pr-4 pl-2 shadow-pill backdrop-blur-xl">
-      <span className="grid size-9 shrink-0 place-items-center rounded-full text-sm font-bold" style={{ background: projectColorVar(project.color) }} aria-hidden>
-        ✳
+    <button
+      type="button"
+      aria-label={label}
+      disabled={running}
+      onClick={startIndefinite}
+      className="relative inline-flex max-w-full items-center gap-3 rounded-full bg-glass py-2 pr-4 pl-2 text-left shadow-pill backdrop-blur-xl transition-colors enabled:hover:bg-glass-strong"
+    >
+      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-sun text-ink" aria-hidden>
+        <InfinityIcon className="size-5" />
       </span>
-      <span className="min-w-0">
-        <span className="block truncate text-sm font-semibold">{project.name}</span>
-        <span className="block truncate text-[11px] text-muted">{exercise ? `Ejercicio · ${exercise.workouts}/${project.exercise_config!.weeklyTarget} esta semana` : `Proyecto activo · ${percent}% hecho`}</span>
-      </span>
-      <ChevronDown className="size-4 shrink-0 text-ink-soft" aria-hidden />
-      <select
-        aria-label="Cambiar proyecto destacado"
-        className="absolute inset-0 cursor-pointer opacity-0"
-        value={project.id}
-        onChange={(e) => {
-          setChosen(e.target.value)
-          try {
-            localStorage.setItem(PROJECT_KEY, e.target.value)
-          } catch {
-            /* nada */
-          }
-        }}
-      >
-        {active.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-      </select>
-    </div>
+      <span className="min-w-0 max-w-44 text-sm leading-tight font-semibold">{label}</span>
+    </button>
   )
 }
 

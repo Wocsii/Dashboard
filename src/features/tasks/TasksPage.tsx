@@ -1,3 +1,7 @@
+import { useGoogleBoard, useGoogleTasksStatus, type GoogleTask } from '../google-tasks/api'
+import { googleTaskView } from '../google-tasks/task-link'
+import { GoogleTaskRow } from '../google-tasks/GoogleTaskRow'
+import { GoogleTaskEditor } from '../google-tasks/GoogleTaskEditor'
 import { useMemo, useState } from 'react'
 import { Plus, Search } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -23,6 +27,12 @@ const groupMeta = [
 
 export function TasksPage() {
   const { data: tasks, isLoading, error, refetch } = useTasks()
+  const googleStatus = useGoogleTasksStatus()
+  const google = useGoogleBoard(googleStatus.data?.state === 'connected')
+  const [googleEdit, setGoogleEdit] = useState<{ list: string; task: GoogleTask } | null>(null)
+  const googleRows = useMemo(() => (googleStatus.data?.state === 'connected' ? google.data?.columns ?? [] : []).flatMap(column => column.tasks.map(task => ({ view: googleTaskView(column.id, task), task, list: column.id, listTitle: column.title }))), [google.data, googleStatus.data?.state])
+  const googleById = new Map(googleRows.map(row => [row.view.id, row]))
+  const allTasks = useMemo(() => [...tasks ?? [], ...googleRows.map(row => row.view)], [tasks, googleRows])
   const { data: projects = [] } = useProjects()
   const projectMap = useProjectMap()
   const { newTask } = useQuickActions()
@@ -30,8 +40,8 @@ export function TasksPage() {
   const [sort, setSort] = useState<TaskSort>('due')
   const set = <K extends keyof TaskFilter>(k: K, v: TaskFilter[K]) => setFilter((f) => ({ ...f, [k]: v }))
 
-  const groups = useMemo(() => groupTasks(sortTasks(filterTasks(tasks ?? [], filter), sort)), [tasks, filter, sort])
-  const pendingCount = (tasks ?? []).filter((t) => t.status !== 'done').length
+  const groups = useMemo(() => groupTasks(sortTasks(filterTasks(allTasks, filter), sort)), [allTasks, filter, sort])
+  const pendingCount = allTasks.filter((t) => t.status !== 'done').length
   const total = Object.values(groups).reduce((n, g) => n + g.length, 0)
 
   return (
@@ -84,9 +94,11 @@ export function TasksPage() {
         </div>
       </Card>
 
-      {isLoading && <Spinner />}
+      {(isLoading || googleStatus.isLoading || (googleStatus.data?.state === 'connected' && google.isLoading)) && <Spinner />}
+      {googleStatus.error && <ErrorNote error={googleStatus.error} onRetry={() => void googleStatus.refetch()} />}
+      {googleStatus.data?.state === 'connected' && google.error && <ErrorNote error={google.error} onRetry={() => void google.refetch()} />}
       {error && <ErrorNote error={error} onRetry={() => void refetch()} />}
-      {tasks && total === 0 && (
+      {tasks && !googleStatus.isLoading && !(googleStatus.data?.state === 'connected' && google.isLoading) && total === 0 && (
         <Card><EmptyState action={<Button size="sm" onClick={() => newTask()}><Plus className="size-3.5" /> Crear una</Button>}>{copy.empty.tasks}</EmptyState></Card>
       )}
 
@@ -102,12 +114,16 @@ export function TasksPage() {
                 <span className="text-xs font-normal text-muted">{list.length}</span>
               </h2>
               <ul>
-                {list.map((t) => <TaskRow key={t.id} task={t} project={t.project_id ? projectMap.get(t.project_id) : undefined} />)}
+                {list.map(t => {
+                  const external = googleById.get(t.id)
+                  return external ? <GoogleTaskRow key={t.id} task={external.task} list={external.list} listTitle={external.listTitle} canWrite={google.data?.canWrite === true} onOpen={() => setGoogleEdit({ list: external.list, task: external.task })} /> : <TaskRow key={t.id} task={t} project={t.project_id ? projectMap.get(t.project_id) : undefined} />
+                })}
               </ul>
             </Card>
           )
         })}
       </div>
+      {googleEdit && <GoogleTaskEditor key={`${googleEdit.list}:${googleEdit.task.id}`} edit={googleEdit} columns={google.data?.columns ?? []} canWrite={google.data?.canWrite === true} onClose={() => setGoogleEdit(null)} />}
     </>
   )
 }

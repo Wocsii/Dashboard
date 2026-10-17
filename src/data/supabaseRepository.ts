@@ -1,4 +1,5 @@
 import { requireSupabase } from '@/lib/supabase'
+import type { FocusSession } from '@/types/domain'
 import type { Repository } from './repository'
 
 /** Lanza el error de PostgREST con un mensaje legible */
@@ -17,6 +18,7 @@ export function createSupabaseRepository(): Repository {
   }
 
   return {
+    saveGoogleFocusTask: async (input) => unwrap(await db.from('tasks').upsert({ ...input, user_id: await uid() }).select().single()),
     listTasks: async () => unwrap(await db.from('tasks').select('*').order('position')),
     createTask: async (input) => unwrap(await db.from('tasks').insert(input).select().single()),
     updateTask: async (id, patch) => unwrap(await db.from('tasks').update(patch).eq('id', id).select().single()),
@@ -39,6 +41,14 @@ export function createSupabaseRepository(): Repository {
     updateNote: async (id, patch) => unwrap(await db.from('notes').update(patch).eq('id', id).select().single()),
     deleteNote: async (id) => void unwrap(await db.from('notes').delete().eq('id', id)),
 
+    listTaskFocusSessions: async (taskId) => {
+      const sessions: FocusSession[] = []
+      for (let offset = 0; ; offset += 1000) {
+        const page = unwrap(await db.from('focus_sessions').select('*').eq('task_id', taskId).eq('kind', 'focus').order('id').range(offset, offset + 999))
+        sessions.push(...page)
+        if (page.length < 1000) return sessions
+      }
+    },
     listFocusSessions: async (since) =>
       unwrap(await db.from('focus_sessions').select('*').gte('started_at', since).order('started_at', { ascending: false })),
     createFocusSession: async (input) => {

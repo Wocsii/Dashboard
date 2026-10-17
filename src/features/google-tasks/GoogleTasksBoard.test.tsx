@@ -1,4 +1,7 @@
-import { screen, within } from '@testing-library/react'
+import { formatWorkedTime } from '../focus/task-time'
+import { TasksPage } from '../tasks/TasksPage'
+import { googleTaskKey, isGoogleFocusTask } from './task-link'
+import { screen, within, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderApp } from '@/test/render'
 import { GoogleTasksBoard } from './GoogleTasksBoard'
@@ -61,6 +64,53 @@ describe('Google Tasks', () => {
     expect(mocks.mutate).toHaveBeenCalledWith({ action: 'mode', mode: 'readonly' })
   })
 
+  it('muestra Google Tasks también en Tareas y completa directamente en Google', async () => {
+    const user = userEvent.setup(); renderApp(<TasksPage />)
+    expect(await screen.findByRole('button', { name: /Comprar pan.*Google Tasks/ })).toBeInTheDocument()
+    expect(await screen.findByText('Comparar vuelos')).toBeInTheDocument()
+    await user.click(screen.getByRole('checkbox', { name: 'Completar "Comprar pan"' }))
+    expect(mocks.mutate).toHaveBeenCalledWith(expect.objectContaining({ action: 'save', list: 'one', task: 't', data: expect.objectContaining({ status: 'completed' }) }))
+    await user.type(screen.getByLabelText('Buscar tareas'), 'Comprar pan')
+    expect(screen.queryByText('Comparar vuelos')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Comprar pan.*Google Tasks/ })).toBeInTheDocument()
+  })
+  it('activa el reloj desde Google incluso en solo lectura y guarda el tiempo sin duplicar tareas visibles', async () => {
+    mocks.canWrite = false
+    const user = userEvent.setup()
+    const { repo } = renderApp(<TasksPage />)
+    expect(await screen.findByRole('checkbox', { name: 'Completar "Comprar pan"' })).toBeDisabled()
+    await user.click(await screen.findByRole('button', { name: 'Activar enfoque indefinido: Comprar pan' }))
+    const stop = await screen.findByRole('button', { name: 'Detener enfoque: Comprar pan' })
+    expect(stop).toHaveAttribute('aria-pressed', 'true')
+    const saved = JSON.parse(localStorage.getItem('mi-espacio:pomodoro:v1')!)
+    expect(saved.state).toMatchObject({ status: 'running', indefinite: true })
+    const linked = (await repo.listTasks()).find(isGoogleFocusTask)!
+    expect(linked.tags).toContain(googleTaskKey('one', 't'))
+    expect(saved.taskId).toBe(linked.id)
+    expect(screen.getAllByRole('button', { name: /Comprar pan.*Google Tasks/ })).toHaveLength(1)
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 2000)
+    await user.click(stop)
+    clock.mockRestore()
+    await waitFor(async () => {
+      const sessions = await repo.listFocusSessions('2000-01-01')
+      expect(sessions.some(session => session.task_id === linked.id && session.duration_seconds >= 2)).toBe(true)
+    })
+    const logged = (await repo.listTaskFocusSessions(linked.id)).reduce((total, row) => total + row.duration_seconds, 0)
+    await user.click(screen.getByRole('button', { name: /Comprar pan.*Google Tasks/ }))
+    const details = await screen.findByRole('dialog')
+    expect(await within(details).findByText(formatWorkedTime(logged))).toBeInTheDocument()
+    expect(within(details).getByText('Tiempo trabajado')).toBeInTheDocument()
+    await user.click(within(details).getByRole('button', { name: 'Cerrar' }))
+    await user.click(screen.getByRole('button', { name: 'Activar enfoque indefinido: Comprar pan' }))
+    await screen.findByRole('button', { name: 'Detener enfoque: Comprar pan' })
+    expect((await repo.listTasks()).filter(isGoogleFocusTask)).toHaveLength(1)
+    expect(mocks.mutate).not.toHaveBeenCalled()
+  })
+  it('permite activar enfoque desde el kanban de Google', async () => {
+    const user = userEvent.setup(); renderApp(<GoogleTasksBoard />)
+    await user.click(await screen.findByRole('button', { name: 'Activar enfoque indefinido: Comprar pan' }))
+    expect(await screen.findByRole('button', { name: 'Detener enfoque: Comprar pan' })).toHaveAttribute('aria-pressed', 'true')
+  })
   it('permite reactivar la edición desde solo lectura', async () => {
     mocks.mode = 'readonly'
     const user = userEvent.setup(); renderApp(<GoogleTasksSettings />)

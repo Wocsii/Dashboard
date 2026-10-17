@@ -230,7 +230,6 @@ function LocalBoard({ userId }: { userId: string }) {
           </>
         }
       />
-      <p className="mb-4 text-xs text-muted">Hasta seis columnas. Elige las visibles en <Link to="/ajustes" className="underline">Ajustes</Link>.</p>
       {storageError && <ErrorNote error={storageError} />}
       {isLoading && <Spinner />}
       {error && <ErrorNote error={error} onRetry={() => void refetch()} />}

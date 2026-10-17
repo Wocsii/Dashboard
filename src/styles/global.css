@@ -61,3 +61,10 @@
   .group:hover .task-focus-button,
   .group:focus-within .task-focus-button { opacity: 1; pointer-events: auto; }
 }
+
+@media (hover: hover) and (pointer: fine) {
+  .column-drag-handle { opacity: 0; transition: opacity 150ms ease; }
+  .column-drag-handle:hover,
+  .column-drag-handle:focus-visible,
+  .column-drag-handle[aria-pressed='true'] { opacity: 1; }
+}

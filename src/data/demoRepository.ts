@@ -37,6 +37,11 @@ export function createDemoRepository(initial?: SampleData): Repository {
   }
 
   return {
+    async saveGoogleFocusTask(input) {
+      const existing = data.tasks.find(task => task.id === input.id)
+      if (existing) return this.updateTask(input.id, input)
+      return this.createTask(input)
+    },
     listTasks: () => delay([...data.tasks].sort((a, b) => a.position - b.position)),
     async createTask(input) {
       const t: Task = withCompletedAt(undefined, {
@@ -129,6 +134,7 @@ export function createDemoRepository(initial?: SampleData): Repository {
       return delay(undefined)
     },
 
+    listTaskFocusSessions: (taskId) => delay(data.focusSessions.filter(session => session.task_id === taskId && session.kind === 'focus')),
     listFocusSessions: (since) => delay(data.focusSessions.filter((s) => s.started_at >= since)),
     async createFocusSession(input) {
       const s: FocusSession = { id: id(), user_id: DEMO_USER_ID, created_at: now(), ...input }

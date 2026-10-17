@@ -50,7 +50,10 @@ export function useLogFocusSession() {
         toast(`No se pudo guardar el tiempo: ${error.message}. El registro queda pendiente.`, 'error')
       }
     },
-    onSuccess: (s) => qc.setQueryData<FocusSession[]>(focusKey, (l = []) => [s, ...l.filter((row) => row.id !== s.id)]),
+    onSuccess: (s) => {
+      qc.setQueryData<FocusSession[]>(focusKey, (l = []) => [s, ...l.filter((row) => row.id !== s.id)])
+      if (s.task_id) qc.setQueryData<FocusSession[]>(['task-focus-sessions', s.task_id], rows => rows ? [s, ...rows.filter(row => row.id !== s.id)] : undefined)
+    },
   })
   const { mutate } = mutation
   useEffect(() => {

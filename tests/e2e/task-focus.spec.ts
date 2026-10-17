@@ -25,3 +25,23 @@ for (const path of ['/tareas', '/kanban']) {
     await expect(page.getByRole('button', { name:'Empezar',exact:true })).toBeVisible()
   })
 }
+
+test('Inicio conserva la píldora compacta y continúa el cronómetro de Enfoque', async ({ page }) => {
+  await page.goto('/')
+  const start = page.getByRole('button', { name: 'Iniciar cronómetro indefinido', exact: true })
+  await expect(start).toBeVisible()
+  const size = await start.boundingBox()
+  expect(size!.height).toBe(52)
+  await start.click()
+  await expect(page.getByRole('button', { name: 'Cronómetro indefinido en marcha' })).toBeDisabled()
+  await page.getByRole('link', { name: 'Enfoque', exact: true }).click()
+  await expect(page.getByText('Enfoque sin límite · Tiempo transcurrido')).toBeVisible()
+  await page.getByRole('button', { name: 'Pausar', exact: true }).click()
+  await page.getByRole('link', { name: 'Inicio', exact: true }).click()
+  const resume = page.getByRole('button', { name: 'Continuar cronómetro indefinido', exact: true })
+  await expect(resume).toBeVisible()
+  await page.screenshot({ path: '/tmp/dashboard-indefinite.png', fullPage: true })
+  await resume.click()
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Cronómetro indefinido en marcha' })).toBeDisabled()
+})

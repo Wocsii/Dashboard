@@ -20,6 +20,7 @@ import type {
  */
 export interface Repository {
   listTasks(): Promise<Task[]>
+  saveGoogleFocusTask(input: { id: string; title: string; description: string; tags: string[] }): Promise<Task>
   createTask(input: Partial<TaskInput> & { title: string; position?: number }): Promise<Task>
   updateTask(id: string, patch: Partial<TaskInput> & { position?: number }): Promise<Task>
   deleteTask(id: string): Promise<void>
@@ -37,6 +38,7 @@ export interface Repository {
   updateNote(id: string, patch: Partial<NoteInput>): Promise<Note>
   deleteNote(id: string): Promise<void>
 
+  listTaskFocusSessions(taskId: string): Promise<FocusSession[]>
   listFocusSessions(sinceISO: string): Promise<FocusSession[]>
   createFocusSession(input: FocusSessionInput): Promise<FocusSession>
 
