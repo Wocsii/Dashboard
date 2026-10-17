@@ -1,11 +1,12 @@
-import { MAX_COLUMNS, useColumnVisibility, visibleColumns } from '../kanban/column-visibility'
+import { SortableColumn } from '../kanban/SortableColumn'
+import { boardKeyboardCoordinates, columnDragId, MAX_COLUMNS, useColumnVisibility, visibleColumns } from '../kanban/column-visibility'
 import { ColumnColorPicker } from '../kanban/ColumnColorPicker'
 import { useGoogleColumnColors } from './useGoogleColumnColors'
 import { projectColorVar, type ProjectColor } from '@/config/theme.config'
 import { useProfile } from '../settings/hooks'
 import { useState } from 'react'
 import { closestCorners, DndContext, KeyboardSensor, PointerSensor, useDroppable, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
-import { SortableContext, useSortable, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
+import { SortableContext, useSortable, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
@@ -48,12 +49,19 @@ export function GoogleTasksBoard() {
   const mutation = useGoogleTasksMutation()
   const [edit, setEdit] = useState<{ list: string; task?: GoogleTask } | null>(null)
   const [newList, setNewList] = useState(false)
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }))
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(KeyboardSensor, { coordinateGetter: boardKeyboardCoordinates }))
   const columns = board.data?.columns ?? []
   const shownColumns = visibleColumns(columns, selected)
   const canWrite = board.data?.canWrite === true
   const close = () => { setEdit(null); setNewList(false); mutation.reset() }
   function onDragEnd({ active, over }: DragEndEvent) {
+    const sourceColumn = active.data.current?.columnId as string | undefined
+    if (sourceColumn) {
+      const targetColumn = over?.data.current?.columnId as string | undefined
+      const order = shownColumns.map(c => c.id)
+      if (targetColumn && sourceColumn !== targetColumn) saveVisible(arrayMove(order, order.indexOf(sourceColumn), order.indexOf(targetColumn)))
+      return
+    }
     if (!canWrite || !over || active.id === over.id) return
     const from = active.data.current as { list: string; task: GoogleTask }
     const destination = over.data.current?.list as string | undefined
@@ -69,8 +77,8 @@ export function GoogleTasksBoard() {
     {board.isLoading && <Spinner />}
     {board.error && <ErrorNote error={board.error} onRetry={() => void board.refetch()} />}
     {mutation.error && !edit && !newList && <ErrorNote error={mutation.error} />}
-    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
-      <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-[repeat(auto-fit,minmax(210px,1fr))]">{shownColumns.map(column => <Column key={column.id} column={column} color={colors[column.id] ?? 'sky'} readOnly={!canWrite} pending={mutation.isPending} onAdd={() => { mutation.reset(); setEdit({ list: column.id }) }} onEdit={task => { mutation.reset(); setEdit({ list: column.id, task }) }} />)}</div>
+    <DndContext sensors={sensors} collisionDetection={args => closestCorners({ ...args, droppableContainers: args.droppableContainers.filter(container => Boolean(container.data.current?.columnId) === Boolean(args.active.data.current?.columnId)) })} onDragEnd={onDragEnd}>
+      <SortableContext items={shownColumns.map(c => columnDragId(c.id))} strategy={rectSortingStrategy}><div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-[repeat(auto-fit,minmax(210px,1fr))]">{shownColumns.map(column => <SortableColumn key={column.id} id={column.id} title={column.title}><Column column={column} color={colors[column.id] ?? 'sky'} readOnly={!canWrite} pending={mutation.isPending} onAdd={() => { mutation.reset(); setEdit({ list: column.id }) }} onEdit={task => { mutation.reset(); setEdit({ list: column.id, task }) }} /></SortableColumn>)}</div></SortableContext>
     </DndContext>
     {!board.isLoading && !board.error && !columns.length && <p className="py-8 text-sm text-muted">No tienes listas. {canWrite ? 'Pulsa «Añadir columna» para crear la primera.' : 'Las listas que crees en Google aparecerán aquí.'}</p>}
     <Modal open={newList && canWrite} onClose={close} title="Añadir columna">

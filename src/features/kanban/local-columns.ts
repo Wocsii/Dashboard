@@ -3,7 +3,7 @@ import type { Task, TaskStatus } from '@/types/domain'
 import { projectColors, type ProjectColor } from '@/config/theme.config'
 import { copy } from '@/config/copy.es'
 
-export type LocalColumns = { columns: { id: string; title: string; status: TaskStatus; color?: ProjectColor }[]; assignments: Record<string, string> }
+export type LocalColumns = { columns: { id: string; title: string; status: TaskStatus; color?: ProjectColor }[]; assignments: Record<string, string>; deleted?: string[] }
 export type BoardColumn = { id: string; title: string; status: TaskStatus; dot: string; color?: ProjectColor }
 export const defaultColumns: BoardColumn[] = [
   { id: 'todo', title: copy.status.todo, status: 'todo', dot: 'bg-sky-400' },
@@ -18,12 +18,20 @@ export function readLocalColumns(raw: string | null): LocalColumns {
     if (!value || !Array.isArray(value.columns) || value.columns.length > 100 || !value.assignments || typeof value.assignments !== 'object' || Array.isArray(value.assignments)) return empty
     if (!value.columns.every(c => typeof c.id === 'string' && c.id.startsWith('custom:') && typeof c.title === 'string' && c.title.trim().length > 0 && c.title.length <= 80 && defaultColumns.some(d => d.status === c.status))) return empty
     if (!Object.values(value.assignments).every(id => typeof id === 'string')) return empty
+    if (value.deleted !== undefined && (!Array.isArray(value.deleted) || !value.deleted.every(id => typeof id === 'string'))) return empty
     return { ...value, columns: value.columns.map(c => c.color === undefined || projectColors.includes(c.color) ? c : { ...c, color: 'sky' }) }
   } catch { return empty }
 }
+export function localDefinitions(config: LocalColumns) {
+  return [...defaultColumns.filter(c => !config.deleted?.includes(c.id)), ...config.columns.map(c => ({ ...c, dot: 'bg-sky-400' }))]
+}
+export function removeLocalColumn(config: LocalColumns, id: string): LocalColumns {
+  return { ...config, columns: config.columns.filter(c => c.id !== id), deleted: [...(config.deleted ?? []), id], assignments: Object.fromEntries(Object.entries(config.assignments).filter(([, column]) => column !== id)) }
+}
 export function taskColumn(task: Task, config: LocalColumns): string {
   const custom = config.columns.find(c => c.id === config.assignments[task.id])
-  return custom?.status === task.status ? custom.id : task.status
+  const definitions = localDefinitions(config)
+  return custom?.status === task.status ? custom.id : definitions.find(c => c.id === task.status)?.id ?? definitions.find(c => c.status === task.status)?.id ?? definitions[0]?.id ?? task.status
 }
 export function useLocalColumns(userId: string) {
   const key = `mi-espacio:kanban-columns:${userId}`

@@ -1,11 +1,12 @@
-import { MAX_COLUMNS, useColumnVisibility, visibleColumns } from './column-visibility'
+import { SortableColumn } from './SortableColumn'
+import { boardKeyboardCoordinates, columnDragId, MAX_COLUMNS, useColumnVisibility, visibleColumns } from './column-visibility'
 import { ColumnColorPicker } from './ColumnColorPicker'
 import { projectColorVar, type ProjectColor } from '@/config/theme.config'
 import { TaskDialog } from '../tasks/TaskDialog'
 import { useProfile } from '../settings/hooks'
 import { Modal } from '@/components/ui/Modal'
 import { Field, Input, Select } from '@/components/ui/Field'
-import { defaultColumns, taskColumn, useLocalColumns, type LocalColumns } from './local-columns'
+import { defaultColumns, localDefinitions, taskColumn, useLocalColumns, type LocalColumns } from './local-columns'
 import { Link } from 'react-router'
 import { useGoogleTasksStatus } from '../google-tasks/api'
 import { GoogleTasksBoard } from '../google-tasks/GoogleTasksBoard'
@@ -24,7 +25,7 @@ import {
   type DragStartEvent,
   type KeyboardCoordinateGetter,
 } from '@dnd-kit/core'
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Plus } from 'lucide-react'
 import { Button, IconButton } from '@/components/ui/Button'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -56,6 +57,7 @@ function findColumn(cols: Columns, id: string): string | undefined {
  * de la misma columna); ↑/↓ reordenan.
  */
 const columnKeyboardCoordinates = (order: string[]): KeyboardCoordinateGetter => (event, args) => {
+  if (args.context.active?.data.current?.columnId) return boardKeyboardCoordinates(event, args)
   if (event.code !== 'ArrowRight' && event.code !== 'ArrowLeft') return sortableKeyboardCoordinates(event, args)
   const { active, droppableRects } = args.context
   const from = active?.data.current?.sortable?.containerId as TaskStatus | undefined
@@ -114,7 +116,7 @@ function LocalKanbanPage() {
 function LocalBoard({ userId }: { userId: string }) {
   const { config, setConfig, assign, storageError } = useLocalColumns(userId)
   const { selected, save: saveVisible } = useColumnVisibility(userId, 'local')
-  const allDefinitions = useMemo(() => [...defaultColumns, ...config.columns.map(c => ({ ...c, dot: 'bg-sky-400' }))], [config.columns])
+  const allDefinitions = useMemo(() => localDefinitions(config), [config])
   const definitions = visibleColumns(allDefinitions, selected)
   const [columnColor, setColumnColor] = useState<ProjectColor>('sky')
   const [addingColumn, setAddingColumn] = useState(false)
@@ -156,7 +158,7 @@ function LocalBoard({ userId }: { userId: string }) {
   const onDragStart = (e: DragStartEvent) => setActiveId(String(e.active.id))
 
   const onDragOver = ({ active, over }: DragOverEvent) => {
-    if (!over) return
+    if (!over || active.data.current?.columnId) return
     const from = findColumn(columns, String(active.id))
     const to = findColumn(columns, String(over.id))
     if (!from || !to || from === to) return
@@ -173,6 +175,13 @@ function LocalBoard({ userId }: { userId: string }) {
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     setActiveId(null)
+    const sourceColumn = active.data.current?.columnId as string | undefined
+    if (sourceColumn) {
+      const targetColumn = over?.data.current?.columnId as string | undefined
+      const order = definitions.map(c => c.id)
+      if (targetColumn && sourceColumn !== targetColumn) saveVisible(arrayMove(order, order.indexOf(sourceColumn), order.indexOf(targetColumn)))
+      return
+    }
     justDragged.current = true
     setTimeout(() => (justDragged.current = false), 50)
     const id = String(active.id)
@@ -227,7 +236,7 @@ function LocalBoard({ userId }: { userId: string }) {
       {error && <ErrorNote error={error} onRetry={() => void refetch()} />}
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={args => closestCorners({ ...args, droppableContainers: args.droppableContainers.filter(container => Boolean(container.data.current?.columnId) === Boolean(args.active.data.current?.columnId)) })}
         onDragStart={onDragStart}
         onDragOver={onDragOver}
         onDragEnd={onDragEnd}
@@ -236,10 +245,10 @@ function LocalBoard({ userId }: { userId: string }) {
           screenReaderInstructions: { draggable: 'Pulsa espacio para coger la tarjeta; flechas izquierda y derecha para cambiar de columna, arriba y abajo para reordenar; espacio para soltar.' },
         }}
       >
+        <SortableContext items={definitions.map(c => columnDragId(c.id))} strategy={rectSortingStrategy}>
         <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-[repeat(auto-fit,minmax(210px,1fr))]">
           {definitions.map(({ id, title, dot, status, color }) => (
-            <Column
-              key={id}
+            <SortableColumn key={id} id={id} title={title}><Column
               status={id}
               title={title}
               dot={dot}
@@ -249,9 +258,10 @@ function LocalBoard({ userId }: { userId: string }) {
               projectMap={projectMap}
               onOpen={openTask}
               onAdd={() => id.startsWith('custom:') ? setNewCardColumn(id) : newTask({ status, project_id: projectFilter === 'all' ? null : projectFilter })}
-            />
+            /></SortableColumn>
           ))}
         </div>
+        </SortableContext>
         <DragOverlay>{active ? <KanbanCardView task={active} project={active.project_id ? projectMap.get(active.project_id) : undefined} overlay /> : null}</DragOverlay>
       </DndContext>
       <Modal open={addingColumn} onClose={() => setAddingColumn(false)} title="Añadir columna">

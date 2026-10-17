@@ -8,6 +8,7 @@ const data = z.object({ title: z.string().trim().min(1).max(1024), notes: z.stri
 const command = z.discriminatedUnion('action', [
   z.object({ action: z.literal('disconnect') }),
   z.object({ action: z.literal('mode'), mode: z.enum(['readonly', 'write']) }),
+  z.object({ action: z.literal('deleteList'), list: id }),
   z.object({ action: z.literal('list'), title: z.string().trim().min(1).max(1024) }),
   z.object({ action: z.literal('save'), list: id, task: id.optional(), etag: z.string().optional(), data }),
   z.object({ action: z.literal('delete'), list: id, task: id, etag: z.string().optional() }),
@@ -49,6 +50,7 @@ export const POST = handle(async (req) => {
     return json({ ok: true })
   }
   if (c.action === 'list') return json(await tasksRequest(user.id, '/users/@me/lists', 'POST', { title: c.title }))
+  if (c.action === 'deleteList') { await tasksRequest(user.id, `/users/@me/lists/${enc(c.list)}`, 'DELETE'); return json({ ok: true }) }
   const path = `/lists/${enc(c.list)}/tasks`
   if (c.action === 'save') return json(await tasksRequest(user.id, `${path}${c.task ? `/${enc(c.task)}` : ''}`, c.task ? 'PATCH' : 'POST', c.data, c.etag))
   if (c.action === 'delete') { await tasksRequest(user.id, `${path}/${enc(c.task)}`, 'DELETE', undefined, c.etag); return json({ ok: true }) }

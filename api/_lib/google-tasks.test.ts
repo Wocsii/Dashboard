@@ -39,6 +39,15 @@ describe('Google Tasks server', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ error: { message: 'private response', errors: [{ reason }], details: [{ reason }] } }, { status: 403 })))
     await expect(tasksRequest('user', '/users/@me/lists')).rejects.toMatchObject({ code, message: expect.not.stringContaining('private response') })
   })
+  it.each([false, true])('elimina listas respetando solo lectura (%s)', async readonly => {
+    if (readonly) mocks.scopes.push(TASKS_READONLY)
+    const fetcher = vi.fn().mockResolvedValue(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetcher)
+    const res = await POST(new Request('http://x/api/google/status?service=tasks', { method: 'POST', body: JSON.stringify({ action: 'deleteList', list: 'list/id' }) }))
+    expect(res.status).toBe(readonly ? 403 : 200)
+    if (readonly) expect(fetcher).not.toHaveBeenCalled()
+    else expect(fetcher).toHaveBeenCalledWith('https://tasks.googleapis.com/tasks/v1/users/@me/lists/list%2Fid', expect.objectContaining({ method: 'DELETE' }))
+  })
   it('valida los comandos antes de enviar datos a Google', async () => {
     const res = await POST(new Request('http://x/api/google/status?service=tasks', { method: 'POST', body: JSON.stringify({ action: 'save', list: 'list', data: { title: '' } }) }))
     expect(res.status).toBe(400)

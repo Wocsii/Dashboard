@@ -48,3 +48,9 @@ Al crear una columna se puede elegir amarillo, verde, rosa, azul, lila o coral. 
 ## Columnas visibles
 
 Ajustes → Columnas del tablero permite marcar hasta seis columnas. La selección se guarda por cuenta, navegador y origen (tablero local o Google Tasks). Ocultar una columna no borra listas ni tarjetas. Sin selección guardada se muestran las seis primeras disponibles. El tablero comienza con cuatro columnas locales y permite crear hasta seis en total; las listas de Google que ya superen ese número se conservan y se pueden seleccionar desde Ajustes. La creación de listas desde el tablero queda desactivada cuando ya existen seis. El diseño adapta el número de columnas al ancho disponible.
+
+## Mover y eliminar columnas
+
+Arrastra el asa ⠿ de la cabecera para reordenar columnas; también admite espacio, flechas y espacio para soltarlas. El orden se conserva por cuenta y navegador, por separado para el tablero local y Google, sin alterar las tareas.
+
+En Ajustes → Columnas del tablero, Eliminar pide confirmación. Las columnas locales se eliminan conservando las tareas, sus estados y enlaces al reloj: las tarjetas aparecen en una columna restante (se conserva al menos una). En Google Tasks se elimina la lista real con todas sus tareas; requiere edición y se advierte antes de confirmar. Ocultar sigue conservando la columna y sus tareas.
