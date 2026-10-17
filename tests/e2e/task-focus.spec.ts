@@ -52,3 +52,38 @@ test('Inicio conserva la píldora compacta y continúa el cronómetro de Enfoque
   await page.reload()
   await expect(page.getByRole('button', { name: 'Pausar cronómetro indefinido' })).toHaveAttribute('aria-pressed', 'true')
 })
+
+test('al salir de Enfoque limpia la tarea y conserva el reloj sin duplicar tiempo', async ({ page }) => {
+  await page.goto('/enfoque')
+  await page.getByRole('combobox', { name: 'Tarea en la que te concentras' }).selectOption('t6')
+  await page.clock.install()
+  await page.getByRole('button', { name: 'Iniciar cronómetro indefinido', exact: true }).click()
+  const started = await page.evaluate(() => JSON.parse(localStorage.getItem('mi-espacio:pomodoro:v1')!))
+  expect(started.taskId).toBe('t6')
+  await page.clock.fastForward(3000)
+  await page.getByRole('link', { name: 'Inicio', exact: true }).click()
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('mi-espacio:pomodoro:v1')!).taskId)).toBeNull()
+  const detached = await page.evaluate(() => JSON.parse(localStorage.getItem('mi-espacio:pomodoro:v1')!))
+  expect(detached.state.startedAt).toBe(started.state.startedAt)
+  expect(detached.state.status).toBe('running')
+  await page.clock.fastForward(2000)
+  await page.getByRole('button', { name: 'Pausar cronómetro indefinido', exact: true }).click()
+  await expect.poll(() => page.evaluate(start => {
+    const rows = JSON.parse(localStorage.getItem('mi-espacio:demo-data:v1')!).focusSessions.filter((row: { started_at: string }) => Date.parse(row.started_at) >= start)
+    return { total: rows.reduce((sum: number, row: { duration_seconds: number }) => sum + row.duration_seconds, 0), linked: rows.some((row: { task_id: string | null }) => row.task_id === 't6'), unassigned: rows.some((row: { task_id: string | null }) => row.task_id === null) }
+  }, started.state.startedAt)).toEqual({ total: 5, linked: true, unassigned: true })
+  await page.getByRole('link', { name: 'Enfoque', exact: true }).click()
+  await expect(page.getByRole('combobox', { name: 'Tarea en la que te concentras' })).toHaveValue('')
+})
+
+test('una selección sin iniciar tampoco se conserva al salir de Enfoque', async ({ page }) => {
+  await page.goto('/enfoque')
+  const select = page.getByRole('combobox', { name: 'Tarea en la que te concentras' })
+  await select.selectOption('t6')
+  await page.getByRole('link', { name: 'Inicio', exact: true }).click()
+  await page.getByRole('link', { name: 'Enfoque', exact: true }).click()
+  await expect(select).toHaveValue('')
+  await select.selectOption('t6')
+  await page.reload()
+  await expect(select).toHaveValue('')
+})

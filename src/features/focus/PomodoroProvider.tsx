@@ -1,3 +1,4 @@
+import { useLocation } from 'react-router'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useToast } from '@/components/ui/Toast'
 import { useQueryClient } from '@tanstack/react-query'
@@ -16,7 +17,7 @@ import * as P from './pomodoro'
 
 const STATE_KEY = 'mi-espacio:pomodoro:v1'
 
-type Stored = { state: P.PomodoroState; taskId: string | null }
+type Stored = { state: P.PomodoroState; taskId: string | null; segment?: { startedAt: number; elapsedSeconds: number } }
 
 type Ctx = {
   state: P.PomodoroState
@@ -42,7 +43,10 @@ const PomodoroContext = createContext<Ctx | null>(null)
 function readStored(d: P.Durations): Stored {
   try {
     const raw = localStorage.getItem(STATE_KEY)
-    if (raw) return JSON.parse(raw) as Stored
+    if (raw) {
+      const value = JSON.parse(raw) as Stored
+      return value.state.status === 'idle' ? { state: value.state, taskId: null } : value
+    }
   } catch {
     /* sin almacenamiento */
   }
@@ -69,6 +73,8 @@ function chime() {
 }
 
 export function PomodoroProvider({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation()
+  const previousPath = useRef(pathname)
   const { data: settings } = useSettings()
   const log = useLogFocusSession()
   const qc = useQueryClient()
@@ -90,7 +96,16 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   )
   const logEnabled = settings?.log_focus_sessions ?? true
 
-  const [{ state: stored, taskId }, setStored] = useState<Stored>(() => readStored(durations))
+  const [{ state: stored, taskId, segment }, setStoredRaw] = useState<Stored>(() => readStored(durations))
+  const setStored = useCallback((update: Stored | ((previous: Stored) => Stored)) => {
+    setStoredRaw(previous => {
+      const next = typeof update === 'function' ? update(previous) : update
+      if (next.state.status === 'idle' || (next.segment === previous.segment && next.state.startedAt !== previous.state.startedAt)) {
+        return { ...next, segment: undefined }
+      }
+      return next
+    })
+  }, [])
   const [now, setNow] = useState(() => Date.now())
   const fromOtherTab = useRef(false)
 
@@ -101,11 +116,11 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       return
     }
     try {
-      localStorage.setItem(STATE_KEY, JSON.stringify({ state: stored, taskId }))
+      localStorage.setItem(STATE_KEY, JSON.stringify({ state: stored, taskId, segment }))
     } catch {
       /* nada */
     }
-  }, [stored, taskId])
+  }, [stored, taskId, segment])
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
       if (e.key !== STATE_KEY || !e.newValue) return
@@ -114,27 +129,41 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     }
     window.addEventListener('storage', onStorage)
     return () => window.removeEventListener('storage', onStorage)
-  }, [])
+  }, [setStored])
 
   const logSession = useCallback(
     (s: P.PomodoroState, completed: boolean, endedAt: number) => {
       const task = tasks?.find((t) => t.id === taskId)
       const habit = projects?.find((p) => p.id === task?.project_id)?.exercise_config
       if ((!logEnabled && !habit) || s.mode !== 'focus' || !s.startedAt) return
-      const seconds = P.elapsedSeconds(s, endedAt)
+      const seconds = Math.max(0, P.elapsedSeconds(s, endedAt) - (segment?.elapsedSeconds ?? 0))
       if (seconds < 1) return
       log.mutate({
-        id: timerSessionId(s.startedAt, taskId ?? 'unassigned'),
+        id: timerSessionId(segment?.startedAt ?? s.startedAt, taskId ?? 'unassigned'),
         kind: 'focus',
-        started_at: new Date(s.startedAt).toISOString(),
+        started_at: new Date(segment?.startedAt ?? s.startedAt).toISOString(),
         ended_at: new Date(endedAt).toISOString(),
         duration_seconds: seconds,
         completed: completed && !s.indefinite,
         task_id: task?.id ?? null,
       })
     },
-    [log, logEnabled, taskId, tasks, projects],
+    [log, logEnabled, taskId, tasks, projects, segment],
   )
+
+  // La elección pertenece a la visita a Enfoque, no a futuras visitas.
+  useEffect(() => {
+    const leftFocus = previousPath.current === '/enfoque' && pathname !== '/enfoque'
+    previousPath.current = pathname
+    if (!leftFocus || !taskId) return
+    const t = Date.now()
+    logSession(stored, false, t)
+    setStored(previous => ({
+      ...previous,
+      taskId: null,
+      segment: previous.state.startedAt ? { startedAt: t, elapsedSeconds: P.elapsedSeconds(previous.state, t) } : undefined,
+    }))
+  }, [pathname, taskId, stored, logSession, setStored])
 
   // Parado: el tiempo restante sigue a las duraciones configuradas
   const state = stored.status === 'idle' ? { ...stored, remainingMs: P.minutesToMs(durations[stored.mode]) } : stored
@@ -190,10 +219,10 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       }
       linkedHabit.current = null
     }
-  }), [qc, taskId, logSession, durations])
+  }), [qc, taskId, logSession, durations, setStored])
 
   const liveSession = taskId && state.startedAt && state.mode === 'focus' && state.status !== 'idle'
-    ? { id: timerSessionId(state.startedAt, taskId), taskId, seconds: P.elapsedSeconds(state, now), startedAt: state.startedAt }
+    ? { id: timerSessionId(segment?.startedAt ?? state.startedAt, taskId), taskId, seconds: Math.max(0, P.elapsedSeconds(state, now) - (segment?.elapsedSeconds ?? 0)), startedAt: segment?.startedAt ?? state.startedAt }
     : undefined
   const progress = currentProject?.exercise_config ? habitDailyProgress(currentProject, tasks ?? [], sessions, habitLogs, todayISO(new Date(now)), liveSession) : null
   const habitDay = todayISO(new Date(now))
@@ -276,7 +305,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
         return
       }
       logSession(current, false, t)
-      setStored({ taskId: null, state: P.start({ ...P.initialState(durations), completedFocus: current.completedFocus, indefinite: true }, t) })
+      setStored({ taskId: pathname === '/enfoque' ? taskId : null, state: P.start({ ...P.initialState(durations), completedFocus: current.completedFocus, indefinite: true }, t) })
     },
     setFocusDuration: (minutes) => {
       if (!Number.isInteger(minutes) || minutes < 1 || minutes > 180) return
