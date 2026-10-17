@@ -1,6 +1,7 @@
+import { useToday } from '@/lib/useToday'
 import { useMemo } from 'react'
 import { addDays, startOfWeek } from 'date-fns'
-import { dayLabel, formatLong, toISODate, todayISO } from '@/lib/dates'
+import { dayLabel, formatLong, toISODate } from '@/lib/dates'
 import { completionRate, focusMinutes, formatMinutes, productivityStreak, todayProductivity, weeklySeries } from '@/lib/stats'
 import { isDone } from '@/lib/tasks'
 import type { Bar } from '@/components/ui/BarChart'
@@ -11,6 +12,7 @@ import { useTasks } from '../tasks/hooks'
 
 /** Todas las métricas derivadas en un solo sitio (Inicio y Estadísticas) */
 export function useStats() {
+  const currentDay = useToday()
   const { data: allTasks = [], isLoading: l1 } = useTasks()
   const { data: sessions = [], isLoading: l2 } = useFocusSessions()
   const { data: projects = [] } = useProjects()
@@ -19,8 +21,8 @@ export function useStats() {
   const weekStartsOn = (settings?.week_starts_on ?? 1) as 0 | 1
 
   return useMemo(() => {
-    const now = new Date()
-    const today = todayISO(now)
+    const now = new Date(`${currentDay}T12:00:00`)
+    const today = currentDay
     const week = weeklySeries(tasks, sessions, now, weekStartsOn)
     const weekStart = week[0].date
     const done = tasks.filter(isDone)
@@ -61,5 +63,5 @@ export function useStats() {
       focusBars: toBars((d) => d.focusMinutes, formatMinutes),
       weeksBars: weeks,
     }
-  }, [tasks, sessions, projects, weekStartsOn, l1, l2])
+  }, [tasks, sessions, projects, weekStartsOn, l1, l2, currentDay])
 }

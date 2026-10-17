@@ -50,6 +50,22 @@ describe('stats', () => {
     expect(productivityStreak([], [], now)).toBe(0)
   })
 
+  it('cuenta cronómetros indefinidos y sesiones pausadas con tiempo, sin exigir completado', () => {
+    const sessions = [14, 15].map(day => ({ ...session(day, 5), completed: false }))
+    expect(productivityStreak([], sessions, now)).toBe(2)
+    expect(productivityStreak([], [{ ...session(15, 0), completed: false }, session(14, 5, 'short_break')], now)).toBe(0)
+  })
+
+  it('cuenta ambos días de una sesión continua que cruza medianoche', () => {
+    const start = new Date(2026, 9, 14, 23, 59)
+    const end = new Date(2026, 9, 15, 0, 1)
+    expect(productivityStreak([], [{ ...session(14, 2), completed: false, started_at: start.toISOString(), ended_at: end.toISOString() }], now)).toBe(2)
+  })
+
+  it('no rellena días intermedios de una sesión que estuvo pausada', () => {
+    expect(productivityStreak([], [{ ...session(12, 5), completed: false, ended_at: at(15) }], now)).toBe(1)
+  })
+
   it('formatea minutos', () => {
     expect(formatMinutes(45)).toBe('45m')
     expect(formatMinutes(120)).toBe('2h')

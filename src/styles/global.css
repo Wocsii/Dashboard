@@ -68,3 +68,29 @@
   .column-drag-handle:focus-visible,
   .column-drag-handle[aria-pressed='true'] { opacity: 1; }
 }
+
+/* Halo organico amarillo: solo se mueve mientras corre el cronometro. */
+.indefinite-timer-orb { background: #fff8df; }
+.indefinite-timer-orb-active { background: var(--color-sun); }
+.indefinite-timer-orb-active::before,
+.indefinite-timer-orb-active::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  z-index: -1;
+  inset: -5px;
+  border: 2px solid var(--color-sun);
+  border-radius: 42% 58% 55% 45% / 55% 42% 58% 45%;
+  box-shadow: 0 0 7px rgb(248 201 74 / 0.5);
+  animation: timer-halo-orbit 4s ease-in-out infinite;
+}
+.indefinite-timer-orb-active::after {
+  inset: -3px;
+  opacity: 0.55;
+  animation-delay: -2s;
+  animation-direction: reverse;
+}
+@keyframes timer-halo-orbit {
+  0%, 100% { transform: rotate(-12deg) scale(1); }
+  50% { transform: rotate(22deg) scale(1.09); border-radius: 55% 45% 43% 57% / 43% 57% 45% 55%; }
+}

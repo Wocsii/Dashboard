@@ -50,11 +50,23 @@ export function weeklySeries(
   })
 }
 
-/** Días seguidos (hasta hoy, o hasta ayer si hoy aún no hay actividad) con al menos una tarea o sesión de foco completadas */
+/** Días seguidos con tareas completadas o tiempo real de enfoque, incluido el indefinido. */
 export function productivityStreak(tasks: Task[], sessions: FocusSession[], now = new Date()): number {
   const active = new Set<string>()
   for (const t of tasks) if (t.completed_at) active.add(localDay(t.completed_at))
-  for (const s of sessions) if (s.kind === 'focus' && s.completed) active.add(localDay(s.started_at))
+  for (const s of sessions) {
+    if (s.kind !== 'focus' || s.duration_seconds <= 0) continue
+    active.add(localDay(s.started_at))
+    // Una sesión continua puede pasar por medianoche. No rellenar días de pausa.
+    const start = new Date(s.started_at)
+    const end = new Date(Date.parse(s.ended_at) - 1)
+    if (s.duration_seconds * 1000 >= end.getTime() - start.getTime() - 1000) {
+      start.setHours(0, 0, 0, 0)
+      for (let day = addDays(start, 1); toISODate(day) <= toISODate(end); day = addDays(day, 1)) active.add(toISODate(day))
+    } else if (s.ended_at) {
+      active.add(localDay(s.ended_at))
+    }
+  }
 
   let cursor = now
   if (!active.has(toISODate(cursor))) cursor = addDays(cursor, -1)

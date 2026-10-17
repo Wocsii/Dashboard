@@ -21,7 +21,7 @@ export function ActiveProjectWidget() {
       onClick={running ? pause : startIndefinite}
       className="relative inline-flex w-max max-w-full items-center gap-3 rounded-full bg-glass py-2 pr-4 pl-2 text-left shadow-pill backdrop-blur-xl transition-colors enabled:hover:bg-glass-strong"
     >
-      <span className={`grid size-9 shrink-0 place-items-center rounded-full text-ink transition-colors ${running ? 'bg-mint-strong' : 'bg-sun'}`} aria-hidden>
+      <span className={`indefinite-timer-orb ${running ? 'indefinite-timer-orb-active' : ''} relative isolate grid size-9 shrink-0 place-items-center rounded-full border-2 border-sun text-ink transition-colors`} aria-hidden>
         <InfinityIcon className="size-5" />
       </span>
       <span className="whitespace-nowrap text-sm leading-tight font-semibold">{label}</span>
