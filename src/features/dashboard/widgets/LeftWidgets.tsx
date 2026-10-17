@@ -10,21 +10,21 @@ import { usePomodoro } from '../../focus/PomodoroProvider'
 
 /** Control del cronómetro en la misma píldora del proyecto destacado. */
 export function ActiveProjectWidget() {
-  const { state, startIndefinite } = usePomodoro()
+  const { state, startIndefinite, pause } = usePomodoro()
   const running = !!state.indefinite && state.status === 'running'
-  const label = running ? 'Cronómetro indefinido en marcha' : state.indefinite && state.status === 'paused' ? 'Continuar cronómetro indefinido' : 'Iniciar cronómetro indefinido'
+  const label = running ? 'Pausar cronómetro indefinido' : state.indefinite && state.status === 'paused' ? 'Continuar cronómetro indefinido' : 'Iniciar cronómetro indefinido'
   return (
     <button
       type="button"
       aria-label={label}
-      disabled={running}
-      onClick={startIndefinite}
-      className="relative inline-flex max-w-full items-center gap-3 rounded-full bg-glass py-2 pr-4 pl-2 text-left shadow-pill backdrop-blur-xl transition-colors enabled:hover:bg-glass-strong"
+      aria-pressed={running}
+      onClick={running ? pause : startIndefinite}
+      className="relative inline-flex w-max max-w-full items-center gap-3 rounded-full bg-glass py-2 pr-4 pl-2 text-left shadow-pill backdrop-blur-xl transition-colors enabled:hover:bg-glass-strong"
     >
-      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-sun text-ink" aria-hidden>
+      <span className={`grid size-9 shrink-0 place-items-center rounded-full text-ink transition-colors ${running ? 'bg-mint-strong' : 'bg-sun'}`} aria-hidden>
         <InfinityIcon className="size-5" />
       </span>
-      <span className="min-w-0 max-w-44 text-sm leading-tight font-semibold">{label}</span>
+      <span className="whitespace-nowrap text-sm leading-tight font-semibold">{label}</span>
     </button>
   )
 }
