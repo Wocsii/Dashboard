@@ -1,0 +1,36 @@
+import AxeBuilder from '@axe-core/playwright'
+import { expect, test } from '@playwright/test'
+
+test('ajustes reparte las opciones y conserva los textos en tarjetas desplegables', async ({ page }) => {
+  await page.goto('/ajustes')
+  const columns = page.locator('summary').filter({ hasText: 'Columnas del tablero' })
+  const calendars = page.locator('summary').filter({ hasText: 'Google Calendar' })
+  await expect(columns).toBeVisible()
+  const left = await columns.boundingBox()
+  const right = await calendars.boundingBox()
+  expect(right!.x).toBeGreaterThan(left!.x + left!.width)
+  await expect(page.getByRole('heading', { name: 'Apariencia', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Sesión', exact: true })).toBeVisible()
+  await expect(page.getByRole('radio', { name: 'Día', exact: true })).toBeVisible()
+  const text = page.getByText('Elige hasta seis columnas para mostrar en el tablero. Ocultarlas conserva sus tareas.')
+  await expect(text).not.toBeVisible()
+  await columns.focus()
+  await page.keyboard.press('Enter')
+  await expect(text).toBeVisible()
+  await expect(page.getByRole('checkbox', { name: 'Pendiente', exact: true })).toBeVisible()
+  await columns.click()
+  await expect(text).not.toBeVisible()
+  await page.screenshot({ path: '/tmp/settings-desktop.png', fullPage: true, animations: 'disabled' })
+  const { violations } = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
+  expect(violations.filter(issue => issue.impact === 'critical' || issue.impact === 'serious')).toEqual([])
+})
+
+test('ajustes se adapta a móvil y mantiene la lectura en modo noche', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/ajustes')
+  await page.getByRole('radio', { name: 'Noche', exact: true }).click()
+  await page.locator('summary').filter({ hasText: 'Google Tasks · Kanban' }).click()
+  await expect(page.getByText('Conecta Google Tasks para ver una columna por lista en el kanban. Las tareas y los cambios se guardan en Google.')).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  await page.screenshot({ path: '/tmp/settings-mobile.png', fullPage: true, animations: 'disabled' })
+})

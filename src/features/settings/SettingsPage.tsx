@@ -1,9 +1,9 @@
 import { ColumnSettings } from '../kanban/ColumnSettings'
 import { GoogleTasksSettings } from '../google-tasks/GoogleTasksSettings'
-import { useEffect } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { Link2Off, LogOut, RotateCcw } from 'lucide-react'
+import { CalendarDays, CalendarRange, ChevronDown, Columns3, ListTodo, Link2Off, LogOut, RotateCcw, UserRound, type LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Field, Input } from '@/components/ui/Field'
@@ -26,6 +26,37 @@ const calendarMessages: Record<string, [string, 'info' | 'error']> = {
   invalid_state: ['La conexión ha caducado. Vuelve a intentarlo.', 'error'],
   not_configured: ['Google Calendar no está configurado en el servidor', 'error'],
   error: ['No se pudo conectar Google Calendar', 'error'],
+}
+
+const sectionTones = {
+  sky: 'bg-sky-100',
+  mint: 'bg-mint/40',
+  sun: 'bg-sun-soft',
+  lilac: 'bg-lilac/40',
+}
+
+function SettingsSection({ title, icon: Icon, tone = 'sky', children }: {
+  title: string
+  icon: LucideIcon
+  tone?: keyof typeof sectionTones
+  children: ReactNode
+}) {
+  return (
+    <Card padded={false} className="min-w-0">
+      <details className="group/settings">
+        <summary className="flex cursor-pointer list-none items-center gap-3 rounded-card p-5 transition-colors hover:bg-sky-50/50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink [&::-webkit-details-marker]:hidden">
+          <span className={`grid size-10 shrink-0 place-items-center rounded-full ${sectionTones[tone]}`} aria-hidden>
+            <Icon className="size-5" />
+          </span>
+          <h2 className="min-w-0 flex-1 text-sm font-semibold">{title}</h2>
+          <ChevronDown aria-hidden className="size-4 shrink-0 text-muted transition-transform group-open/settings:rotate-180" />
+        </summary>
+        <div className="mx-5 border-t border-line pt-5 pb-5 [&_p]:leading-relaxed">
+          {children}
+        </div>
+      </details>
+    </Card>
+  )
 }
 
 function CalendarSettings() {
@@ -108,27 +139,18 @@ export function SettingsPage() {
   return (
     <>
       <PageHeader title="Ajustes" subtitle={email ? `Sesión iniciada como ${email}` : undefined} />
-      <div className="grid gap-5 lg:grid-cols-2">
-        <div className="flex flex-col gap-5">
+      <div className="grid items-start gap-5 lg:grid-cols-2">
+        <div className="flex min-w-0 flex-col gap-5">
           <Card><AppearanceSettings /></Card>
-          <Card><h2 className="mb-4 text-sm font-semibold">Columnas del tablero</h2><ColumnSettings /></Card>
-          <Card><h2 className="mb-4 text-sm font-semibold">Google Tasks · Kanban</h2><GoogleTasksSettings /></Card>
-          <Card>
-            <h2 className="mb-4 text-sm font-semibold">Próximos eventos de Inicio</h2>
-            <UpcomingEventsSettings />
-          </Card>
-          <Card>
-            <h2 className="mb-4 text-sm font-semibold">Google Calendar</h2>
-            <CalendarSettings />
-          </Card>
-          <Card>
-            <h2 className="mb-4 text-sm font-semibold">Apple Calendar · iCloud</h2>
-            <AppleConnectionPanel />
-          </Card>
+          <SettingsSection title="Columnas del tablero" icon={Columns3} tone="sun"><ColumnSettings /></SettingsSection>
+          <SettingsSection title="Google Tasks · Kanban" icon={ListTodo} tone="mint"><GoogleTasksSettings /></SettingsSection>
         </div>
-        <div className="flex flex-col gap-5">
+        <div className="flex min-w-0 flex-col gap-5">
           <Card>
-            <h2 className="mb-4 text-sm font-semibold">Perfil</h2>
+            <div className="mb-5 flex items-center gap-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-sky-100" aria-hidden><UserRound className="size-5" /></span>
+              <h2 className="text-sm font-semibold">Perfil</h2>
+            </div>
             {profile && (
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Nombre">
@@ -145,6 +167,9 @@ export function SettingsPage() {
               El saludo, colores, fondo e ilustraciones se cambian desde el código: <code>src/config/theme.config.ts</code> y <code>src/styles/tokens.css</code>.
             </p>
           </Card>
+          <SettingsSection title="Próximos eventos de Inicio" icon={CalendarRange} tone="lilac"><UpcomingEventsSettings /></SettingsSection>
+          <SettingsSection title="Google Calendar" icon={CalendarDays}><CalendarSettings /></SettingsSection>
+          <SettingsSection title="Apple Calendar · iCloud" icon={CalendarDays} tone="mint"><AppleConnectionPanel /></SettingsSection>
           <Card>
             <h2 className="mb-4 text-sm font-semibold">Sesión</h2>
             {isDemo ? (
