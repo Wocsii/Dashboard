@@ -276,7 +276,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
         return
       }
       logSession(current, false, t)
-      setStored(s => ({ ...s, state: P.start({ ...P.initialState(durations), completedFocus: current.completedFocus, indefinite: true }, t) }))
+      setStored({ taskId: null, state: P.start({ ...P.initialState(durations), completedFocus: current.completedFocus, indefinite: true }, t) })
     },
     setFocusDuration: (minutes) => {
       if (!Number.isInteger(minutes) || minutes < 1 || minutes > 180) return
