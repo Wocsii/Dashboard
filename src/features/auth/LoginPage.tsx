@@ -48,13 +48,14 @@ export function LoginPage() {
 
   return (
     <SkyFrame>
-      <main className="grid h-full place-items-center p-6">
+      <main className="grid h-full overflow-y-auto place-items-center p-6">
         <div className="flex w-full max-w-md flex-col items-center animate-rise">
         {/* El personaje va encima de la tarjeta (no solapado): sus trazos blancos se leen sobre el cielo */}
         <Mascot variant="hero" className="character-outline relative z-10 -mb-3 h-44" />
         <Card className="w-full px-8 pt-10 pb-8 text-center" tone="ivory">
           <h1 className="font-display text-5xl leading-none">{themeConfig.greeting}</h1>
-          <p className="mt-3 text-sm text-ink-soft">Entra en {themeConfig.appName} para ver tu día.</p>
+          <p className="mt-3 text-sm text-ink-soft">Mi Dashboard Personal · {themeConfig.appName}</p>
+          <p className="mt-3 text-sm text-ink-soft">Organiza tus tareas, proyectos y notas, consulta tus calendarios y registra tu tiempo de concentración. Puedes conectar Google Calendar y Google Tasks para gestionar tu día desde un solo lugar.</p>
           <Button onClick={login} className="mt-8 w-full" size="md" variant="light">
             <GoogleMark /> Continuar con Google
           </Button>
@@ -71,6 +72,10 @@ export function LoginPage() {
               {error}
             </p>
           )}
+          <nav aria-label="Información legal" className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-ink-soft">
+            <a href="/privacidad" className="underline">Política de Privacidad</a>
+            <a href="/condiciones" className="underline">Condiciones del Servicio</a>
+          </nav>
         </Card>
         </div>
       </main>
