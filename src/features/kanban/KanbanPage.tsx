@@ -256,7 +256,7 @@ function LocalBoard({ userId }: { userId: string }) {
               byId={byId}
               projectMap={projectMap}
               onOpen={openTask}
-              onAdd={() => id.startsWith('custom:') ? setNewCardColumn(id) : newTask({ status, project_id: projectFilter === 'all' ? null : projectFilter })}
+              onAdd={() => id.startsWith('custom:') ? setNewCardColumn(id) : newTask({ status, column_id: id, project_id: projectFilter === 'all' ? null : projectFilter })}
             /></SortableColumn>
           ))}
         </div>
@@ -281,7 +281,7 @@ function LocalBoard({ userId }: { userId: string }) {
           <div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setAddingColumn(false)}>Cancelar</Button><Button type="submit" disabled={allDefinitions.length >= MAX_COLUMNS}>Crear columna</Button></div>
         </form>
       </Modal>
-      <TaskDialog open={!!newCardColumn} onClose={() => setNewCardColumn(null)} defaults={{ status: definitions.find(c => c.id === newCardColumn)?.status ?? 'todo', project_id: projectFilter === 'all' ? null : projectFilter }} onCreated={task => { if (newCardColumn) assign(task.id, newCardColumn) }} />
+      <TaskDialog open={!!newCardColumn} onClose={() => setNewCardColumn(null)} defaults={{ column_id: newCardColumn ?? undefined, status: definitions.find(c => c.id === newCardColumn)?.status ?? 'todo', project_id: projectFilter === 'all' ? null : projectFilter }} />
     </>
   )
 }

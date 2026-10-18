@@ -45,13 +45,19 @@ export function useLocalColumns(userId: string) {
   const [storageError, setStorageError] = useState<Error | null>(null)
   const setConfig = (update: SetStateAction<LocalColumns>) => {
     const next = typeof update === 'function' ? update(config) : update
-    try { localStorage.setItem(key, JSON.stringify(next)); setStorageError(null) } catch { setStorageError(new Error('No se pudieron guardar las columnas en este navegador. Se conservarán solo mientras esta pestaña esté abierta.')) }
+    let persisted = false
+    try { localStorage.setItem(key, JSON.stringify(next)); setStorageError(null); persisted = true } catch { setStorageError(new Error('No se pudieron guardar las columnas en este navegador. Se conservarán solo mientras esta pestaña esté abierta.')) }
     setState(next)
+    if (persisted) window.dispatchEvent(new Event('kanban-columns'))
   }
   useEffect(() => {
-    const sync = (event: StorageEvent) => { if (event.key === key || event.key === null) setState(readLocalColumns(event.newValue)) }
+    const sync = (event: Event) => {
+      if (event instanceof StorageEvent && event.key !== key && event.key !== null) return
+      try { setState(readLocalColumns(localStorage.getItem(key))) } catch { /* Keep in-memory changes when storage is unavailable. */ }
+    }
     window.addEventListener('storage', sync)
-    return () => window.removeEventListener('storage', sync)
+    window.addEventListener('kanban-columns', sync)
+    return () => { window.removeEventListener('storage', sync); window.removeEventListener('kanban-columns', sync) }
   }, [key])
   const assign = (taskId: string, columnId: string) => setConfig(previous => ({ ...previous, assignments: { ...previous.assignments, [taskId]: columnId } }))
   return { config, setConfig, assign, storageError }

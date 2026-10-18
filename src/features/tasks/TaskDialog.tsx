@@ -1,3 +1,7 @@
+import { localDefinitions, taskColumn, useLocalColumns } from '../kanban/local-columns'
+import { useColumnVisibility, visibleColumns } from '../kanban/column-visibility'
+import { useProfile } from '../settings/hooks'
+import { ErrorNote, Spinner } from '@/components/ui/States'
 import { TaskWorkedTime } from '../focus/TaskWorkedTime'
 import { useState, type FormEvent } from 'react'
 import { Trash2 } from 'lucide-react'
@@ -6,11 +10,11 @@ import { ConfirmButton } from '@/components/ui/ConfirmButton'
 import { Field, Input, Select, TextArea } from '@/components/ui/Field'
 import { Modal } from '@/components/ui/Modal'
 import { copy } from '@/config/copy.es'
-import type { Task, TaskInput, TaskPriority, TaskStatus } from '@/types/domain'
+import type { Task, TaskInput, TaskPriority } from '@/types/domain'
 import { useProjects } from '../projects/hooks'
 import { useCreateTask, useDeleteTask, useUpdateTask } from './hooks'
 
-export type TaskDraft = Partial<TaskInput>
+export type TaskDraft = Partial<TaskInput> & { column_id?: string }
 
 type Props = { open: boolean; onClose: () => void; task?: Task | null; defaults?: TaskDraft; onCreated?: (task: Task) => void }
 
@@ -26,24 +30,48 @@ export function TaskDialog({ open, onClose, task, defaults, onCreated }: Props) 
   )
 }
 
-function TaskForm({ task, defaults, onDone, onCreated }: { task?: Task | null; defaults?: TaskDraft; onCreated?: (task: Task) => void; onDone: () => void }) {
+type FormProps = { task?: Task | null; defaults?: TaskDraft; onCreated?: (task: Task) => void; onDone: () => void }
+function TaskForm(props: FormProps) {
+  const profile = useProfile()
+  if (profile.isLoading) return <Spinner />
+  if (profile.error) return <ErrorNote error={profile.error} onRetry={() => void profile.refetch()} />
+  return profile.data ? <TaskFields key={profile.data.id} {...props} userId={profile.data.id} /> : null
+}
+function TaskFields({ task, defaults, onDone, onCreated, userId }: FormProps & { userId: string }) {
+  const { config, assign, storageError } = useLocalColumns(userId)
+  const { selected } = useColumnVisibility(userId, 'local')
+  const definitions = localDefinitions(config)
+  const shown = visibleColumns(definitions, selected)
+  const columns = [...shown, ...definitions.filter(c => !shown.some(visible => visible.id === c.id))]
+  const [columnId, setColumnId] = useState(() => task ? taskColumn(task, config) : defaults?.column_id ?? columns.find(c => c.status === (defaults?.status ?? 'todo'))?.id ?? columns[0]?.id)
+  const [columnChanged, setColumnChanged] = useState(false)
+  const column = columns.find(c => c.id === columnId) ?? columns.find(c => c.status === (task?.status ?? defaults?.status ?? 'todo')) ?? columns[0]
+
   const { data: projects = [] } = useProjects()
   const create = useCreateTask()
   const update = useUpdateTask()
   const remove = useDeleteTask()
-  const [form, setForm] = useState<TaskInput>(() => ({ ...empty, ...defaults, ...(task ?? {}) }))
-  const [tagsText, setTagsText] = useState(form.tags.join(', '))
+  const [form, setForm] = useState<TaskInput>(() => {
+    const values = { ...empty, ...defaults, ...(task ?? {}) }
+    return { title: values.title, description: values.description, status: values.status, priority: values.priority, due_date: values.due_date, tags: values.tags, project_id: values.project_id, is_focus: values.is_focus }
+  })
   const set = <K extends keyof TaskInput>(k: K, v: TaskInput[K]) => setForm((f) => ({ ...f, [k]: v }))
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
     const title = form.title.trim()
-    if (!title) return
-    const tags = tagsText.split(',').map((t) => t.trim()).filter(Boolean)
-    const payload: TaskInput = { ...form, title, tags }
-    if (task) update.mutate({ id: task.id, patch: payload })
-    else create.mutate(payload, { onSuccess: created => { if (created) onCreated?.(created); if (onCreated) onDone() } })
-    if (task || !onCreated) onDone()
+    if (!title || !column) return
+    const payload: TaskInput = { ...form, title, status: task && !columnChanged ? form.status : column.status }
+    if (task) update.mutate({ id: task.id, patch: payload }, { onSuccess: () => {
+      if (columnChanged) assign(task.id, column.id)
+      onDone()
+    } })
+    else create.mutate(payload, { onSuccess: created => {
+      if (!created) return
+      assign(created.id, column.id)
+      onCreated?.(created)
+      onDone()
+    } })
   }
 
   return (
@@ -66,10 +94,8 @@ function TaskForm({ task, defaults, onDone, onCreated }: { task?: Task | null; d
         </Field>
         <Field label="Estado">
           {(id) => (
-            <Select id={id} value={form.status} onChange={(e) => set('status', e.target.value as TaskStatus)}>
-              {Object.entries(copy.status).map(([v, l]) => (
-                <option key={v} value={v}>{l}</option>
-              ))}
+            <Select id={id} value={column?.id ?? ''} onChange={(e) => { setColumnId(e.target.value); setColumnChanged(true) }}>
+              {columns.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
             </Select>
           )}
         </Field>
@@ -85,9 +111,7 @@ function TaskForm({ task, defaults, onDone, onCreated }: { task?: Task | null; d
           )}
         </Field>
       </div>
-      <Field label="Etiquetas" hint="Separadas por comas">
-        {(id) => <Input id={id} value={tagsText} onChange={(e) => setTagsText(e.target.value)} placeholder="casa, diseño" />}
-      </Field>
+      {storageError && <ErrorNote error={storageError} />}
       <label className="flex items-center gap-2 text-sm text-ink-soft">
         <input type="checkbox" checked={form.is_focus} onChange={(e) => set('is_focus', e.target.checked)} className="size-4 accent-ink" />
         Marcar como tarea prioritaria del día
