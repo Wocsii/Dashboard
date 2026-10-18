@@ -1,3 +1,4 @@
+import { priorityRank } from '@/lib/tasks'
 import { SortableColumn } from './SortableColumn'
 import { boardKeyboardCoordinates, columnDragId, MAX_COLUMNS, useColumnVisibility, visibleColumns } from './column-visibility'
 import { ColumnColorPicker } from './ColumnColorPicker'
@@ -43,7 +44,7 @@ type Columns = Record<string, string[]>
 
 function buildColumns(tasks: Task[], config: LocalColumns): Columns {
   const cols: Columns = Object.fromEntries([...defaultColumns, ...config.columns].map(c => [c.id, []]))
-  for (const t of [...tasks].sort((a, b) => a.position - b.position)) cols[taskColumn(t, config)].push(t.id)
+  for (const t of [...tasks].sort((a, b) => priorityRank[a.priority] - priorityRank[b.priority] || a.position - b.position)) cols[taskColumn(t, config)].push(t.id)
   return cols
 }
 
@@ -252,7 +253,7 @@ function LocalBoard({ userId }: { userId: string }) {
               title={title}
               dot={dot}
               color={color}
-              ids={columns[id] ?? []}
+              ids={activeId ? columns[id] ?? [] : [...columns[id] ?? []].sort((a, b) => priorityRank[byId.get(a)?.priority ?? 'medium'] - priorityRank[byId.get(b)?.priority ?? 'medium'])}
               byId={byId}
               projectMap={projectMap}
               onOpen={openTask}

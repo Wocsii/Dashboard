@@ -14,11 +14,12 @@ describe('TasksPage', () => {
     await user.click(screen.getByRole('button', { name:'Detener enfoque: Llamar al dentista' }))
     expect(JSON.parse(localStorage.getItem('mi-espacio:pomodoro:v1')!).state.status).toBe('idle')
   })
-  it('muestra secciones de vencidas y de hoy', async () => {
+  it('muestra primero las urgentes y agrupa por prioridad automáticamente', async () => {
     renderApp(<TasksPage />)
-    expect(await screen.findByRole('heading', { name: /Vencidas/ })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: /^Hoy/ })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /^Urgentes/ })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /^Prioridad alta/ })).toBeInTheDocument()
     expect(screen.getByText('Pagar la factura de internet')).toBeInTheDocument()
+    expect(screen.getByLabelText('Ordenar')).toHaveValue('priority')
   })
 
   it('crea una tarea con prioridad y fecha y la guarda', async () => {

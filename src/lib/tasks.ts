@@ -54,6 +54,13 @@ export function sortTasks(tasks: Task[], sort: TaskSort): Task[] {
   return [...tasks].sort(cmp)
 }
 
+export type PriorityGroups = Record<TaskPriority | 'done', Task[]>
+export function groupTasksByPriority(tasks: Task[]): PriorityGroups {
+  const groups: PriorityGroups = { urgent: [], high: [], medium: [], low: [], done: [] }
+  for (const task of tasks) groups[isDone(task) ? 'done' : task.priority].push(task)
+  return groups
+}
+
 export type TaskGroups = { overdue: Task[]; today: Task[]; upcoming: Task[]; noDate: Task[]; done: Task[] }
 
 /** Agrupa tareas por urgencia para la vista de lista */

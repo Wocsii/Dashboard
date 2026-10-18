@@ -14,6 +14,13 @@ describe('KanbanPage', () => {
     expect(screen.getByRole('region', { name: /Pendiente/ })).toBeInTheDocument()
   })
 
+  it('ordena las tarjetas por prioridad aunque su posición manual sea anterior', async () => {
+    renderApp(<KanbanPage />)
+    const todo = await screen.findByRole('region', { name: /Pendiente/ })
+    expect(within(todo).getAllByRole('listitem')[0]).toHaveTextContent('Pagar la factura de internet')
+    expect(within(todo).getAllByRole('listitem').at(-1)).toHaveTextContent('Practicar sombreado')
+  })
+
   it('filtra por proyecto', async () => {
     const user = userEvent.setup()
     renderApp(<KanbanPage />)

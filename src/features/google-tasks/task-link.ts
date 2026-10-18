@@ -1,13 +1,13 @@
-import type { Task } from '@/types/domain'
+import type { Task, TaskPriority } from '@/types/domain'
 import type { GoogleTask } from './api'
 
 const marker = 'google-tasks-focus:'
 export const googleTaskKey = (list: string, task: string) => `${marker}${JSON.stringify([list, task])}`
 export const isGoogleFocusTask = (task: Task) => task.tags.some(tag => tag.startsWith(marker))
-export function googleTaskView(list: string, task: GoogleTask): Task {
+export function googleTaskView(list: string, task: GoogleTask, priority: TaskPriority = 'medium'): Task {
   return {
     id: googleTaskKey(list, task.id), user_id: '', project_id: null, title: task.title || '(Sin título)',
-    description: task.notes ?? '', status: task.status === 'completed' ? 'done' : 'todo', priority: 'medium',
+    description: task.notes ?? '', status: task.status === 'completed' ? 'done' : 'todo', priority,
     due_date: task.due?.slice(0, 10) ?? null, tags: [], position: 0, is_focus: false,
     completed_at: null, created_at: '', updated_at: '',
   }

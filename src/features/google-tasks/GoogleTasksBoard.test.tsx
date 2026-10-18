@@ -7,14 +7,14 @@ import userEvent from '@testing-library/user-event'
 import { renderApp } from '@/test/render'
 import { GoogleTasksBoard } from './GoogleTasksBoard'
 import { GoogleTasksSettings } from './GoogleTasksSettings'
-const mocks = vi.hoisted(() => ({ mutate: vi.fn(), connect: vi.fn(), canWrite: true, mode: 'write' as 'readonly' | 'write' }))
+const mocks = vi.hoisted(() => ({ mutate: vi.fn(), connect: vi.fn(), canWrite: true, mode: 'write' as 'readonly' | 'write', extraTasks: [] as { id: string; title: string; status: 'needsAction' }[] }))
 vi.mock('./api', () => ({
-  useGoogleBoard: () => ({ data: { canWrite: mocks.canWrite, columns: [{ id: 'one', title: 'Casa', tasks: [{ id: 't', title: 'Comprar pan', status: 'needsAction' }] }, { id: 'two', title: 'Trabajo', tasks: [] }, { id: 'three', title: 'Ideas nuevas', tasks: [] }] }, refetch: vi.fn() }),
+  useGoogleBoard: () => ({ data: { canWrite: mocks.canWrite, columns: [{ id: 'one', title: 'Casa', tasks: [{ id: 't', title: 'Comprar pan', status: 'needsAction' }, ...mocks.extraTasks] }, { id: 'two', title: 'Trabajo', tasks: [] }, { id: 'three', title: 'Ideas nuevas', tasks: [] }] }, refetch: vi.fn() }),
   useGoogleTasksMutation: () => ({ mutate: mocks.mutate, reset: vi.fn(), isPending: false }),
   useGoogleTasksStatus: () => ({ data: { state: 'connected', email: 'test@example.com', mode: mocks.mode } }), connectGoogleTasks: mocks.connect,
 }))
 describe('Google Tasks', () => {
-  beforeEach(() => { vi.clearAllMocks(); mocks.canWrite = true; mocks.mode = 'write' })
+  beforeEach(() => { vi.clearAllMocks(); mocks.canWrite = true; mocks.mode = 'write'; mocks.extraTasks = [] })
   it('usa las listas reales como columnas y permite añadir otras', async () => {
     const user = userEvent.setup(); renderApp(<GoogleTasksBoard />)
     expect(within(screen.getByRole('region', { name: 'Casa' })).getByText('Comprar pan')).toBeInTheDocument()
@@ -130,6 +130,24 @@ describe('Google Tasks', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(mocks.mutate).not.toHaveBeenCalled()
   })
+  it('ordena Google por prioridad y sincroniza Kanban y Tareas sin escribir en Google', async () => {
+    mocks.canWrite = false
+    mocks.extraTasks = [{ id: 'urgent', title: 'Resolver incidencia', status: 'needsAction' }]
+    const user = userEvent.setup()
+    renderApp(<><GoogleTasksBoard /><TasksPage /></>)
+    const column = await screen.findByRole('region', { name: 'Casa' })
+    await user.click(within(column).getByRole('button', { name: 'Resolver incidencia' }))
+    const priority = await screen.findByLabelText('Prioridad')
+    await waitFor(() => expect(priority).toBeEnabled())
+    await user.selectOptions(priority, 'urgent')
+    expect(within(column).getAllByRole('listitem')[0]).toHaveTextContent('Resolver incidencia')
+    const group = await screen.findByRole('region', { name: /Urgentes/ })
+    expect(within(group).getByText('Resolver incidencia')).toBeInTheDocument()
+    expect(mocks.mutate).not.toHaveBeenCalled()
+    const saved = Object.keys(localStorage).find(key => key.startsWith('mi-espacio:google-task-priorities:'))!
+    expect(JSON.parse(localStorage.getItem(saved)!)[googleTaskKey('one', 'urgent')]).toBe('urgent')
+  })
+
   it('permite reactivar la edición desde solo lectura', async () => {
     mocks.mode = 'readonly'
     const user = userEvent.setup(); renderApp(<GoogleTasksSettings />)

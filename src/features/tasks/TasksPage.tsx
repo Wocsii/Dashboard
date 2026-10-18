@@ -1,5 +1,6 @@
+import { useGoogleTaskPriorities } from '../google-tasks/useGoogleTaskPriorities'
 import { useGoogleBoard, useGoogleTasksStatus, type GoogleTask } from '../google-tasks/api'
-import { googleTaskView } from '../google-tasks/task-link'
+import { googleTaskKey, googleTaskView } from '../google-tasks/task-link'
 import { GoogleTaskRow } from '../google-tasks/GoogleTaskRow'
 import { GoogleTaskEditor } from '../google-tasks/GoogleTaskEditor'
 import { useMemo, useState } from 'react'
@@ -10,14 +11,14 @@ import { Input, Segmented, Select } from '@/components/ui/Field'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState, ErrorNote, Spinner } from '@/components/ui/States'
 import { copy } from '@/config/copy.es'
-import { defaultFilter, filterTasks, groupTasks, sortTasks, type TaskFilter, type TaskSort } from '@/lib/tasks'
+import { defaultFilter, filterTasks, groupTasks, groupTasksByPriority, sortTasks, type TaskFilter, type TaskSort } from '@/lib/tasks'
 import type { Task, TaskPriority } from '@/types/domain'
 import { useProjectMap, useProjects } from '../projects/hooks'
 import { useQuickActions } from '../quick-actions'
 import { useTasks } from './hooks'
 import { TaskRow } from './TaskRow'
 
-const groupMeta = [
+const dateGroupMeta = [
   { key: 'overdue', title: 'Vencidas', accent: 'bg-coral' },
   { key: 'today', title: 'Hoy', accent: 'bg-sun' },
   { key: 'upcoming', title: 'Próximas', accent: 'bg-sky-400' },
@@ -25,22 +26,35 @@ const groupMeta = [
   { key: 'done', title: 'Completadas', accent: 'bg-mint-strong' },
 ] as const
 
+const priorityGroupMeta = [
+  { key: 'urgent', title: 'Urgentes', accent: 'bg-coral' },
+  { key: 'high', title: 'Prioridad alta', accent: 'bg-coral' },
+  { key: 'medium', title: 'Prioridad media', accent: 'bg-sun' },
+  { key: 'low', title: 'Prioridad baja', accent: 'bg-sky-400' },
+  { key: 'done', title: 'Completadas', accent: 'bg-mint-strong' },
+] as const
+
 export function TasksPage() {
   const { data: tasks, isLoading, error, refetch } = useTasks()
+  const { priorities } = useGoogleTaskPriorities()
   const googleStatus = useGoogleTasksStatus()
   const google = useGoogleBoard(googleStatus.data?.state === 'connected')
   const [googleEdit, setGoogleEdit] = useState<{ list: string; task: GoogleTask } | null>(null)
-  const googleRows = useMemo(() => (googleStatus.data?.state === 'connected' ? google.data?.columns ?? [] : []).flatMap(column => column.tasks.map(task => ({ view: googleTaskView(column.id, task), task, list: column.id, listTitle: column.title }))), [google.data, googleStatus.data?.state])
+  const googleRows = useMemo(() => (googleStatus.data?.state === 'connected' ? google.data?.columns ?? [] : []).flatMap(column => column.tasks.map(task => ({ view: googleTaskView(column.id, task, priorities[googleTaskKey(column.id, task.id)] ?? 'medium'), task, list: column.id, listTitle: column.title }))), [google.data, googleStatus.data?.state, priorities])
   const googleById = new Map(googleRows.map(row => [row.view.id, row]))
   const allTasks = useMemo(() => [...tasks ?? [], ...googleRows.map(row => row.view)], [tasks, googleRows])
   const { data: projects = [] } = useProjects()
   const projectMap = useProjectMap()
   const { newTask } = useQuickActions()
   const [filter, setFilter] = useState<TaskFilter>(defaultFilter)
-  const [sort, setSort] = useState<TaskSort>('due')
+  const [sort, setSort] = useState<TaskSort>('priority')
   const set = <K extends keyof TaskFilter>(k: K, v: TaskFilter[K]) => setFilter((f) => ({ ...f, [k]: v }))
 
-  const groups = useMemo(() => groupTasks(sortTasks(filterTasks(allTasks, filter), sort)), [allTasks, filter, sort])
+  const groups = useMemo(() => {
+    const sorted = sortTasks(filterTasks(allTasks, filter), sort)
+    return sort === 'priority' ? groupTasksByPriority(sorted) : groupTasks(sorted)
+  }, [allTasks, filter, sort])
+  const groupMeta = sort === 'priority' ? priorityGroupMeta : dateGroupMeta
   const pendingCount = allTasks.filter((t) => t.status !== 'done').length
   const total = Object.values(groups).reduce((n, g) => n + g.length, 0)
 
@@ -104,7 +118,7 @@ export function TasksPage() {
 
       <div className="grid items-start gap-5 lg:grid-cols-2">
         {groupMeta.map(({ key, title, accent }) => {
-          const list: Task[] = groups[key]
+          const list: Task[] = (groups as Record<string, Task[]>)[key] ?? []
           if (!list.length) return null
           return (
             <Card key={key} as="section" aria-labelledby={`g-${key}`} className="animate-rise p-3">
@@ -116,7 +130,7 @@ export function TasksPage() {
               <ul>
                 {list.map(t => {
                   const external = googleById.get(t.id)
-                  return external ? <GoogleTaskRow key={t.id} task={external.task} list={external.list} listTitle={external.listTitle} canWrite={google.data?.canWrite === true} onOpen={() => setGoogleEdit({ list: external.list, task: external.task })} /> : <TaskRow key={t.id} task={t} project={t.project_id ? projectMap.get(t.project_id) : undefined} />
+                  return external ? <GoogleTaskRow key={t.id} task={external.task} priority={t.priority} list={external.list} listTitle={external.listTitle} canWrite={google.data?.canWrite === true} onOpen={() => setGoogleEdit({ list: external.list, task: external.task })} /> : <TaskRow key={t.id} task={t} project={t.project_id ? projectMap.get(t.project_id) : undefined} />
                 })}
               </ul>
             </Card>

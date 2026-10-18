@@ -1,6 +1,6 @@
 import { buildSampleData } from '@/mocks/sample-data'
 import type { Task } from '@/types/domain'
-import { defaultFilter, filterTasks, groupTasks, isOverdue, pickFocusTask, sortTasks } from './tasks'
+import { defaultFilter, filterTasks, groupTasks, groupTasksByPriority, isOverdue, pickFocusTask, sortTasks } from './tasks'
 
 const today = '2026-10-15'
 const mk = (o: Partial<Task>): Task => ({
@@ -21,6 +21,11 @@ describe('tasks', () => {
       today,
     )
     expect([g.overdue.length, g.today.length, g.upcoming.length, g.noDate.length, g.done.length]).toEqual([1, 1, 1, 1, 1])
+  })
+
+  it('agrupa por prioridad y mantiene las completadas aparte', () => {
+    const groups = groupTasksByPriority(sortTasks([mk({ priority: 'low' }), mk({ priority: 'urgent' }), mk({ priority: 'high' }), mk({ priority: 'medium' }), mk({ priority: 'urgent', status: 'done' })], 'priority'))
+    expect(Object.values(groups).map(rows => rows.length)).toEqual([1, 1, 1, 1, 1])
   })
 
   it('filtra por estado, prioridad, fecha y texto', () => {

@@ -19,7 +19,7 @@ Se reutilizan el cliente OAuth, la URL de callback y las variables existentes de
 - Las listas y tareas se recargan cada minuto, al recuperar el foco y con Actualizar. No hay sincronización instantánea por webhooks.
 - Se recorren todas las páginas de listas y tareas, incluidas completadas ocultas. Las subtareas se identifican con una etiqueta; la vista es plana.
 - El estado completado se muestra dentro de cada lista: las listas no son estados. La API permite fecha, sin hora.
-- Las tareas conectadas aparecen en Kanban y Tareas, junto a las tareas propias de la app. Ambas vistas comparten la consulta y el editor de Google: completar, editar o borrar usa Google y respeta el modo de lectura. Las tareas de Google no tienen prioridad ni proyecto propios en la app.
+- Las tareas conectadas aparecen en Kanban y Tareas, junto a las tareas propias de la app. Ambas vistas comparten la consulta y el editor de Google: completar, editar o borrar usa Google y respeta el modo de lectura. Las tareas de Google no tienen proyecto propio en la app. Su prioridad es una preferencia local del navegador, descrita más abajo.
 - El botón de enfoque está disponible para tareas pendientes de Google en ambas vistas, también en solo lectura. El reloj no escribe en Google. Al usarlo se crea o reutiliza una asociación interna estable en Supabase para vincular las sesiones y conservar el tiempo; esa asociación no aparece como una tarea duplicada ni en el kanban local. No requiere una migración SQL.
 
 ## Conexión y seguridad
@@ -65,3 +65,9 @@ Al abrir una tarea local o de Google se muestra «Tiempo trabajado», con horas,
 ## Editar columnas
 
 En Ajustes → Columnas del tablero, Editar permite cambiar el nombre y el color sin cambiar el identificador, el orden ni las tareas. Las columnas locales, incluidas las predeterminadas, guardan estos cambios por cuenta y navegador. En Google Tasks, el nombre se guarda en la lista real y requiere edición; el color se guarda en el navegador y puede cambiarse en solo lectura.
+
+## Orden automático por prioridad
+
+Las tarjetas del kanban se ordenan por Urgente, Alta, Media y Baja dentro de cada columna. Las tareas de igual prioridad conservan su orden manual en el tablero local. La sección Tareas abre ordenada y agrupada por prioridad; sus filtros y las opciones de orden por fecha o creación siguen disponibles.
+
+La API de Google Tasks no ofrece estos niveles de prioridad. El editor de las tareas conectadas permite elegirlos como preferencia de Mi espacio, guardada por cuenta en este navegador. Se comparte entre Kanban y Tareas y entre las pestañas del mismo navegador, también en solo lectura. Las tareas sin elección comienzan con prioridad Media. Cambiar esa prioridad no escribe en Google. Al mover una tarea de Google entre listas desde la app se conserva esa preferencia.
