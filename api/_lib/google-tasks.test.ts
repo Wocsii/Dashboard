@@ -48,6 +48,15 @@ describe('Google Tasks server', () => {
     if (readonly) expect(fetcher).not.toHaveBeenCalled()
     else expect(fetcher).toHaveBeenCalledWith('https://tasks.googleapis.com/tasks/v1/users/@me/lists/list%2Fid', expect.objectContaining({ method: 'DELETE' }))
   })
+  it.each([false, true])('renombra listas respetando permisos y etag (solo lectura: %s)', async readonly => {
+    if (readonly) mocks.scopes.push(TASKS_READONLY)
+    const fetcher = vi.fn().mockResolvedValue(Response.json({ id: 'list/id', title: 'Nuevo nombre' }))
+    vi.stubGlobal('fetch', fetcher)
+    const res = await POST(new Request('http://x/api/google/status?service=tasks', { method: 'POST', body: JSON.stringify({ action: 'renameList', list: 'list/id', title: 'Nuevo nombre', etag: 'version' }) }))
+    expect(res.status).toBe(readonly ? 403 : 200)
+    if (readonly) expect(fetcher).not.toHaveBeenCalled()
+    else expect(fetcher).toHaveBeenCalledWith('https://tasks.googleapis.com/tasks/v1/users/@me/lists/list%2Fid', expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ title: 'Nuevo nombre' }), headers: expect.objectContaining({ 'If-Match': 'version' }) }))
+  })
   it('valida los comandos antes de enviar datos a Google', async () => {
     const res = await POST(new Request('http://x/api/google/status?service=tasks', { method: 'POST', body: JSON.stringify({ action: 'save', list: 'list', data: { title: '' } }) }))
     expect(res.status).toBe(400)

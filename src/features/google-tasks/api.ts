@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { isDemo, isEmbedded } from '@/lib/env'
 
 export type GoogleTask = { id: string; title: string; notes?: string; due?: string; status: 'needsAction' | 'completed'; etag?: string; parent?: string; position?: string }
-export type GoogleColumn = { id: string; title: string; tasks: GoogleTask[] }
+export type GoogleColumn = { id: string; title: string; etag?: string; tasks: GoogleTask[] }
 export type TasksStatus = { state: 'connected' | 'disconnected' | 'not_configured' | 'needs_reauth'; email?: string; mode?: 'readonly' | 'write'; canWrite?: boolean }
 export async function tasksCall<T>(path: string, body?: unknown): Promise<T> {
   const token = (await supabase?.auth.getSession())?.data.session?.access_token

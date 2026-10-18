@@ -1,3 +1,4 @@
+import { ColumnSettings } from '../kanban/ColumnSettings'
 import { formatWorkedTime } from '../focus/task-time'
 import { TasksPage } from '../tasks/TasksPage'
 import { googleTaskKey, isGoogleFocusTask } from './task-link'
@@ -110,6 +111,24 @@ describe('Google Tasks', () => {
     const user = userEvent.setup(); renderApp(<GoogleTasksBoard />)
     await user.click(await screen.findByRole('button', { name: 'Activar enfoque indefinido: Comprar pan' }))
     expect(await screen.findByRole('button', { name: 'Detener enfoque: Comprar pan' })).toHaveAttribute('aria-pressed', 'true')
+  })
+  it('edita el nombre de la columna conectada mediante Google Tasks', async () => {
+    const user = userEvent.setup(); renderApp(<ColumnSettings />)
+    await user.click(await screen.findByRole('button', { name: 'Editar columna Casa' }))
+    await user.clear(screen.getByLabelText('Nombre de la columna'))
+    await user.type(screen.getByLabelText('Nombre de la columna'), 'Casa nueva')
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    expect(mocks.mutate).toHaveBeenCalledWith({ action: 'renameList', list: 'one', title: 'Casa nueva', etag: undefined }, expect.anything())
+  })
+  it('en solo lectura permite editar el color sin escribir en Google', async () => {
+    mocks.canWrite = false
+    const user = userEvent.setup(); renderApp(<ColumnSettings />)
+    await user.click(await screen.findByRole('button', { name: 'Editar columna Casa' }))
+    expect(screen.getByLabelText('Nombre de la columna')).toHaveAttribute('readonly')
+    await user.click(screen.getByRole('radio', { name: 'Lila' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(mocks.mutate).not.toHaveBeenCalled()
   })
   it('permite reactivar la edición desde solo lectura', async () => {
     mocks.mode = 'readonly'

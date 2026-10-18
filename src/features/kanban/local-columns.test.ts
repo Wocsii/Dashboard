@@ -1,4 +1,4 @@
-import { localDefinitions, removeLocalColumn, readLocalColumns, taskColumn } from './local-columns'
+import { editLocalColumn, localDefinitions, removeLocalColumn, readLocalColumns, taskColumn } from './local-columns'
 import { buildSampleData } from '@/mocks/sample-data'
 
 describe('columnas locales', () => {
@@ -17,6 +17,15 @@ describe('columnas locales', () => {
     expect(localDefinitions(withoutDefault).some(c => c.id === taskColumn(task, withoutDefault))).toBe(true)
     expect(task.status).toBe('todo')
     expect(readLocalColumns(JSON.stringify(withoutDefault))).toEqual(withoutDefault)
+  })
+  it('edita nombre y color de columnas predeterminadas y personalizadas conservando ids, estados y tareas', () => {
+    expect(localDefinitions(editLocalColumn(config, 'todo', 'Solo nombre')).find(c => c.id === 'todo')?.color).toBeUndefined()
+    const renamedDefault = editLocalColumn(config, 'todo', 'Pendientes de revisar', 'lilac')
+    const edited = editLocalColumn(renamedDefault, 'custom:review', 'Revisión final', 'sun')
+    expect(localDefinitions(edited).find(c => c.id === 'todo')).toMatchObject({ title: 'Pendientes de revisar', color: 'lilac', status: 'todo' })
+    expect(edited.columns[0]).toMatchObject({ id: 'custom:review', title: 'Revisión final', color: 'sun', status: 'todo' })
+    expect(edited.assignments).toEqual(config.assignments)
+    expect(readLocalColumns(JSON.stringify(edited))).toEqual(edited)
   })
   it('usa la columna personalizada solo mientras coincide el estado de la tarea', () => {
     const task = { ...buildSampleData().tasks[0], id: 't1', status: 'todo' as const }

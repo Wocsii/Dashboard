@@ -3,7 +3,7 @@ import type { Task, TaskStatus } from '@/types/domain'
 import { projectColors, type ProjectColor } from '@/config/theme.config'
 import { copy } from '@/config/copy.es'
 
-export type LocalColumns = { columns: { id: string; title: string; status: TaskStatus; color?: ProjectColor }[]; assignments: Record<string, string>; deleted?: string[] }
+export type LocalColumns = { columns: { id: string; title: string; status: TaskStatus; color?: ProjectColor }[]; assignments: Record<string, string>; deleted?: string[]; overrides?: Record<string, { title: string; color?: ProjectColor }> }
 export type BoardColumn = { id: string; title: string; status: TaskStatus; dot: string; color?: ProjectColor }
 export const defaultColumns: BoardColumn[] = [
   { id: 'todo', title: copy.status.todo, status: 'todo', dot: 'bg-sky-400' },
@@ -19,11 +19,17 @@ export function readLocalColumns(raw: string | null): LocalColumns {
     if (!value.columns.every(c => typeof c.id === 'string' && c.id.startsWith('custom:') && typeof c.title === 'string' && c.title.trim().length > 0 && c.title.length <= 80 && defaultColumns.some(d => d.status === c.status))) return empty
     if (!Object.values(value.assignments).every(id => typeof id === 'string')) return empty
     if (value.deleted !== undefined && (!Array.isArray(value.deleted) || !value.deleted.every(id => typeof id === 'string'))) return empty
+    if (value.overrides !== undefined && (!value.overrides || typeof value.overrides !== 'object' || Array.isArray(value.overrides) || !Object.entries(value.overrides).every(([id, c]) => defaultColumns.some(column => column.id === id) && c && typeof c.title === 'string' && c.title.trim().length > 0 && c.title.length <= 80 && (c.color === undefined || projectColors.includes(c.color))))) return empty
     return { ...value, columns: value.columns.map(c => c.color === undefined || projectColors.includes(c.color) ? c : { ...c, color: 'sky' }) }
   } catch { return empty }
 }
 export function localDefinitions(config: LocalColumns) {
-  return [...defaultColumns.filter(c => !config.deleted?.includes(c.id)), ...config.columns.map(c => ({ ...c, dot: 'bg-sky-400' }))]
+  return [...defaultColumns.filter(c => !config.deleted?.includes(c.id)).map(c => ({ ...c, ...config.overrides?.[c.id] })), ...config.columns.map(c => ({ ...c, dot: 'bg-sky-400' }))]
+}
+export function editLocalColumn(config: LocalColumns, id: string, title: string, color?: ProjectColor): LocalColumns {
+  const patch = { title, ...(color === undefined ? {} : { color }) }
+  if (defaultColumns.some(c => c.id === id)) return { ...config, overrides: { ...config.overrides, [id]: { ...config.overrides?.[id], ...patch } } }
+  return { ...config, columns: config.columns.map(c => c.id === id ? { ...c, ...patch } : c) }
 }
 export function removeLocalColumn(config: LocalColumns, id: string): LocalColumns {
   return { ...config, columns: config.columns.filter(c => c.id !== id), deleted: [...(config.deleted ?? []), id], assignments: Object.fromEntries(Object.entries(config.assignments).filter(([, column]) => column !== id)) }

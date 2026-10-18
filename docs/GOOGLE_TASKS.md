@@ -61,3 +61,7 @@ El asa de columnas se muestra con ratón solo al pasar por la esquina superior i
 ## Tiempo por tarea
 
 Al abrir una tarea local o de Google se muestra «Tiempo trabajado», con horas, minutos y segundos de todo su historial de enfoque, además del tramo activo. Los descansos y las sesiones sin tarea no se asignan a ese total. Los guardados periódicos, registros pendientes y tramo activo se deduplican por sesión. Consultar este dato no escribe en Google ni crea una asociación interna: esa asociación solo se crea al iniciar el reloj.
+
+## Editar columnas
+
+En Ajustes → Columnas del tablero, Editar permite cambiar el nombre y el color sin cambiar el identificador, el orden ni las tareas. Las columnas locales, incluidas las predeterminadas, guardan estos cambios por cuenta y navegador. En Google Tasks, el nombre se guarda en la lista real y requiere edición; el color se guarda en el navegador y puede cambiarse en solo lectura.
