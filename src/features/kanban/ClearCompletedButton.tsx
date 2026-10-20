@@ -1,4 +1,4 @@
-import { BrushCleaning } from 'lucide-react'
+import { Feather } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { IconButton } from '@/components/ui/Button'
 import { ErrorNote } from '@/components/ui/States'
@@ -14,7 +14,7 @@ export function ClearCompletedButton({ ids }: { ids: string[] }) {
     },
   })
   return <div className="flex items-center gap-2">
-    <IconButton label="Limpiar completadas" className="bg-sun-soft text-amber-600" disabled={!ids.length || clear.isPending} onClick={() => clear.mutate()}><BrushCleaning className="size-5" /></IconButton>
+    <IconButton label="Limpiar completadas" className="text-amber-500" disabled={!ids.length || clear.isPending} onClick={() => clear.mutate()}><Feather className="size-4" strokeWidth={1.5} /></IconButton>
     {clear.error && <ErrorNote error={clear.error} />}
   </div>
 }
