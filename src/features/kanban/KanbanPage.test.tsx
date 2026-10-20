@@ -3,7 +3,25 @@ import userEvent from '@testing-library/user-event'
 import { renderApp } from '@/test/render'
 import { KanbanPage } from './KanbanPage'
 
+const googleStatus = vi.hoisted(() => ({ pending: false }))
+vi.mock('../google-tasks/api', async importOriginal => {
+  const actual = await importOriginal<typeof import('../google-tasks/api')>()
+  return { ...actual, useGoogleTasksStatus: () => ({
+    data: googleStatus.pending ? undefined : { state: 'disconnected' },
+    isLoading: googleStatus.pending,
+  }) }
+})
+
 describe('KanbanPage', () => {
+  beforeEach(() => { googleStatus.pending = false })
+
+  it('muestra el tablero local mientras Google sigue comprobando la conexión', async () => {
+    googleStatus.pending = true
+    renderApp(<KanbanPage />)
+    expect(await screen.findByText('Comparar vuelos')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Nueva tarjeta' })).toBeInTheDocument()
+  })
+
   it('reparte las tarjetas en las cuatro columnas', async () => {
     renderApp(<KanbanPage />)
     const blocked = await screen.findByRole('region', { name: /Bloqueada/ })

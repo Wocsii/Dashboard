@@ -291,9 +291,8 @@ function LocalBoard({ userId }: { userId: string }) {
 
 export function KanbanPage() {
   const status = useGoogleTasksStatus()
-  if (status.isLoading) return <Spinner />
-  if (status.error) return <ErrorNote error={status.error} onRetry={() => void status.refetch()} />
   if (status.data?.state === 'connected') return <GoogleTasksBoard />
   if (status.data?.state === 'needs_reauth') return <><PageHeader title="Tablero" /><p>Vuelve a conectar Google Tasks desde <Link to="/ajustes" className="underline">Ajustes</Link> para ver tus listas.</p></>
-  return <LocalKanbanPage />
+  // La comprobación de Google se hace en segundo plano sin bloquear el tablero local.
+  return <>{status.error && <ErrorNote error={status.error} onRetry={() => void status.refetch()} />}<LocalKanbanPage /></>
 }
