@@ -1,5 +1,41 @@
 import { expect, test } from '@playwright/test'
 
+test('al soltar una tarjeta no vuelve a la columna anterior y conserva el destino al recargar', async ({ page }) => {
+  await page.goto('/kanban')
+  const card = page.getByRole('button', { name: /^Comparar vuelos/ })
+  const destination = page.getByRole('region', { name: /En progreso/ })
+  const sourceBox = await card.boundingBox()
+  const destinationBox = await destination.boundingBox()
+  if (!sourceBox || !destinationBox) throw new Error('Faltan la tarjeta o la columna')
+  await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + 20)
+  await page.mouse.down()
+  await page.mouse.move(destinationBox.x + destinationBox.width / 2, destinationBox.y + destinationBox.height - 20, { steps: 16 })
+  await expect(destination.getByRole('button', { name: /^Comparar vuelos/ })).toBeVisible()
+  await page.evaluate(() => {
+    const observed = document.createElement('div')
+    observed.id = 'drop-observations'
+    observed.hidden = true
+    document.body.append(observed)
+    document.addEventListener('mouseup', () => {
+      const observer = new MutationObserver(() => {
+        const card = document.querySelector('[aria-label^="Comparar vuelos. Pulsa"]')
+        const column = card?.closest('section')?.getAttribute('aria-labelledby') ?? 'missing'
+        observed.dataset.columns = `${observed.dataset.columns ?? ''}${column},`
+      })
+      observer.observe(document.getElementById('root')!, { childList: true, subtree: true, attributes: true })
+      setTimeout(() => { observer.disconnect(); observed.dataset.done = 'true' }, 500)
+    }, { once: true })
+  })
+  await page.mouse.up()
+  await expect(page.locator('#drop-observations')).toHaveAttribute('data-done', 'true')
+  const columns = (await page.locator('#drop-observations').getAttribute('data-columns'))?.split(',').filter(Boolean)
+  expect(columns?.length).toBeGreaterThan(0)
+  expect(new Set(columns)).toEqual(new Set(['col-in_progress']))
+  await expect(destination.getByRole('button', { name: /^Comparar vuelos/ })).toBeVisible()
+  await page.reload()
+  await expect(destination.getByRole('button', { name: /^Comparar vuelos/ })).toBeVisible()
+})
+
 test('sin Google Tasks: crear columna y tarjeta, mover con teclado y conservar tras recargar', async ({ page }) => {
   await page.goto('/kanban')
   await page.getByRole('button', { name: 'Añadir columna', exact: true }).click()

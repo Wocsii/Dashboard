@@ -131,6 +131,7 @@ function LocalBoard({ userId }: { userId: string }) {
   const { newTask, editTask } = useQuickActions()
   const [projectFilter, setProjectFilter] = useState<string>('all')
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [pendingMoves, setPendingMoves] = useState<Record<string, Pick<Task, 'status' | 'position'>>>({})
   // Evita abrir el editor con el "click" que algunos navegadores disparan al soltar
   const justDragged = useRef(false)
   const openTask = (t: Task) => {
@@ -138,8 +139,8 @@ function LocalBoard({ userId }: { userId: string }) {
   }
 
   const visible = useMemo(
-    () => (tasks ?? []).filter((t) => projectFilter === 'all' || t.project_id === projectFilter),
-    [tasks, projectFilter],
+    () => (tasks ?? []).map(t => pendingMoves[t.id] ? { ...t, ...pendingMoves[t.id] } : t).filter((t) => projectFilter === 'all' || t.project_id === projectFilter),
+    [tasks, projectFilter, pendingMoves],
   )
   const initialColumns = useMemo(() => buildColumns(visible, config), [visible, config])
   const byId = useMemo(() => new Map(visible.map((t) => [t.id, t])), [visible])
@@ -170,7 +171,7 @@ function LocalBoard({ userId }: { userId: string }) {
       return {
         ...cols,
         [from]: cols[from].filter((id) => id !== active.id),
-        [to]: [...cols[to].slice(0, index), String(active.id), ...cols[to].slice(index)],
+        [to]: [...cols[to].slice(0, index), String(active.id), ...cols[to].slice(index)].sort((a, b) => priorityRank[byId.get(a)?.priority ?? 'medium'] - priorityRank[byId.get(b)?.priority ?? 'medium']),
       }
     })
   }
@@ -197,15 +198,28 @@ function LocalBoard({ userId }: { userId: string }) {
     const overIndex = list.indexOf(String(over.id))
     const activeIndex = list.indexOf(id)
     if (overIndex >= 0 && overIndex !== activeIndex) list = arrayMove(list, activeIndex, overIndex)
+    list = [...list].sort((a, b) => priorityRank[byId.get(a)?.priority ?? 'medium'] - priorityRank[byId.get(b)?.priority ?? 'medium'])
     setColumns((c) => ({ ...c, [columnId]: list }))
 
-    const i = list.indexOf(id)
-    const before = byId.get(list[i - 1])?.position
-    const after = byId.get(list[i + 1])?.position
+    const peers = list.filter(otherId => byId.get(otherId)?.priority === task.priority)
+    const i = peers.indexOf(id)
+    const before = byId.get(peers[i - 1])?.position
+    const after = byId.get(peers[i + 1])?.position
     const position = positionBetween(before, after)
     const previousColumn = taskColumn(task, config)
+    const patch = { status, position }
+    const changed = status !== task.status || position !== task.position
+    // Mantiene estado y columna coherentes mientras la mutación optimista prepara la caché.
+    if (changed) setPendingMoves(previous => ({ ...previous, [id]: patch }))
     assign(id, columnId)
-    if (status !== task.status || position !== task.position) update.mutate({ id, patch: { status, position } }, { onError: () => assign(id, previousColumn) })
+    if (changed) void update.mutateAsync({ id, patch })
+      .catch(() => assign(id, previousColumn))
+      .finally(() => setPendingMoves(previous => {
+        if (previous[id] !== patch) return previous
+        const next = { ...previous }
+        delete next[id]
+        return next
+      }))
   }
 
   const active = activeId ? byId.get(activeId) : undefined
@@ -264,7 +278,7 @@ function LocalBoard({ userId }: { userId: string }) {
           ))}
         </div>
         </SortableContext>
-        <DragOverlay>{active ? <KanbanCardView task={active} project={active.project_id ? projectMap.get(active.project_id) : undefined} overlay /> : null}</DragOverlay>
+        <DragOverlay dropAnimation={null}>{active ? <KanbanCardView task={active} project={active.project_id ? projectMap.get(active.project_id) : undefined} overlay /> : null}</DragOverlay>
       </DndContext>
       <Modal open={addingColumn} onClose={() => setAddingColumn(false)} title="Añadir columna">
         <form className="flex flex-col gap-4" onSubmit={event => {
