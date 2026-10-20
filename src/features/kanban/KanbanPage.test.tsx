@@ -21,6 +21,15 @@ describe('KanbanPage', () => {
     expect(within(todo).getAllByRole('listitem').at(-1)).toHaveTextContent('Practicar sombreado')
   })
 
+  it('limpia las completadas sin retirar las tareas pendientes', async () => {
+    const user = userEvent.setup()
+    renderApp(<KanbanPage />)
+    const completed = await screen.findByRole('region', { name: /Completada/ })
+    await user.click(screen.getByRole('button', { name: 'Limpiar completadas' }))
+    expect(await within(completed).findByText('Suelta aquí')).toBeInTheDocument()
+    expect(screen.getByText('Comparar vuelos')).toBeInTheDocument()
+  })
+
   it('filtra por proyecto', async () => {
     const user = userEvent.setup()
     renderApp(<KanbanPage />)

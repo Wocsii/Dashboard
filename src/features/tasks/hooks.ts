@@ -5,6 +5,7 @@ import { useListMutation } from '@/data/optimistic'
 import type { Task, TaskInput } from '@/types/domain'
 
 export const tasksKey = ['tasks'] as const
+export const deletedTasksKey = ['deleted-tasks'] as const
 
 export function useTasks({ includeGoogleFocus = false } = {}) {
   return useQuery({ queryKey: tasksKey, queryFn: () => repo().listTasks(), select: tasks => includeGoogleFocus ? tasks : tasks.filter(task => !isGoogleFocusTask(task)) })

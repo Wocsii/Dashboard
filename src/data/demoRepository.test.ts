@@ -28,6 +28,21 @@ describe('repositorio demo', () => {
     expect((await repo.listTasks()).some((x) => x.id === t.id)).toBe(false)
   })
 
+  it('recupera tareas completas y elimina definitivamente al cumplir 14 días', async () => {
+    const data = buildSampleData()
+    const repo = createDemoRepository(data)
+    const task = await repo.createTask({ title: 'Recuperable', description: 'Detalles', status: 'done', tags: ['personal'] })
+    await repo.trashTasks([task.id])
+    expect((await repo.listTasks()).some(t => t.id === task.id)).toBe(false)
+    expect(await repo.listDeletedTasks()).toContainEqual(expect.objectContaining({ id: task.id, description: 'Detalles', tags: ['personal'] }))
+    await repo.restoreTask(task.id)
+    expect(await repo.listTasks()).toContainEqual(expect.objectContaining({ id: task.id, status: 'done', deleted_at: null }))
+    await repo.deleteTask(task.id)
+    data.tasks.find(t => t.id === task.id)!.deleted_at = new Date(Date.now() - 14 * 86400000).toISOString()
+    expect(await repo.listDeletedTasks()).toEqual([])
+    await expect(repo.restoreTask(task.id)).rejects.toThrow('Tarea no encontrado')
+  })
+
   it('persiste en localStorage', async () => {
     const repo = createDemoRepository(buildSampleData())
     await repo.createNote({ title: 'Persistente' })

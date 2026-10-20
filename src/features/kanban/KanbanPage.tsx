@@ -1,3 +1,4 @@
+import { ClearCompletedButton } from './ClearCompletedButton'
 import { priorityRank } from '@/lib/tasks'
 import { SortableColumn } from './SortableColumn'
 import { boardKeyboardCoordinates, columnDragId, MAX_COLUMNS, useColumnVisibility, visibleColumns } from './column-visibility'
@@ -225,6 +226,7 @@ function LocalBoard({ userId }: { userId: string }) {
               {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             <Button variant="light" disabled={allDefinitions.length >= MAX_COLUMNS} onClick={() => { setColumnColor('sky'); setAddingColumn(true) }}><Plus className="size-4" /> Añadir columna</Button>
+            <ClearCompletedButton ids={visible.filter(t => taskColumn(t, config) === 'done').map(t => t.id)} />
             <Button onClick={() => newTask({ project_id: projectFilter === 'all' ? null : projectFilter })}>
               <Plus className="size-4" /> Nueva tarjeta
             </Button>

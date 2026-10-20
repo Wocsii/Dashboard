@@ -1,3 +1,4 @@
+import { DeletedTasksSettings } from '../tasks/DeletedTasksSettings'
 import { ColumnSettings } from '../kanban/ColumnSettings'
 import { GoogleTasksSettings } from '../google-tasks/GoogleTasksSettings'
 import { useEffect, type ReactNode } from 'react'
@@ -142,6 +143,7 @@ export function SettingsPage() {
       <div className="grid items-start gap-5 lg:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-5">
           <Card><AppearanceSettings /></Card>
+          <SettingsSection title="Recuperar tareas borradas" icon={RotateCcw} tone="sun"><DeletedTasksSettings /></SettingsSection>
           <SettingsSection title="Columnas del tablero" icon={Columns3} tone="sun"><ColumnSettings /></SettingsSection>
           <SettingsSection title="Google Tasks · Kanban" icon={ListTodo} tone="mint"><GoogleTasksSettings /></SettingsSection>
         </div>

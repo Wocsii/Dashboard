@@ -20,6 +20,9 @@ import type {
  */
 export interface Repository {
   listTasks(): Promise<Task[]>
+  listDeletedTasks(): Promise<Task[]>
+  restoreTask(id: string): Promise<void>
+  trashTasks(ids: string[]): Promise<void>
   saveGoogleFocusTask(input: { id: string; title: string; description: string; tags: string[] }): Promise<Task>
   createTask(input: Partial<TaskInput> & { title: string; position?: number }): Promise<Task>
   updateTask(id: string, patch: Partial<TaskInput> & { position?: number }): Promise<Task>

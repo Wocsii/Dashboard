@@ -36,13 +36,24 @@ export function createDemoRepository(initial?: SampleData): Repository {
     return next
   }
 
+  function purgeExpired() {
+    const expired = new Set(data.tasks.filter(t => t.deleted_at && Date.parse(t.deleted_at) <= Date.now() - 14 * 86400000).map(t => t.id))
+    if (!expired.size) return
+    data.tasks = data.tasks.filter(t => !expired.has(t.id))
+    data.focusSessions = data.focusSessions.map(s => expired.has(s.task_id ?? '') ? { ...s, task_id: null } : s)
+    save()
+  }
+
   return {
     async saveGoogleFocusTask(input) {
       const existing = data.tasks.find(task => task.id === input.id)
       if (existing) return this.updateTask(input.id, input)
       return this.createTask(input)
     },
-    listTasks: () => delay([...data.tasks].sort((a, b) => a.position - b.position)),
+    listTasks: () => {
+      purgeExpired()
+      return delay(data.tasks.filter(t => !t.deleted_at).sort((a, b) => a.position - b.position))
+    },
     async createTask(input) {
       const t: Task = withCompletedAt(undefined, {
         id: id(), user_id: DEMO_USER_ID, project_id: null, description: '', status: 'todo', priority: 'medium',
@@ -62,8 +73,22 @@ export function createDemoRepository(initial?: SampleData): Repository {
       return delay(data.tasks[i])
     },
     async deleteTask(taskId) {
-      data.tasks = data.tasks.filter((t) => t.id !== taskId)
-      data.focusSessions = data.focusSessions.map((s) => (s.task_id === taskId ? { ...s, task_id: null } : s))
+      return this.trashTasks([taskId])
+    },
+    async trashTasks(ids) {
+      data.tasks = data.tasks.map(t => ids.includes(t.id) && !t.deleted_at ? { ...t, deleted_at: now(), is_focus: false } : t)
+      save()
+      return delay(undefined)
+    },
+    listDeletedTasks: () => {
+      purgeExpired()
+      return delay(data.tasks.filter(t => t.deleted_at).sort((a, b) => b.deleted_at!.localeCompare(a.deleted_at!)))
+    },
+    async restoreTask(taskId) {
+      purgeExpired()
+      const task = data.tasks.find(t => t.id === taskId)
+      if (!task) throw notFound('Tarea')
+      task.deleted_at = null
       save()
       return delay(undefined)
     },

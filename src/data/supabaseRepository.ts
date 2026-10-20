@@ -17,12 +17,30 @@ export function createSupabaseRepository(): Repository {
     return id
   }
 
+  const purgeExpired = async () => {
+    unwrap(await db.from('tasks').delete().lte('deleted_at', new Date(Date.now() - 14 * 86400000).toISOString()))
+  }
+
   return {
     saveGoogleFocusTask: async (input) => unwrap(await db.from('tasks').upsert({ ...input, user_id: await uid() }).select().single()),
-    listTasks: async () => unwrap(await db.from('tasks').select('*').order('position')),
+    listTasks: async () => {
+      await purgeExpired()
+      return unwrap(await db.from('tasks').select('*').is('deleted_at', null).order('position'))
+    },
+    listDeletedTasks: async () => {
+      await purgeExpired()
+      return unwrap(await db.from('tasks').select('*').not('deleted_at', 'is', null).order('deleted_at', { ascending: false }))
+    },
+    restoreTask: async (id) => {
+      await purgeExpired()
+      unwrap(await db.from('tasks').update({ deleted_at: null }).eq('id', id).select('id').single())
+    },
+    trashTasks: async (ids) => {
+      if (ids.length) unwrap(await db.from('tasks').update({ deleted_at: new Date().toISOString(), is_focus: false }).in('id', ids).is('deleted_at', null))
+    },
     createTask: async (input) => unwrap(await db.from('tasks').insert(input).select().single()),
     updateTask: async (id, patch) => unwrap(await db.from('tasks').update(patch).eq('id', id).select().single()),
-    deleteTask: async (id) => void unwrap(await db.from('tasks').delete().eq('id', id)),
+    deleteTask: async (id) => void unwrap(await db.from('tasks').update({ deleted_at: new Date().toISOString(), is_focus: false }).eq('id', id).is('deleted_at', null)),
 
     listProjects: async () => unwrap(await db.from('projects').select('*').order('created_at')),
     createProject: async (input) => unwrap(await db.from('projects').insert(input).select().single()),

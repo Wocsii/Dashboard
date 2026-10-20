@@ -48,6 +48,7 @@ type TaskRow = {
   tags: string[]
   position: number
   is_focus: boolean
+  deleted_at?: string | null
   completed_at: string | null
 } & Timestamps
 type NoteRow = { id: string; user_id: string; title: string; content: string; pinned: boolean } & Timestamps
