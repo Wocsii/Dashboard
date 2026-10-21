@@ -1,10 +1,10 @@
 import { FocusClock } from './FocusClock'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
-import { Field, Input } from '@/components/ui/Field'
+import { Input } from '@/components/ui/Field'
 import { ManualTimeEntry } from './ManualTimeEntry'
 import { Mascot } from '@/components/ui/Mascot'
-import { Infinity as InfinityIcon, Pause, Play, RotateCcw, SkipForward, Square } from 'lucide-react'
+import { Infinity as InfinityIcon, Minus, Pause, Play, Plus, RotateCcw, SkipForward, Square } from 'lucide-react'
 import { BarChart } from '@/components/ui/BarChart'
 import { Button, IconButton } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -30,7 +30,11 @@ const modeColor: Record<FocusKind, string> = {
 export function PomodoroControls({ size = 'lg' }: { size?: 'md' | 'lg' }) {
   const { state, start, pause, reset, skip, indefiniteSessionSeconds, editIndefiniteTime } = usePomodoro()
   const [editing, setEditing] = useState(false)
-  const [time, setTime] = useState({ hours: 0, minutes: 0, seconds: 0 })
+  const [minutes, setMinutes] = useState('')
+  const formId = useId()
+  const minutesId = useId()
+  const close = () => setEditing(false)
+  const adjust = (delta: number) => setMinutes(String(Math.max(0, Math.min(9999, (Number(minutes) || 0) + delta))))
   const running = state.status === 'running'
   const canEdit = !!state.indefinite && state.status === 'paused'
   return (
@@ -44,24 +48,32 @@ export function PomodoroControls({ size = 'lg' }: { size?: 'md' | 'lg' }) {
         {running ? 'Pausar' : state.status === 'paused' ? 'Continuar' : 'Empezar'}
       </Button>
       {canEdit && <Button variant="sun" onClick={() => {
-        setTime({ hours: Math.floor(indefiniteSessionSeconds / 3600), minutes: Math.floor(indefiniteSessionSeconds / 60) % 60, seconds: indefiniteSessionSeconds % 60 })
+        setMinutes(String(Math.round(indefiniteSessionSeconds / 60)))
         setEditing(true)
       }}>Editar</Button>}
       <IconButton label={state.indefinite ? 'Finalizar enfoque' : 'Saltar al siguiente bloque'} variant="light" size={size} onClick={skip}>
         {state.indefinite ? <Square className="size-4" /> : <SkipForward className="size-4" />}
       </IconButton>
     </div>
-    <Modal open={editing && canEdit} onClose={() => setEditing(false)} title="Editar tiempo indefinido">
-      <form className="flex flex-col gap-4" onSubmit={event => {
+    <Modal open={editing && canEdit} onClose={close} title="Editar tiempo indefinido" footer={<><Button variant="ghost" onClick={close}>Cancelar</Button><Button type="submit" form={formId}>Guardar</Button></>}>
+      <form id={formId} className="flex flex-col gap-5 pt-2 text-left" onSubmit={event => {
         event.preventDefault()
-        editIndefiniteTime(time.hours * 3600 + time.minutes * 60 + time.seconds)
-        setEditing(false)
+        const value = Number(minutes)
+        if (!Number.isInteger(value) || value < 0 || value > 9999) return
+        if (value !== Math.round(indefiniteSessionSeconds / 60)) editIndefiniteTime(value * 60)
+        close()
       }}>
-        <p className="text-sm text-ink-soft">Corrige el tiempo trabajado en esta sesión. El cronómetro seguirá en pausa.</p>
-        <div className="grid grid-cols-3 gap-3">
-          {(['hours', 'minutes', 'seconds'] as const).map((part, index) => <Field key={part} label={['Horas', 'Minutos', 'Segundos'][index]}>{id => <Input id={id} type="number" min={0} max={part === 'hours' ? 9999 : 59} step={1} required value={time[part]} onChange={event => setTime(previous => ({ ...previous, [part]: Number(event.target.value) }))} />}</Field>)}
+        <div className="rounded-card bg-card px-4 py-6 shadow-pill">
+          <label htmlFor={minutesId} className="mb-4 block text-center text-xs font-medium text-ink-soft">Minutos trabajados</label>
+          <div className="flex items-center justify-center gap-2 sm:gap-4">
+            <IconButton label="Restar 5 minutos" variant="light" size="lg" disabled={Number(minutes) <= 0} onClick={() => adjust(-5)}><Minus className="size-4" /></IconButton>
+            <Input id={minutesId} aria-label="Tiempo trabajado en minutos" type="number" min={0} max={9999} step={1} required autoFocus value={minutes} onChange={event => setMinutes(event.target.value)} className="h-20 w-24 border-transparent sm:w-32 bg-transparent text-center font-display text-6xl tracking-tight tabular-nums shadow-none focus:border-sky-400 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield]" />
+            <IconButton label="Añadir 5 minutos" variant="light" size="lg" disabled={Number(minutes) >= 9999} onClick={() => adjust(5)}><Plus className="size-4" /></IconButton>
+          </div>
         </div>
-        <div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setEditing(false)}>Cancelar</Button><Button type="submit" variant="sun">Guardar tiempo</Button></div>
+        <div role="group" aria-label="Duraciones habituales" className="flex flex-wrap justify-center gap-2">
+          {[15, 25, 50, 90].map(value => <Button key={value} size="sm" variant={Number(minutes) === value ? 'sun' : 'light'} aria-pressed={Number(minutes) === value} className={Number(minutes) === value ? 'min-w-18 shadow-pill' : 'min-w-18'} onClick={() => setMinutes(String(value))}>{value} min</Button>)}
+        </div>
       </form>
     </Modal>
     </>
