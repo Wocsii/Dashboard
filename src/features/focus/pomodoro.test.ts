@@ -3,6 +3,21 @@ import * as P from './pomodoro'
 const d: P.Durations = { focus: 25, short_break: 5, long_break: 15, longBreakEvery: 4 }
 
 describe('pomodoro', () => {
+  it('recalcula la hora de fin excluyendo pausas incluso al cruzar medianoche', () => {
+    const start = new Date(2026, 9, 20, 23, 30).getTime()
+    let s = P.start({ ...P.initialState(d), indefinite: true }, start)
+    s = P.pause(s, start + 20 * 60000)
+    s = P.start(s, start + 40 * 60000)
+    s = P.pause(s, start + 70 * 60000)
+    expect(P.indefiniteSecondsUntil(s, start + 50 * 60000)).toBe(30 * 60)
+    expect(P.indefiniteSecondsUntil(s, start + 30 * 60000)).toBe(20 * 60)
+    expect(P.indefiniteSecondsUntil(s, start + 50 * 60000, start + 40 * 60000)).toBe(10 * 60)
+    s = { ...s, elapsedMs: 30 * 60000, editedEndedAt: start + 50 * 60000 }
+    s = P.start(s, start + 90 * 60000)
+    s = P.pause(s, start + 100 * 60000)
+    expect(P.elapsedSeconds(s, start + 100 * 60000)).toBe(40 * 60)
+    expect(P.indefiniteSecondsUntil(s, start + 100 * 60000)).toBe(40 * 60)
+  })
   it('counts unlimited focus upwards and excludes paused time', () => {
     let s = P.start({ ...P.initialState(d),indefinite:true }, 1000)
     expect(s.endsAt).toBeNull()

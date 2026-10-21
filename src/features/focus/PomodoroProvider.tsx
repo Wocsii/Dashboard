@@ -32,7 +32,10 @@ type Ctx = {
   startIndefinite: () => void
   setFocusDuration: (minutes: number) => void
   indefiniteSessionSeconds: number
-  editIndefiniteTime: (seconds: number) => void
+  indefiniteSessionStart: number | null
+  indefinitePausedAt: number
+  indefiniteSecondsUntil: (endedAt: number) => number
+  editIndefiniteEndTime: (endedAt: number) => void
   pause: () => void
   reset: () => void
   skip: () => void
@@ -144,7 +147,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
         id: timerSessionId(segment?.startedAt ?? s.startedAt, taskId ?? 'unassigned'),
         kind: 'focus',
         started_at: new Date(segment?.startedAt ?? s.startedAt).toISOString(),
-        ended_at: new Date(endedAt).toISOString(),
+        ended_at: new Date(s.indefinite && s.status === 'paused' ? s.editedEndedAt ?? s.pausedAt ?? endedAt : endedAt).toISOString(),
         duration_seconds: seconds,
         completed: completed && !s.indefinite,
         task_id: task?.id ?? null,
@@ -270,20 +273,25 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   const value: Ctx = {
     state,
     indefiniteSessionSeconds: Math.max(0, P.elapsedSeconds(state, now) - (segment?.elapsedSeconds ?? 0)),
-    editIndefiniteTime: (seconds) => {
+    indefiniteSessionStart: segment?.startedAt ?? state.startedAt,
+    indefinitePausedAt: state.pausedAt ?? now,
+    indefiniteSecondsUntil: endedAt => P.indefiniteSecondsUntil(state, endedAt, segment?.startedAt ?? state.startedAt ?? endedAt),
+    editIndefiniteEndTime: (endedAt) => {
       const current = latest.current.state
-      if (!current.indefinite || current.status !== 'paused' || !current.startedAt || !Number.isSafeInteger(seconds) || seconds < 0) return
+      const sessionStart = segment?.startedAt ?? current.startedAt
+      if (!current.indefinite || current.status !== 'paused' || !sessionStart || !Number.isFinite(endedAt) || endedAt < sessionStart || endedAt > (current.pausedAt ?? Date.now())) return
+      const seconds = P.indefiniteSecondsUntil(current, endedAt, sessionStart)
       const elapsedMs = (seconds + (segment?.elapsedSeconds ?? 0)) * 1000
-      const next = { ...current, elapsedMs }
+      const next = { ...current, elapsedMs, editedEndedAt: endedAt }
       setStored(previous => ({ ...previous, state: next }))
       const task = tasks?.find(t => t.id === taskId)
       const habit = projects?.find(p => p.id === task?.project_id)?.exercise_config
       if (logEnabled || habit) log.mutate({
         replaceDuration: true,
-        id: timerSessionId(segment?.startedAt ?? current.startedAt, taskId ?? 'unassigned'),
+        id: timerSessionId(sessionStart, taskId ?? 'unassigned'),
         kind: 'focus',
-        started_at: new Date(segment?.startedAt ?? current.startedAt).toISOString(),
-        ended_at: new Date().toISOString(),
+        started_at: new Date(sessionStart).toISOString(),
+        ended_at: new Date(endedAt).toISOString(),
         duration_seconds: seconds,
         completed: false,
         task_id: task?.id ?? null,

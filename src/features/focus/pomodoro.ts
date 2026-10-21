@@ -21,6 +21,9 @@ export type PomodoroState = {
   completedFocus: number
   indefinite?: boolean
   runningSince?: number | null
+  pausedAt?: number
+  editedEndedAt?: number
+  workIntervals?: { start: number; end: number }[]
 }
 
 export const minutesToMs = (m: number) => Math.round(m * 60_000)
@@ -36,14 +39,22 @@ export function remaining(s: PomodoroState, now: number): number {
 
 export function start(s: PomodoroState, now: number): PomodoroState {
   if (s.status === 'running') return s
-  return { ...s, status: 'running', endsAt: s.indefinite ? null : now + s.remainingMs, startedAt: s.startedAt ?? now, runningSince: now }
+  const workIntervals = s.editedEndedAt === undefined ? s.workIntervals : s.workIntervals?.map(interval => ({ ...interval, end: Math.min(interval.end, s.editedEndedAt!) })).filter(interval => interval.end > interval.start)
+  return { ...s, workIntervals, editedEndedAt: undefined, status: 'running', endsAt: s.indefinite ? null : now + s.remainingMs, startedAt: s.startedAt ?? now, runningSince: now }
 }
 
 export function pause(s: PomodoroState, now: number): PomodoroState {
   if (s.status !== 'running') return s
-  if (s.indefinite) return { ...s, status:'paused', endsAt:null, runningSince:null, elapsedMs:remaining(s, now) }
+  if (s.indefinite) return { ...s, status:'paused', endsAt:null, runningSince:null, elapsedMs:remaining(s, now), pausedAt: now, workIntervals: [...(s.workIntervals ?? (s.elapsedMs > 0 ? [{ start: (s.runningSince ?? now) - s.elapsedMs, end: s.runningSince ?? now }] : [])), { start: s.runningSince ?? now, end: now }] }
   const left = remaining(s, now)
   return { ...s, status: 'paused', endsAt: null, remainingMs: left, elapsedMs: s.elapsedMs + (s.remainingMs - left) }
+}
+
+/** Tiempo realmente trabajado hasta una hora, excluyendo las pausas. */
+export function indefiniteSecondsUntil(s: PomodoroState, endedAt: number, segmentStart = s.startedAt ?? endedAt): number {
+  const end = Math.min(endedAt, s.pausedAt ?? endedAt)
+  const intervals = s.workIntervals ?? [{ start: (s.pausedAt ?? endedAt) - s.elapsedMs, end: s.pausedAt ?? endedAt }]
+  return Math.round(intervals.reduce((sum, interval) => sum + Math.max(0, Math.min(interval.end, end) - Math.max(interval.start, segmentStart)), 0) / 1000)
 }
 
 export function reset(s: PomodoroState, d: Durations): PomodoroState {

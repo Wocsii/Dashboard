@@ -28,13 +28,26 @@ const modeColor: Record<FocusKind, string> = {
 }
 
 export function PomodoroControls({ size = 'lg' }: { size?: 'md' | 'lg' }) {
-  const { state, start, pause, reset, skip, indefiniteSessionSeconds, editIndefiniteTime } = usePomodoro()
+  const { state, start, pause, reset, skip, indefiniteSessionStart, indefinitePausedAt, indefiniteSecondsUntil, editIndefiniteEndTime } = usePomodoro()
   const [editing, setEditing] = useState(false)
-  const [minutes, setMinutes] = useState('')
+  const [endTime, setEndTime] = useState({ day: '', hours: '', minutes: '' })
   const formId = useId()
+  const hoursId = useId()
   const minutesId = useId()
+  const dateId = useId()
   const close = () => setEditing(false)
-  const adjust = (delta: number) => setMinutes(String(Math.max(0, Math.min(9999, (Number(minutes) || 0) + delta))))
+  const selectEndTime = (timestamp: number) => {
+    const date = new Date(timestamp)
+    setEndTime({ day: toISODate(date), hours: String(date.getHours()).padStart(2, '0'), minutes: String(date.getMinutes()).padStart(2, '0') })
+  }
+  const selected = new Date(`${endTime.day}T${endTime.hours.padStart(2, '0')}:${endTime.minutes.padStart(2, '0')}:00`).getTime()
+  const endedAt = Number.isFinite(selected) && indefiniteSessionStart !== null && selected >= Math.floor(indefiniteSessionStart / 60000) * 60000 ? Math.max(selected, indefiniteSessionStart) : selected
+  const validEndTime = endTime.hours !== '' && endTime.minutes !== '' && Number.isFinite(endedAt) && indefiniteSessionStart !== null && endedAt >= indefiniteSessionStart && endedAt <= indefinitePausedAt
+  const seconds = validEndTime ? indefiniteSecondsUntil(endedAt) : 0
+  const adjust = (delta: number) => {
+    const base = Number.isFinite(selected) ? selected : indefinitePausedAt
+    selectEndTime(Math.max(indefiniteSessionStart ?? base, Math.min(indefinitePausedAt, base + delta * 60000)))
+  }
   const running = state.status === 'running'
   const canEdit = !!state.indefinite && state.status === 'paused'
   return (
@@ -48,32 +61,38 @@ export function PomodoroControls({ size = 'lg' }: { size?: 'md' | 'lg' }) {
         {running ? 'Pausar' : state.status === 'paused' ? 'Continuar' : 'Empezar'}
       </Button>
       {canEdit && <Button variant="sun" onClick={() => {
-        setMinutes(String(Math.round(indefiniteSessionSeconds / 60)))
+        selectEndTime(state.editedEndedAt ?? indefinitePausedAt)
         setEditing(true)
       }}>Editar</Button>}
       <IconButton label={state.indefinite ? 'Finalizar enfoque' : 'Saltar al siguiente bloque'} variant="light" size={size} onClick={skip}>
         {state.indefinite ? <Square className="size-4" /> : <SkipForward className="size-4" />}
       </IconButton>
     </div>
-    <Modal open={editing && canEdit} onClose={close} title="Editar tiempo indefinido" footer={<><Button variant="ghost" onClick={close}>Cancelar</Button><Button type="submit" form={formId}>Guardar</Button></>}>
+    <Modal open={editing && canEdit} onClose={close} title="Editar hora de fin" footer={<><Button variant="ghost" onClick={close}>Cancelar</Button><Button type="submit" form={formId} disabled={!validEndTime}>Guardar</Button></>}>
       <form id={formId} className="flex flex-col gap-5 pt-2 text-left" onSubmit={event => {
         event.preventDefault()
-        const value = Number(minutes)
-        if (!Number.isInteger(value) || value < 0 || value > 9999) return
-        if (value !== Math.round(indefiniteSessionSeconds / 60)) editIndefiniteTime(value * 60)
+        if (!validEndTime) return
+        const original = state.editedEndedAt ?? indefinitePausedAt
+        if (Math.floor(selected / 60000) !== Math.floor(original / 60000)) editIndefiniteEndTime(endedAt)
         close()
       }}>
         <div className="rounded-card bg-card px-4 py-6 shadow-pill">
-          <label htmlFor={minutesId} className="mb-4 block text-center text-xs font-medium text-ink-soft">Minutos trabajados</label>
+          <p className="mb-4 text-center text-xs font-medium text-ink-soft">¿Hasta qué hora trabajaste?</p>
           <div className="flex items-center justify-center gap-2 sm:gap-4">
-            <IconButton label="Restar 5 minutos" variant="light" size="lg" disabled={Number(minutes) <= 0} onClick={() => adjust(-5)}><Minus className="size-4" /></IconButton>
-            <Input id={minutesId} aria-label="Tiempo trabajado en minutos" type="number" min={0} max={9999} step={1} required autoFocus value={minutes} onChange={event => setMinutes(event.target.value)} className="h-20 w-24 border-transparent sm:w-32 bg-transparent text-center font-display text-6xl tracking-tight tabular-nums shadow-none focus:border-sky-400 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield]" />
-            <IconButton label="Añadir 5 minutos" variant="light" size="lg" disabled={Number(minutes) >= 9999} onClick={() => adjust(5)}><Plus className="size-4" /></IconButton>
+            <IconButton label="Restar 5 minutos" variant="light" size="lg" disabled={endedAt <= (indefiniteSessionStart ?? 0)} onClick={() => adjust(-5)}><Minus className="size-4" /></IconButton>
+            <div className="flex items-center gap-1">
+              <Input id={hoursId} aria-label="Hora de fin" type="number" min={0} max={23} step={1} required autoFocus value={endTime.hours} onChange={event => setEndTime(previous => ({ ...previous, hours: event.target.value }))} className="h-20 w-16 sm:w-20 border-transparent bg-transparent text-center font-display text-5xl tracking-tight tabular-nums shadow-none focus:border-sky-400 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield]" />
+              <span className="font-display text-5xl" aria-hidden>:</span>
+              <Input id={minutesId} aria-label="Minutos de fin" type="number" min={0} max={59} step={1} required value={endTime.minutes} onChange={event => setEndTime(previous => ({ ...previous, minutes: event.target.value }))} className="h-20 w-16 sm:w-20 border-transparent bg-transparent text-center font-display text-5xl tracking-tight tabular-nums shadow-none focus:border-sky-400 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield]" />
+            </div>
+            <IconButton label="Añadir 5 minutos" variant="light" size="lg" disabled={endedAt >= indefinitePausedAt} onClick={() => adjust(5)}><Plus className="size-4" /></IconButton>
           </div>
         </div>
-        <div role="group" aria-label="Duraciones habituales" className="flex flex-wrap justify-center gap-2">
-          {[15, 25, 50, 90].map(value => <Button key={value} size="sm" variant={Number(minutes) === value ? 'sun' : 'light'} aria-pressed={Number(minutes) === value} className={Number(minutes) === value ? 'min-w-18 shadow-pill' : 'min-w-18'} onClick={() => setMinutes(String(value))}>{value} min</Button>)}
+        <div className="flex items-center justify-center gap-3">
+          <label htmlFor={dateId} className="text-xs text-ink-soft">Día</label>
+          <Input id={dateId} type="date" required min={indefiniteSessionStart ? toISODate(new Date(indefiniteSessionStart)) : undefined} max={toISODate(new Date(indefinitePausedAt))} value={endTime.day} onChange={event => setEndTime(previous => ({ ...previous, day: event.target.value }))} className="w-auto" />
         </div>
+        <p className="text-center text-sm text-ink-soft" role="status">{validEndTime ? `Tiempo trabajado: ${Math.floor(seconds / 60)} min${seconds % 60 ? ` ${seconds % 60} s` : ''}` : 'Elige una hora entre el inicio de la sesión y el momento en que pausaste.'}</p>
       </form>
     </Modal>
     </>
