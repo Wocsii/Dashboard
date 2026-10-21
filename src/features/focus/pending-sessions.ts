@@ -15,10 +15,10 @@ function validSession(s: FocusSessionInput) {
 function write(userId: string, sessions: Record<string, FocusSessionInput>) {
   try { localStorage.setItem(key(userId), JSON.stringify(sessions)); memory.delete(userId) } catch { memory.set(userId, sessions) }
 }
-export function queueSession(userId: string, input: FocusSessionInput & { id: string }) {
+export function queueSession(userId: string, input: FocusSessionInput & { id: string }, replaceDuration = false) {
   const sessions = Object.fromEntries(pendingSessions(userId).map(s => [s.id!, s]))
   const previous = sessions[input.id]
-  const next = previous ? {
+  const next = previous && !replaceDuration ? {
     ...input,
     duration_seconds: Math.max(input.duration_seconds, previous.duration_seconds),
     completed: input.completed || previous.completed,

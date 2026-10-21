@@ -3,6 +3,14 @@ import type { FocusSessionInput } from '@/types/domain'
 const session: FocusSessionInput & { id: string } = { id: 'session', task_id: null, kind: 'focus', started_at: '2026-10-16T10:00:00.000Z', ended_at: '2026-10-16T10:02:00.000Z', duration_seconds: 120, completed: false }
 describe('guardados de tiempo pendientes', () => {
   beforeEach(() => localStorage.clear())
+  it('permite reducir explícitamente el tiempo sin que un guardado anterior borre la corrección', () => {
+    const older = queueSession('owner', session)
+    const corrected = queueSession('owner', { ...session, duration_seconds: 30 }, true)
+    confirmSession('owner', older)
+    expect(pendingSessions('owner')).toEqual([corrected])
+    expect(corrected.duration_seconds).toBe(30)
+    expect(queueSession('owner', { ...session, duration_seconds: 35 }).duration_seconds).toBe(35)
+  })
   it('retiene un guardado fallido hasta confirmar su éxito', () => {
     const queued = queueSession('owner', session)
     expect(pendingSessions('owner')).toEqual([session])

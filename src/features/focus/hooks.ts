@@ -37,9 +37,9 @@ export function useLogFocusSession() {
     scope: { id: 'focus-session-log' },
     retry: 2,
     retryDelay: attempt => 500 * 2 ** attempt,
-    mutationFn: async (input: FocusSessionInput) => {
+    mutationFn: async ({ replaceDuration = false, ...input }: FocusSessionInput & { replaceDuration?: boolean }) => {
       const userId = profile?.id ?? (await repo().getProfile()).id
-      const queued = queueSession(userId, { ...input, id: input.id ?? timerSessionId(Date.parse(input.started_at), input.task_id ?? userId) })
+      const queued = queueSession(userId, { ...input, id: input.id ?? timerSessionId(Date.parse(input.started_at), input.task_id ?? userId) }, replaceDuration)
       const saved = await repo().createFocusSession(queued)
       confirmSession(userId, queued)
       return saved

@@ -1,4 +1,7 @@
 import { FocusClock } from './FocusClock'
+import { useState } from 'react'
+import { Modal } from '@/components/ui/Modal'
+import { Field, Input } from '@/components/ui/Field'
 import { ManualTimeEntry } from './ManualTimeEntry'
 import { Mascot } from '@/components/ui/Mascot'
 import { Infinity as InfinityIcon, Pause, Play, RotateCcw, SkipForward, Square } from 'lucide-react'
@@ -25,9 +28,13 @@ const modeColor: Record<FocusKind, string> = {
 }
 
 export function PomodoroControls({ size = 'lg' }: { size?: 'md' | 'lg' }) {
-  const { state, start, pause, reset, skip } = usePomodoro()
+  const { state, start, pause, reset, skip, indefiniteSessionSeconds, editIndefiniteTime } = usePomodoro()
+  const [editing, setEditing] = useState(false)
+  const [time, setTime] = useState({ hours: 0, minutes: 0, seconds: 0 })
   const running = state.status === 'running'
+  const canEdit = !!state.indefinite && state.status === 'paused'
   return (
+    <>
     <div className="flex items-center justify-center gap-2">
       <IconButton label="Reiniciar" variant="light" size={size} onClick={reset} disabled={state.status === 'idle'}>
         <RotateCcw className="size-4" />
@@ -36,10 +43,28 @@ export function PomodoroControls({ size = 'lg' }: { size?: 'md' | 'lg' }) {
         {running ? <Pause className="size-4" /> : <Play className="size-4" />}
         {running ? 'Pausar' : state.status === 'paused' ? 'Continuar' : 'Empezar'}
       </Button>
+      {canEdit && <Button variant="sun" onClick={() => {
+        setTime({ hours: Math.floor(indefiniteSessionSeconds / 3600), minutes: Math.floor(indefiniteSessionSeconds / 60) % 60, seconds: indefiniteSessionSeconds % 60 })
+        setEditing(true)
+      }}>Editar</Button>}
       <IconButton label={state.indefinite ? 'Finalizar enfoque' : 'Saltar al siguiente bloque'} variant="light" size={size} onClick={skip}>
         {state.indefinite ? <Square className="size-4" /> : <SkipForward className="size-4" />}
       </IconButton>
     </div>
+    <Modal open={editing && canEdit} onClose={() => setEditing(false)} title="Editar tiempo indefinido">
+      <form className="flex flex-col gap-4" onSubmit={event => {
+        event.preventDefault()
+        editIndefiniteTime(time.hours * 3600 + time.minutes * 60 + time.seconds)
+        setEditing(false)
+      }}>
+        <p className="text-sm text-ink-soft">Corrige el tiempo trabajado en esta sesión. El cronómetro seguirá en pausa.</p>
+        <div className="grid grid-cols-3 gap-3">
+          {(['hours', 'minutes', 'seconds'] as const).map((part, index) => <Field key={part} label={['Horas', 'Minutos', 'Segundos'][index]}>{id => <Input id={id} type="number" min={0} max={part === 'hours' ? 9999 : 59} step={1} required value={time[part]} onChange={event => setTime(previous => ({ ...previous, [part]: Number(event.target.value) }))} />}</Field>)}
+        </div>
+        <div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setEditing(false)}>Cancelar</Button><Button type="submit" variant="sun">Guardar tiempo</Button></div>
+      </form>
+    </Modal>
+    </>
   )
 }
 
