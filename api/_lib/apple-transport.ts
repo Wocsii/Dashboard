@@ -11,14 +11,6 @@ export function trustedAppleUrl(value: string): URL {
   }
   return url
 }
-export function ownedAppleObject(calendar: DAVCalendar, value: string): string {
-  const collection = trustedAppleUrl(calendar.url), object = trustedAppleUrl(value)
-  const path = collection.pathname.endsWith('/') ? collection.pathname : `${collection.pathname}/`
-  const leaf = object.pathname.slice(path.length)
-  if (object.origin !== collection.origin || !object.pathname.startsWith(path) || !leaf || leaf.includes('/') || /%2f|%5c/i.test(leaf)) throw new HttpError(400, 'bad_request', 'El evento no pertenece al calendario seleccionado')
-  return object.href
-}
-
 export const appleFetch: typeof globalThis.fetch = async (input, init) => {
   const request = new Request(input, init)
   const body = await request.arrayBuffer()

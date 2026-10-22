@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { parseISO } from 'date-fns'
-import { Link } from 'react-router'
-import { CalendarDays, ExternalLink } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Segmented } from '@/components/ui/Field'
@@ -41,12 +40,9 @@ export function CalendarPage() {
       <PageHeader
         title="Calendario"
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Link to="/calendario/visual" className="inline-flex h-10 items-center gap-2 rounded-full bg-sun px-4 text-sm font-medium text-ink shadow-pill hover:brightness-95"><CalendarDays className="size-4" /> Ver calendario visual</Link>
-            <Button variant="light" onClick={() => window.open(externalUrl, '_blank', 'noopener')}>
-              <ExternalLink className="size-4" /> Abrir {providerName}
-            </Button>
-          </div>
+          <Button variant="light" onClick={() => window.open(externalUrl, '_blank', 'noopener')}>
+            <ExternalLink className="size-4" /> Abrir {providerName}
+          </Button>
         }
       />
       <div className="mb-5"><CalendarSourcePicker /></div>

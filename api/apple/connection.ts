@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { encrypt } from '../_lib/crypto.js'
-import { readWriteBody } from '../_lib/calendar-write.js'
+import { readJsonBody } from '../_lib/json-body.js'
 import { appleClient, appleCollections } from '../_lib/apple-transport.js'
 import { appleSetupError, isAppleConfigured } from '../_lib/apple.js'
 import { serverEnv } from '../_lib/env.js'
@@ -9,7 +9,7 @@ const schema = z.object({ email:z.email().max(320), password:z.string().trim().r
 export const POST = handle(async (req) => {
   const user = await requireUser(req)
   if (!isAppleConfigured()) throw appleSetupError()
-  const result = schema.safeParse(await readWriteBody(req))
+  const result = schema.safeParse(await readJsonBody(req))
   if (!result.success) throw new HttpError(400,'bad_request',result.error.issues[0]?.message ?? 'Comprueba los datos de Apple')
   const { email,password } = result.data
   try { await appleCollections(await appleClient(email,password)) } catch (error) {

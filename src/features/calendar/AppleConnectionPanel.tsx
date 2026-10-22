@@ -22,7 +22,7 @@ export function AppleConnectionPanel() {
   if (status.error) return <ErrorNote error={status.error} onRetry={() => void status.refetch()} />
   if (status.data?.state === 'connected') return <div className="flex flex-col gap-3">
     <p className="text-sm text-ink-soft">Conectado como <strong>{status.data.email}</strong></p>
-    <p className="text-xs leading-relaxed text-muted">Tus calendarios de iCloud están disponibles en las vistas de lista y calendario visual. Los cambios se guardan en Apple.</p>
+    <p className="text-xs leading-relaxed text-muted">Tus calendarios de iCloud están disponibles en la lista de eventos. Puedes gestionarlos desde Apple Calendar.</p>
     {disconnect.error && <ErrorNote error={disconnect.error} />}
     <div><Button variant="danger" size="sm" disabled={disconnect.isPending} onClick={() => disconnect.mutate()}><Link2Off className="size-3.5" /> Desconectar Apple Calendar</Button></div>
   </div>

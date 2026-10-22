@@ -48,24 +48,6 @@ export type CalendarEvent = {
   etag?: string
   writable?: boolean
 }
-export type CalendarEventInput = {
-  calendarId: string
-  title: string
-  description: string
-  start: string
-  end: string
-  allDay: boolean
-  timeZone: string
-  location: string
-  attendees?: string[]
-  reminderMinutes?: number | null
-  useDefaultReminder?: boolean
-  recurrence?: string[]
-  colorId?: string
-  category?: string
-  notifyGuests?: boolean
-  createMeet?: boolean
-}
 export type CalendarStatus =
   | { state: 'not_configured' }
   | { state: 'disconnected' }

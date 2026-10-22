@@ -3,13 +3,12 @@ import { serverEnv } from './env.js'
 import { HttpError, supabaseAdmin } from './http.js'
 import { CalendarCache } from './calendar-cache.js'
 
-export const GOOGLE_WRITE_SCOPE = 'https://www.googleapis.com/auth/calendar.events'
-/** Lista de calendarios y lectura/escritura de eventos; no modifica permisos de calendarios. */
+/** Lectura de calendarios y eventos. */
 export const GOOGLE_SCOPES = [
   'openid',
   'email',
   'https://www.googleapis.com/auth/calendar.calendarlist.readonly',
-  GOOGLE_WRITE_SCOPE,
+  'https://www.googleapis.com/auth/calendar.events.readonly',
 ]
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token'
@@ -141,15 +140,6 @@ export async function googleRequest<T>(userId: string, path: string, params?: Re
 }
 
 export const googleGet = <T>(userId: string, path: string, params?: Record<string, string>) => googleRequest<T>(userId, path, params)
-
-export async function requireCalendarWrite(userId: string) {
-  const { data, error } = await supabaseAdmin().from('google_connections').select('scopes').eq('user_id', userId).maybeSingle()
-  if (error) throw new Error('No se pudieron comprobar los permisos de Google')
-  if (!data) throw new HttpError(409, 'not_connected', 'Google Calendar no está conectado')
-  if (!data.scopes?.includes(GOOGLE_WRITE_SCOPE) && !data.scopes?.includes('https://www.googleapis.com/auth/calendar')) {
-    throw new HttpError(403, 'needs_permission', 'Vuelve a conectar Google Calendar para autorizar la creación y edición de eventos.')
-  }
-}
 
 export async function revoke(userId: string) {
   const env = serverEnv()

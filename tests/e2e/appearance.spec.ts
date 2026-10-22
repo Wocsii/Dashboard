@@ -53,9 +53,8 @@ test('el horario cruza medianoche y cambia sin recargar', async ({ page }) => {
 
 test('noche en calendario y móvil sin desbordamiento', async ({ page }) => {
   await page.getByRole('radio', { name: 'Noche', exact: true }).click()
-  await page.goto('/calendario/visual')
-  await expect(page.getByLabel('Agenda semanal')).toBeVisible()
-  await expect(page.getByRole('region', { name: 'Calendario de Google' })).toHaveCSS('background-color', 'rgb(32, 45, 66)')
+  await page.goto('/calendario')
+  await expect(page.getByRole('radiogroup', { name: 'Rango', exact: true })).toBeVisible()
   await page.screenshot({ path: '/tmp/mi-espacio-night-calendar.png', animations: 'disabled' })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/ajustes')
@@ -68,7 +67,7 @@ test('noche en calendario y móvil sin desbordamiento', async ({ page }) => {
 test('los colores nocturnos mantienen la legibilidad en todas las páginas', async ({ page }) => {
   await page.getByRole('radio', { name: 'Noche', exact: true }).click()
   const issues: string[] = []
-  for (const route of ['/', '/tareas', '/kanban', '/proyectos', '/notas', '/calendario', '/calendario/visual', '/enfoque', '/estadisticas', '/ajustes']) {
+  for (const route of ['/', '/tareas', '/kanban', '/proyectos', '/notas', '/calendario', '/enfoque', '/estadisticas', '/ajustes']) {
     await page.goto(route)
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'night')
     await page.waitForTimeout(700)

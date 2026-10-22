@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { addDays, endOfDay, startOfDay } from 'date-fns'
-import type { CalendarEvent, CalendarEventInput, CalendarProvider, CalendarStatus } from '@/types/domain'
+import type { CalendarProvider, CalendarStatus } from '@/types/domain'
 import { useCalendarProvider } from './CalendarProvider'
 import { calendarApi, CalendarApiError } from './api'
 
@@ -52,18 +52,6 @@ export function useCalendarEvents(start: Date, end: Date, enabled: boolean, labe
     enabled, staleTime: 60_000, gcTime: 30 * 60_000, refetchInterval: 60_000,
     retry: (n, e) => !(e instanceof CalendarApiError && e.code !== 'network') && n < 2,
   })
-}
-
-export function useCalendarMutations() {
-  const qc = useQueryClient()
-  const refresh = () => qc.invalidateQueries({ queryKey: ['calendar', 'events'] })
-  const onError = (error: Error) => {
-    if (error instanceof CalendarApiError && ['needs_reauth', 'needs_permission'].includes(error.code)) void qc.invalidateQueries({ queryKey: calendarKeys.status })
-    if (error instanceof CalendarApiError && error.code === 'conflict') void refresh()
-  }
-  const save = useMutation({ mutationFn: ({ data, event }: { data: CalendarEventInput; event?: CalendarEvent }) => calendarApi.saveEvent(data, event), onSuccess: refresh, onError })
-  const remove = useMutation({ mutationFn: ({ event, notifyGuests }: { event: CalendarEvent; notifyGuests?: boolean }) => calendarApi.deleteEvent(event, notifyGuests), onSuccess: refresh, onError })
-  return { save, remove }
 }
 
 export function useDisconnectCalendar(source?: CalendarProvider) {

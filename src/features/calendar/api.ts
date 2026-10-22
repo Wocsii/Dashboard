@@ -1,7 +1,7 @@
 import { isDemo, isEmbedded } from '@/lib/env'
 import { supabase } from '@/lib/supabase'
-import { demoCalendars, demoEvents, saveDemoEvent, deleteDemoEvent } from './demoCalendar'
-import type { CalendarEvent, CalendarEventInput, CalendarInfo, CalendarProvider, CalendarStatus } from '@/types/domain'
+import { demoCalendars, demoEvents } from './demoCalendar'
+import type { CalendarEvent, CalendarInfo, CalendarProvider, CalendarStatus } from '@/types/domain'
 
 export class CalendarApiError extends Error {
   constructor(
@@ -38,16 +38,6 @@ export const calendarApi = {
     if (isDemo) return provider === 'apple' ? [] : demoEvents(timeMin, timeMax)
     const q = new URLSearchParams({ timeMin: timeMin.toISOString(), timeMax: timeMax.toISOString() })
     return (await call<{ events: CalendarEvent[] }>(`/api/${provider}/events?${q}`)).events
-  },
-  async saveEvent(data: CalendarEventInput, event?: CalendarEvent): Promise<CalendarEvent> {
-    const provider = data.calendarId.startsWith('apple:') ? 'apple' : 'google'
-    if (isDemo) return saveDemoEvent(data, event)
-    return (await call<{ event: CalendarEvent }>(`/api/${provider}/events-write`, { method: event ? 'PATCH' : 'POST', body: JSON.stringify({ data, eventId: event?.googleId, etag: event?.etag, objectUrl:event?.appleObjectUrl, uid:event?.appleUid, recurrenceId:event?.appleRecurrenceId }) })).event
-  },
-  async deleteEvent(event: CalendarEvent, notifyGuests = false): Promise<void> {
-    if (isDemo) return deleteDemoEvent(event)
-    const provider = event.provider ?? (event.calendarId.startsWith('apple:') ? 'apple' : 'google')
-    await call(`/api/${provider}/events-write`, { method: 'DELETE', body: JSON.stringify({ calendarId: event.calendarId, eventId: event.googleId, etag: event.etag, notifyGuests, objectUrl:event.appleObjectUrl, uid:event.appleUid, recurrenceId:event.appleRecurrenceId }) })
   },
   /** Abre el consentimiento de Google (en pestaña nueva si estamos dentro de la extensión) */
   async connect() {

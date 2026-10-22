@@ -1,5 +1,5 @@
 import { Mascot } from '@/components/ui/Mascot'
-import { CalendarPlus, FolderPlus, NotebookPen, Plus } from 'lucide-react'
+import { FolderPlus, NotebookPen, Plus } from 'lucide-react'
 import { Button, IconButton } from '@/components/ui/Button'
 import { copy } from '@/config/copy.es'
 import { dashboardLayout, type WidgetId } from '@/config/dashboard.layout'
@@ -21,7 +21,7 @@ function Column({ ids, className }: { ids: WidgetId[]; className?: string }) {
 }
 
 export function DashboardPage() {
-  const { newTask, newProject, newNote, newEvent } = useQuickActions()
+  const { newTask, newProject, newNote } = useQuickActions()
   const { data: profile } = useProfile()
   const name = profile?.display_name?.trim()
   const now = new Date()
@@ -42,7 +42,6 @@ export function DashboardPage() {
         <div className="flex flex-wrap items-center gap-2 lg:justify-end" aria-label="Acciones rápidas" role="group">
           <Button variant="light" size="sm" onClick={() => newProject()}><FolderPlus className="size-3.5" /> {copy.quickActions.project}</Button>
           <Button variant="light" size="sm" onClick={newNote}><NotebookPen className="size-3.5" /> {copy.quickActions.note}</Button>
-          <Button variant="light" size="sm" onClick={newEvent}><CalendarPlus className="size-3.5" /> {copy.quickActions.event}</Button>
           <IconButton label={`Nueva ${copy.quickActions.task.toLowerCase()}`} variant="dark" size="lg" onClick={() => newTask()}>
             <Plus className="size-5" />
           </IconButton>

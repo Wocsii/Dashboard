@@ -10,12 +10,11 @@ type QuickActions = {
   newProject: () => void
   editProject: (project: Project) => void
   newNote: () => void
-  newEvent: () => void
 }
 
 const Ctx = createContext<QuickActions | null>(null)
 
-/** Crea tareas/proyectos/notas/eventos desde cualquier pantalla */
+/** Crea tareas/proyectos/notas desde cualquier pantalla */
 export function QuickActionsProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
   const [task, setTask] = useState<{ open: boolean; task?: Task | null; defaults?: TaskDraft }>({ open: false })
@@ -27,7 +26,6 @@ export function QuickActionsProvider({ children }: { children: ReactNode }) {
     newProject: () => setProject({ open: true, project: null }),
     editProject: (p) => setProject({ open: true, project: p }),
     newNote: () => navigate('/notas?nueva=1'),
-    newEvent: () => navigate('/calendario/visual?nuevo=1'),
   }
 
   return (

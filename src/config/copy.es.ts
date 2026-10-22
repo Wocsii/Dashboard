@@ -4,7 +4,7 @@ export const copy = {
   priority: { low: 'Baja', medium: 'Media', high: 'Alta', urgent: 'Urgente' },
   projectStatus: { active: 'Activo', paused: 'Pausado', completed: 'Completado' },
   focusKind: { focus: 'Enfoque', short_break: 'Descanso corto', long_break: 'Descanso largo' },
-  quickActions: { task: 'Tarea', project: 'Proyecto', note: 'Nota', event: 'Evento' },
+  quickActions: { task: 'Tarea', project: 'Proyecto', note: 'Nota' },
   dashboard: {
     title: 'Tu día',
     productivity: 'Productividad de hoy',

@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 import { writeFileSync, mkdirSync } from 'node:fs'
 
-const routes = ['/', '/tareas', '/kanban', '/proyectos', '/notas', '/calendario', '/calendario/visual', '/enfoque', '/estadisticas', '/ajustes']
+const routes = ['/', '/tareas', '/kanban', '/proyectos', '/notas', '/calendario', '/enfoque', '/estadisticas', '/ajustes']
 
 test('accesibilidad: sin violaciones serias o críticas (axe)', async ({ page }) => {
   const report: Record<string, unknown[]> = {}
