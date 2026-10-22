@@ -26,18 +26,18 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const calendarApi = {
-  async status(provider: CalendarProvider = 'google'): Promise<CalendarStatus> {
+  async status(provider: CalendarProvider = 'google', signal?: AbortSignal): Promise<CalendarStatus> {
     if (isDemo) return provider === 'apple' ? { state:'disconnected' } : { state: 'connected', email: 'demo@local', canWrite: true }
-    return call(`/api/${provider}/status`)
+    return call(`/api/${provider}/status`, { signal })
   },
   async calendars(provider: CalendarProvider = 'google'): Promise<CalendarInfo[]> {
     if (isDemo) return provider === 'apple' ? [] : demoCalendars()
     return (await call<{ calendars: CalendarInfo[] }>(`/api/${provider}/calendars`)).calendars
   },
-  async events(timeMin: Date, timeMax: Date, provider: CalendarProvider = 'google'): Promise<CalendarEvent[]> {
+  async events(timeMin: Date, timeMax: Date, provider: CalendarProvider = 'google', signal?: AbortSignal): Promise<CalendarEvent[]> {
     if (isDemo) return provider === 'apple' ? [] : demoEvents(timeMin, timeMax)
     const q = new URLSearchParams({ timeMin: timeMin.toISOString(), timeMax: timeMax.toISOString() })
-    return (await call<{ events: CalendarEvent[] }>(`/api/${provider}/events?${q}`)).events
+    return (await call<{ events: CalendarEvent[] }>(`/api/${provider}/events?${q}`, { signal })).events
   },
   /** Abre el consentimiento de Google (en pestaña nueva si estamos dentro de la extensión) */
   async connect() {

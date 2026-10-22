@@ -66,6 +66,7 @@ export function CalendarPage() {
             />
           </div>
           {events.isLoading && <Spinner />}
+          {events.isFetching && events.data && <p role="status" className="mb-3 text-xs text-muted">Actualizando eventos…</p>}
           {events.error && <ErrorNote error={events.error} onRetry={() => void events.refetch()} />}
           {events.data && events.data.length === 0 && <Card><EmptyState>{copy.empty.events}</EmptyState></Card>}
           <div className="flex flex-col gap-6">

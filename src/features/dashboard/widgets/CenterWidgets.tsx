@@ -130,7 +130,7 @@ export function UpcomingEventsWidget() {
   const events = useEvents('threeDays', connected, provider)
   const next = (events.data ?? []).filter((e) => new Date(e.allDay ? `${e.end.slice(0, 10)}T00:00:00` : e.end) > new Date()).slice(0, 2)
 
-  if (status.error || events.error || status.isLoading || (connected && events.isLoading))
+  if (((status.error || events.error) && next.length === 0) || status.isLoading || (connected && events.isLoading))
     return (
       <Card tilt={-tilt} className="animate-rise">
         <h2 className="text-[17px] font-semibold">{copy.dashboard.upcoming}</h2>

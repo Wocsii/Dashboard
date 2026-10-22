@@ -4,7 +4,7 @@ import { serverEnv } from './env.js'
 import { HttpError, supabaseAdmin } from './http.js'
 import { appleClient } from './apple-transport.js'
 import { CalendarCache } from './calendar-cache.js'
-const clients = new CalendarCache<DAVClient>(60_000)
+const clients = new CalendarCache<DAVClient>(30 * 60_000)
 export function isAppleConfigured() { const env = serverEnv(); return !!(env.supabaseUrl && env.supabaseSecretKey && env.tokenKey) }
 export function appleSetupError() { return new HttpError(501, 'not_configured', 'Falta activar la conexión de Apple en el servidor. Consulta la configuración de Apple Calendar.') }
 export async function withApple<T>(userId: string, fn: (client: DAVClient, email: string) => Promise<T>): Promise<T> {

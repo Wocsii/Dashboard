@@ -51,7 +51,7 @@ const calendarProps = { 'd:displayname': {}, 'c:calendar-description': {}, 'c:ca
 const collections = new WeakMap<DAVClient, CalendarCache<DAVCalendar[]>>()
 export async function appleCollections(client: DAVClient) {
   let cache = collections.get(client)
-  if (!cache) { cache = new CalendarCache<DAVCalendar[]>(60_000, 1); collections.set(client, cache) }
+  if (!cache) { cache = new CalendarCache<DAVCalendar[]>(5 * 60_000, 1); collections.set(client, cache) }
   return cache.get('collections', async () => {
     const calendars = await client.fetchCalendars({ props: calendarProps, projectedProps: { currentUserPrivilegeSet: true } })
     return calendars.filter((calendar) => { trustedAppleUrl(calendar.url); return !calendar.components?.length || calendar.components.includes('VEVENT') })

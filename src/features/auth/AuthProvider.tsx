@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import { useQueryClient } from '@tanstack/react-query'
 import { isDemo, isEmbedded } from '@/lib/env'
 import { supabase } from '@/lib/supabase'
+import { clearCalendarSnapshots } from '@/features/calendar/snapshot'
 
 type AuthState = {
   status: 'loading' | 'signed_in' | 'signed_out'
@@ -28,11 +29,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStatus(data.session ? 'signed_in' : 'signed_out')
     })
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+      if (_event === 'SIGNED_OUT') { clearCalendarSnapshots(); qc.clear() }
       setSession(s)
       setStatus(s ? 'signed_in' : 'signed_out')
     })
     return () => sub.subscription.unsubscribe()
-  }, [])
+  }, [qc])
 
   const value: AuthState = {
     status,
@@ -55,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async signOut() {
       if (!supabase) return
       await supabase.auth.signOut()
+      clearCalendarSnapshots()
       qc.clear()
     },
     async getAccessToken() {

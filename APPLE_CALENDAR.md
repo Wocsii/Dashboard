@@ -14,6 +14,8 @@ La sección `/calendario` muestra la lista de eventos y permite elegir Google o 
 - Cada usuario del dashboard conecta su propia cuenta. La contraseña específica se cifra en el servidor y se guarda en una tabla sin acceso para clientes anónimos o autenticados; las consultas se vinculan al usuario del JWT. El navegador no guarda la contraseña.
 - Lee eventos; la creación y edición se realizan desde Apple Calendar. Actualiza al recargar y periódicamente mientras se usa la vista; no utiliza notificaciones push ni sincronización en segundo plano con la página cerrada.
 - Desconectar borra la conexión del dashboard, sin borrar eventos ni revocar la contraseña en Apple. Puede revocarse desde la cuenta de Apple.
+- La conexión temporal con iCloud se reutiliza durante 30 minutos en cada instancia del servidor y la lista de calendarios durante 5 minutos. El estado de la cuenta se sigue comprobando en cada petición; un reinicio del servidor puede requerir conectar de nuevo automáticamente.
+- El navegador conserva los últimos eventos consultados hasta 24 horas, separados por usuario y cuenta. Al abrir Calendario o Inicio se muestran esos eventos mientras se actualizan en segundo plano. La copia se elimina al cerrar sesión o desconectar el calendario. La primera carga aún necesita consultar iCloud.
 
 ## API y validación
 
