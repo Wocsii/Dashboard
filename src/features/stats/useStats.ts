@@ -1,6 +1,8 @@
 import { useToday } from '@/lib/useToday'
 import { useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { addDays, startOfWeek } from 'date-fns'
+import { repo } from '@/data'
 import { dayLabel, formatLong, toISODate } from '@/lib/dates'
 import { completionRate, focusMinutes, formatMinutes, productivityStreak, todayProductivity, weeklySeries } from '@/lib/stats'
 import { isDone } from '@/lib/tasks'
@@ -8,16 +10,30 @@ import type { Bar } from '@/components/ui/BarChart'
 import { useFocusSessions } from '../focus/hooks'
 import { useProjects } from '../projects/hooks'
 import { useSettings } from '../settings/hooks'
-import { useTasks } from '../tasks/hooks'
+import { tasksKey, useTasks } from '../tasks/hooks'
+import { isGoogleFocusTask } from '../google-tasks/task-link'
 
 /** Todas las métricas derivadas en un solo sitio (Inicio y Estadísticas) */
-export function useStats() {
+export function useStats({ includeDeletedCompleted = false } = {}) {
   const currentDay = useToday()
   const { data: allTasks = [], isLoading: l1 } = useTasks()
+  const { data: deletedTasks = [], isLoading: loadingDeleted } = useQuery({
+    queryKey: [...tasksKey, 'deleted-completed'],
+    queryFn: () => repo().listDeletedTasks(),
+    enabled: includeDeletedCompleted,
+  })
   const { data: sessions = [], isLoading: l2 } = useFocusSessions()
   const { data: projects = [] } = useProjects()
   const { data: settings } = useSettings()
-  const tasks = useMemo(() => allTasks.filter((t) => !t.tags.includes('habit-session')), [allTasks])
+  const tasks = useMemo(() => {
+    const combined = new Map(allTasks.map(task => [task.id, task]))
+    if (includeDeletedCompleted) {
+      for (const task of deletedTasks) {
+        if (isDone(task) && !isGoogleFocusTask(task) && !combined.has(task.id)) combined.set(task.id, task)
+      }
+    }
+    return [...combined.values()].filter(task => !task.tags.includes('habit-session'))
+  }, [allTasks, deletedTasks, includeDeletedCompleted])
   const weekStartsOn = (settings?.week_starts_on ?? 1) as 0 | 1
 
   return useMemo(() => {
@@ -47,7 +63,7 @@ export function useStats() {
     })
 
     return {
-      loading: l1 || l2,
+      loading: l1 || l2 || (includeDeletedCompleted && loadingDeleted),
       today,
       productivity: todayProductivity(tasks, today),
       completed: done.length,
@@ -63,5 +79,5 @@ export function useStats() {
       focusBars: toBars((d) => d.focusMinutes, formatMinutes),
       weeksBars: weeks,
     }
-  }, [tasks, sessions, projects, weekStartsOn, l1, l2, currentDay])
+  }, [tasks, sessions, projects, weekStartsOn, l1, l2, currentDay, includeDeletedCompleted, loadingDeleted])
 }

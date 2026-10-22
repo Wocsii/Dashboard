@@ -24,7 +24,7 @@ function Tile({ icon: Icon, label, value, tone = 'white' }: { icon: LucideIcon; 
 }
 
 export function StatsPage() {
-  const s = useStats()
+  const s = useStats({ includeDeletedCompleted: true })
   if (s.loading) return <Spinner />
   return (
     <>
