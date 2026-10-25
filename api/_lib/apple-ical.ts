@@ -23,9 +23,15 @@ function parse(data: unknown) {
   try { const root = ICAL.Component.fromString(data); if (root.name !== 'vcalendar') throw new Error(); return root } catch { throw new HttpError(502,'unknown','No se pudo interpretar un evento de Apple Calendar') }
 }
 function wallTime(iso: string, zone: string) {
-  const parts = new Intl.DateTimeFormat('en-CA',{ timeZone:zone, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit', hourCycle:'h23' }).formatToParts(new Date(iso))
+  let formatter: Intl.DateTimeFormat
+  try { formatter = new Intl.DateTimeFormat('en-CA',{ timeZone:zone, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit', hourCycle:'h23' }) }
+  catch { throw new AppleTimeZoneError() }
+  const parts = formatter.formatToParts(new Date(iso))
   const get = (name: string) => parts.find((p) => p.type === name)?.value
   return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}`
+}
+export class AppleTimeZoneError extends HttpError {
+  constructor() { super(502, 'unknown', 'No se pudo interpretar la zona horaria de un evento de Apple') }
 }
 function eventTimeZone(time: ICAL.Time, calendar: CalendarInfo, property?: ICAL.Property | null): string {
   if (time.zone === ICAL.Timezone.utcTimezone) return 'UTC'
@@ -47,8 +53,21 @@ function timeISO(time: ICAL.Time, calendar: CalendarInfo, property?: ICAL.Proper
   throw new HttpError(502,'unknown','No se pudo interpretar la zona horaria de un evento de Apple')
 }
 const colors: Record<string,string> = { '1':'#a4bdfc','2':'#7ae7bf','3':'#dbadff','4':'#ff887c','5':'#fbd75b','6':'#ffb878','7':'#46d6db' }
-export function normalizeAppleObject(object: DAVCalendarObject, calendar: CalendarInfo): CalendarEvent[] {
+export function normalizeAppleObject(object: DAVCalendarObject, calendar: CalendarInfo, timezoneSources: string[] = []): CalendarEvent[] {
   const root = parse(object.data)
+  // CalDAV expansion can omit VTIMEZONE while retaining a custom TZID. Restore
+  // the original rules before hydrating dates; never guess a different zone.
+  for (const source of timezoneSources) {
+    if (!source || source.length > 2_000_000) continue
+    let component: ICAL.Component
+    try { component = ICAL.Component.fromString(source) } catch { continue }
+    const zones = component.name === 'vtimezone' ? [component] : component.getAllSubcomponents('vtimezone')
+    for (const zone of zones) {
+      if (!root.getAllSubcomponents('vtimezone').some(existing => value(existing,'tzid') === value(zone,'tzid'))) {
+        root.addSubcomponent(new ICAL.Component(zone.toJSON()))
+      }
+    }
+  }
   return root.getAllSubcomponents('vevent').filter((c) => value(c,'status') !== 'CANCELLED').map((component) => {
     const event = new ICAL.Event(component)
     const recurrence = component.getFirstProperty('recurrence-id')

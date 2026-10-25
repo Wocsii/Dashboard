@@ -23,7 +23,14 @@ export async function withApple<T>(userId: string, fn: (client: DAVClient, email
       if (error.code === 'needs_reauth') await db.from('apple_connections').update({ status:'needs_reauth' }).eq('user_id',userId)
       throw error
     }
-    // Library errors can contain authenticated headers. Never forward or log them.
+    // Only log a fixed classification and code locations: library errors can
+    // contain credentials, event data or authenticated request headers.
+    const kind = error instanceof RangeError ? 'range' : error instanceof TypeError ? 'type' : 'library'
+    const frames = error instanceof Error ? error.stack?.split('\n').slice(1, 5).map(line => line.match(/\bat ([\w.$<>]+).*?:(\d+):(\d+)\)?$/)?.slice(1)).filter(Boolean) : undefined
+    const reason = error instanceof Error && /Invalid time zone/i.test(error.message) ? 'invalid_timezone'
+      : error instanceof Error && /Calendar object fetch failed/.test(error.message) ? 'calendar_object_response'
+      : error instanceof Error && /Calendar discovery failed/.test(error.message) ? 'calendar_discovery' : 'unknown'
+    console.error('Apple Calendar sync failed', { kind, reason, frames })
     throw new HttpError(502,'unknown','No se pudo sincronizar con iCloud. Actualiza el calendario o inténtalo más tarde.')
   }
 }
