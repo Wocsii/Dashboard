@@ -3,12 +3,16 @@ import type { Session } from '@supabase/supabase-js'
 import { useQueryClient } from '@tanstack/react-query'
 import { isDemo, isEmbedded } from '@/lib/env'
 import { supabase } from '@/lib/supabase'
+import { guestMode } from '@/lib/guest'
+import { setGuestRepository } from '@/data'
 import { clearCalendarSnapshots } from '@/features/calendar/snapshot'
 
 type AuthState = {
   status: 'loading' | 'signed_in' | 'signed_out'
   session: Session | null
   email: string | null
+  isGuest: boolean
+  signInAsGuest: () => void
   signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
   /** Token de acceso para llamar a las funciones /api */
@@ -20,15 +24,18 @@ const AuthContext = createContext<AuthState | null>(null)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const qc = useQueryClient()
   const [session, setSession] = useState<Session | null>(null)
+  const [isGuest, setIsGuest] = useState(false)
   const [status, setStatus] = useState<AuthState['status']>(isDemo ? 'signed_in' : 'loading')
 
   useEffect(() => {
     if (!supabase) return
     supabase.auth.getSession().then(({ data }) => {
+      if (guestMode.get()) return
       setSession(data.session)
       setStatus(data.session ? 'signed_in' : 'signed_out')
     })
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+      if (guestMode.get() && !s) return
       if (_event === 'SIGNED_OUT') { clearCalendarSnapshots(); qc.clear() }
       setSession(s)
       setStatus(s ? 'signed_in' : 'signed_out')
@@ -39,7 +46,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthState = {
     status,
     session,
-    email: isDemo ? 'demo@local' : (session?.user.email ?? null),
+    email: isDemo ? 'demo@local' : isGuest ? 'invitado' : (session?.user.email ?? null),
+    isGuest,
+    signInAsGuest() {
+      clearCalendarSnapshots()
+      qc.clear()
+      setGuestRepository(true)
+      setIsGuest(true)
+      setStatus('signed_in')
+    },
     async signInWithGoogle() {
       if (!supabase) return
       // Google no permite iniciar sesión dentro de un iframe (extensión de nueva pestaña):
@@ -55,13 +70,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error
     },
     async signOut() {
+      if (isGuest) {
+        setGuestRepository(false)
+        setIsGuest(false)
+        clearCalendarSnapshots()
+        qc.clear()
+        setStatus('signed_out')
+        return
+      }
       if (!supabase) return
       await supabase.auth.signOut()
       clearCalendarSnapshots()
       qc.clear()
     },
     async getAccessToken() {
-      if (!supabase) return null
+      if (isGuest || !supabase) return null
       const { data } = await supabase.auth.getSession()
       return data.session?.access_token ?? null
     },

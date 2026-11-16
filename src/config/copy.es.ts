@@ -22,5 +22,6 @@ export const copy = {
     projects: 'Aún no hay proyectos',
     events: 'Sin eventos próximos',
   },
+  guestBanner: 'Modo invitado · solo lectura, con datos de ejemplo que se reinician en cada visita',
   demoBanner: 'Modo demo · los datos se guardan solo en este navegador',
 } as const

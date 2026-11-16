@@ -1,10 +1,12 @@
 import { Outlet } from 'react-router'
 import { copy } from '@/config/copy.es'
 import { isDemo } from '@/lib/env'
+import { useAuth } from '@/features/auth/AuthProvider'
 import { SkyFrame } from './SkyFrame'
 import { Sidebar } from './Sidebar'
 
 export function AppShell() {
+  const { isGuest } = useAuth()
   return (
     <SkyFrame>
       <Sidebar />
@@ -13,6 +15,11 @@ export function AppShell() {
           {isDemo && (
             <p className="mb-4 inline-flex rounded-full bg-card/70 px-3 py-1 text-[11px] font-medium text-ink-soft shadow-pill backdrop-blur">
               {copy.demoBanner}
+            </p>
+          )}
+          {isGuest && (
+            <p className="mb-4 inline-flex rounded-full bg-card/70 px-3 py-1 text-[11px] font-medium text-ink-soft shadow-pill backdrop-blur">
+              {copy.guestBanner}
             </p>
           )}
           <Outlet />

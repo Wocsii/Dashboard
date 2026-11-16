@@ -20,7 +20,7 @@ function GoogleMark() {
 }
 
 export function LoginPage() {
-  const { signInWithGoogle } = useAuth()
+  const { signInWithGoogle, signInAsGuest } = useAuth()
   const [error, setError] = useState<string | null>(() => {
     // Supabase devuelve ?error_description=… si el alta falla (p. ej. email fuera de la lista blanca)
     const err = new URLSearchParams(window.location.search).get('error_description')
@@ -59,6 +59,10 @@ export function LoginPage() {
           <Button onClick={login} className="mt-8 w-full" size="md" variant="light">
             <GoogleMark /> Continuar con Google
           </Button>
+          <Button onClick={signInAsGuest} className="mt-3 w-full" size="md" variant="ghost">
+            Entrar como invitado
+          </Button>
+          <p className="mt-2 text-xs text-ink-soft">Solo para ver: datos de ejemplo, sin guardar nada y sin poder editar.</p>
           {opened && (
             <div className="mt-5 rounded-tile bg-sky-50 p-4 text-left text-xs text-ink-soft">
               Se ha abierto una pestaña para iniciar sesión con Google. Cuando termines, vuelve aquí.
