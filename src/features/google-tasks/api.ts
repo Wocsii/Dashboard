@@ -1,13 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { isDemo as isDemoEnv, isEmbedded } from '@/lib/env'
-import { guestMode } from '@/lib/guest'
+import { GUEST_BLOCKED_MESSAGE, guestMode } from '@/lib/guest'
 
 export type GoogleTask = { id: string; title: string; notes?: string; due?: string; status: 'needsAction' | 'completed'; etag?: string; parent?: string; position?: string }
 export type GoogleColumn = { id: string; title: string; etag?: string; tasks: GoogleTask[] }
 export type TasksStatus = { state: 'connected' | 'disconnected' | 'not_configured' | 'needs_reauth'; email?: string; mode?: 'readonly' | 'write'; canWrite?: boolean }
 const isDemo = () => isDemoEnv || guestMode.get()
 export async function tasksCall<T>(path: string, body?: unknown): Promise<T> {
+  if (guestMode.get()) throw new Error(GUEST_BLOCKED_MESSAGE)
   const token = (await supabase?.auth.getSession())?.data.session?.access_token
   const res = await fetch(path, { method: body ? 'POST' : 'GET', headers: { Authorization: `Bearer ${token ?? ''}`, ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) })
   const data = await res.json()

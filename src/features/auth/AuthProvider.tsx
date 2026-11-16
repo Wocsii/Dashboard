@@ -3,7 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import { useQueryClient } from '@tanstack/react-query'
 import { isDemo, isEmbedded } from '@/lib/env'
 import { supabase } from '@/lib/supabase'
-import { guestMode } from '@/lib/guest'
+import { enterGuestStorage, guestMode, leaveGuestStorage } from '@/lib/guest'
 import { setGuestRepository } from '@/data'
 import { clearCalendarSnapshots } from '@/features/calendar/snapshot'
 
@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStatus(data.session ? 'signed_in' : 'signed_out')
     })
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
-      if (guestMode.get() && !s) return
+      if (guestMode.get()) return // el invitado nunca cambia de sesión
       if (_event === 'SIGNED_OUT') { clearCalendarSnapshots(); qc.clear() }
       setSession(s)
       setStatus(s ? 'signed_in' : 'signed_out')
@@ -49,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: isDemo ? 'demo@local' : isGuest ? 'invitado' : (session?.user.email ?? null),
     isGuest,
     signInAsGuest() {
+      enterGuestStorage() // antes que nada: el invitado no ve el almacenamiento real
       clearCalendarSnapshots()
       qc.clear()
       setGuestRepository(true)
@@ -71,9 +72,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     async signOut() {
       if (isGuest) {
+        leaveGuestStorage()
         setGuestRepository(false)
         setIsGuest(false)
-        clearCalendarSnapshots()
         qc.clear()
         setStatus('signed_out')
         return

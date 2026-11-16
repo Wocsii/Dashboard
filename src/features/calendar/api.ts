@@ -1,5 +1,5 @@
 import { isDemo as isDemoEnv, isEmbedded } from '@/lib/env'
-import { guestMode } from '@/lib/guest'
+import { GUEST_BLOCKED_MESSAGE, guestMode } from '@/lib/guest'
 import { supabase } from '@/lib/supabase'
 import { demoCalendars, demoEvents } from './demoCalendar'
 import type { CalendarEvent, CalendarInfo, CalendarProvider, CalendarStatus } from '@/types/domain'
@@ -16,6 +16,7 @@ export class CalendarApiError extends Error {
 const isDemo = () => isDemoEnv || guestMode.get()
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
+  if (guestMode.get()) throw new CalendarApiError(GUEST_BLOCKED_MESSAGE, 'forbidden')
   const token = (await supabase?.auth.getSession())?.data.session?.access_token
   let res: Response
   try {
