@@ -36,7 +36,7 @@ test('Notas abre un cuaderno de doble página con fotos y texto manuscrito', asy
   await page.getByRole('button', { name: 'Añadir texto manuscrito', exact: true }).click()
   await page.getByLabel('Texto manuscrito', { exact: true }).fill('Un día bonito para empezar ♡')
   await page.getByRole('button', { name: 'Abrir stickers' }).click()
-  await expect(page.getByRole('button', { name: /^Añadir / })).toHaveCount(250)
+  await expect(page.getByRole('complementary', { name: 'Biblioteca de stickers' }).getByRole('button', { name: /^Añadir / })).toHaveCount(250)
   await page.getByRole('button', { name: 'Añadir Osito rosa', exact: true }).click()
   await page.getByRole('button', { name: 'Cerrar stickers' }).click()
   await expect(page.getByText('Guardado', { exact: true })).toBeVisible()
