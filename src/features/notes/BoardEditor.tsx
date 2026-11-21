@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { Hand, MousePointer2, Pencil, Type, StickyNote, ImagePlus, Undo2, Redo2, ZoomIn, ZoomOut, Maximize2, Minimize2, Smile, Trash2, Copy, ArrowUpRight, RotateCw, Download, Check, Grid2X2 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { repo } from '@/data'
@@ -134,12 +135,18 @@ export function BoardEditor({ note, onDelete, backdrop, planner = false }: { not
     })
     observer.observe(node)
     return () => observer.disconnect()
-  }, [])
+  }, [full])
   useEffect(() => {
     if (!full) return
-    const old = document.body.style.overflow
+    const scroll = { x: window.scrollX, y: window.scrollY }
+    const body = document.body.style
+    const old = { overflow: body.overflow, position: body.position, top: body.top, left: body.left, width: body.width }
+    const html = document.documentElement.style
+    const oldOverscroll = html.overscrollBehavior
     document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = old }
+    body.position = 'fixed'; body.top = `${-scroll.y}px`; body.left = `${-scroll.x}px`; body.width = '100%'
+    html.overscrollBehavior = 'none'
+    return () => { Object.assign(body, old); html.overscrollBehavior = oldOverscroll; window.scrollTo(scroll.x, scroll.y) }
   }, [full])
   useEffect(() => {
     const node = surface.current
@@ -154,7 +161,7 @@ export function BoardEditor({ note, onDelete, backdrop, planner = false }: { not
     }
     node.addEventListener('wheel', wheel, { passive: false })
     return () => node.removeEventListener('wheel', wheel)
-  }, [tool])
+  }, [tool, full])
   function pointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     if (e.button !== 0 || gesture.current) return
     if ((tool === 'pen' || tool === 'arrow') && pencilOnly && e.pointerType === 'touch') return
@@ -232,7 +239,7 @@ export function BoardEditor({ note, onDelete, backdrop, planner = false }: { not
   const drawing = tool === 'pen' || tool === 'arrow'
   const toolButton = (value: Tool, label: string, icon: ReactNode) => <button type="button" className={tool === value ? 'kw-active' : ''} aria-label={label} title={label} aria-pressed={tool === value} onClick={() => { setTool(value); setSelected(null) }}>{icon}</button>
 
-  return <section className={`kw-editor ${full ? 'kw-fullscreen' : ''}`} aria-label={planner ? 'Agenda creativa' : 'Pizarra de cuaderno'}>
+  const editor = <section className={`kw-editor ${full ? 'kw-fullscreen' : ''}`} aria-label={planner ? 'Agenda creativa' : 'Pizarra de cuaderno'}>
     <div className="kw-editor-heading">
       {!planner && <input className="kw-title" aria-label="Título de la pizarra" placeholder="Mi pequeño cuaderno" value={title} onChange={(e) => { setTitle(e.target.value); titleRef.current = e.target.value; persist(current.current, e.target.value) }} />}
       {planner && <span className="kw-journal-label">mi agenda, a mi manera ♡</span>}
@@ -280,4 +287,5 @@ export function BoardEditor({ note, onDelete, backdrop, planner = false }: { not
     </div>
     <div className="kw-editor-footer"><span>{drawing ? '✎ modo escritura · página bloqueada' : 'arrastra tus recuerdos, pega fotos y deja volar tus ideas'}</span><span>{board.elements.length} pequeños recuerdos</span></div>
   </section>
+  return full ? createPortal(editor, document.body) : editor
 }
