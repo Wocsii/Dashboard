@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router'
 import { BookOpen, Plus } from 'lucide-react'
 import { ErrorNote, Spinner } from '@/components/ui/States'
@@ -13,7 +13,8 @@ export function NotesPage() {
   const create = useCreateNote()
   const remove = useDeleteNote()
   const [params, setParams] = useSearchParams()
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const selectedId = params.get('cuaderno')
+  const setSelectedId = (id: string | null) => setParams(id ? { cuaderno: id } : {}, { replace: true })
   const creating = useRef(false)
   const boards = (notes ?? []).filter((n) => !readBoard(n.content).calendarKey)
   const selected = boards.find((n) => n.id === selectedId) ?? boards[0]
