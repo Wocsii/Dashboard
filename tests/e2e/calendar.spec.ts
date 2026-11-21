@@ -15,7 +15,7 @@ test('agenda semanal permite escribir, decorar, pegar fotos y conserva los cambi
   await page.getByRole('button', { name: 'Añadir Osito rosa', exact: true }).click()
   await expect(page.getByRole('group', { name: 'Sticker 1' })).toBeVisible()
   await page.getByRole('button', { name: 'Cerrar stickers' }).click()
-  await page.getByLabel('Seleccionar imágenes').setInputFiles({ name: 'recuerdo.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=', 'base64') })
+  await page.getByLabel('Seleccionar imágenes').setInputFiles({ name: 'recuerdo.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAEklEQVR4nGN4ffbhf2TMQLoAAKEtOYHRE0iLAAAAAElFTkSuQmCC', 'base64') })
   await expect(page.getByRole('group', { name: 'Imagen 2' })).toBeVisible()
   await expect(page.getByText('Guardado', { exact: true })).toBeVisible()
   await page.reload()

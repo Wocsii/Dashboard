@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { addDays, addWeeks, endOfWeek, format, parseISO, startOfWeek } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, ExternalLink, Pencil, CalendarDays } from 'lucide-react'
@@ -60,6 +60,19 @@ function PlannerPaper({ week, events, board, change }: { week: Date; events: Cal
   </div>
 }
 
+function PlannerPreview({ week, events }: { week: Date; events: CalendarEvent[] }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [scale, setScale] = useState(0.7)
+  useEffect(() => {
+    const node = ref.current
+    if (!node) return
+    const observer = new ResizeObserver(() => setScale(Math.max(0.15, (node.clientWidth - 36) / 1400)))
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+  return <div ref={ref} className="kp-preview-scroll"><div style={{ position: 'relative', height: 1040 * scale }}><div className="kp-preview" style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}><PlannerPaper week={week} events={events} /></div></div></div>
+}
+
 export function CalendarPage() {
   const { provider } = useCalendarProvider()
   const [anchor, setAnchor] = useState(() => new Date())
@@ -86,7 +99,7 @@ export function CalendarPage() {
     {events.isLoading && connected && <Spinner />}
     {events.error && <ErrorNote error={events.error} onRetry={() => void events.refetch()} />}
     {notes.error && <ErrorNote error={notes.error} onRetry={() => void notes.refetch()} />}
-    {annotation ? <BoardEditor key={annotation.id} note={annotation} planner backdrop={(board, change) => <PlannerPaper week={week} events={events.data ?? []} board={board} change={change} />} /> : <><div className="kp-start-bar"><span><CalendarDays size={17} /> un espacio para tu semana</span><button type="button" className="kw-primary" onClick={startDecorating} disabled={notes.isLoading || Boolean(notes.error) || create.isPending}><Pencil size={16} /> Escribir y decorar esta semana</button></div><div className="kp-preview-scroll"><div className="kp-preview"><PlannerPaper week={week} events={events.data ?? []} /></div></div></>}
+    {annotation ? <BoardEditor key={annotation.id} note={annotation} planner backdrop={(board, change) => <PlannerPaper week={week} events={events.data ?? []} board={board} change={change} />} /> : <><div className="kp-start-bar"><span><CalendarDays size={17} /> un espacio para tu semana</span><button type="button" className="kw-primary" onClick={startDecorating} disabled={notes.isLoading || Boolean(notes.error) || create.isPending}><Pencil size={16} /> Escribir y decorar esta semana</button></div><PlannerPreview week={week} events={events.data ?? []} /></>}
     <p className="kp-caption">Los eventos vienen de {providerName}. Tus fotos, stickers y anotaciones se guardan en tu agenda personal.</p>
   </div>
 }
