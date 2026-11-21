@@ -2,33 +2,51 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderApp } from '@/test/render'
 import { NotesPage } from './NotesPage'
+import { readBoard } from './board'
 
-describe('NotesPage', () => {
-  it('autoguarda el contenido mientras escribes', async () => {
+beforeAll(() => { vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} }) })
+afterAll(() => { vi.unstubAllGlobals() })
+
+describe('NotesPage como cuadernos', () => {
+  it('abre una nota anterior como un post-it y autoguarda el texto', async () => {
     const user = userEvent.setup()
     const { repo } = renderApp(<NotesPage />)
-    const content = await screen.findByLabelText('Contenido de la nota')
+    const content = await screen.findByLabelText('Texto del post-it')
     await user.type(content, ' Más ideas.')
     expect(screen.getByText('Guardando…')).toBeInTheDocument()
-    await waitFor(async () => expect((await repo.listNotes()).find((n) => n.id === 'n1')?.content).toMatch(/Más ideas\.$/), { timeout: 3000 })
+    await waitFor(async () => expect(readBoard((await repo.listNotes()).find((n) => n.id === 'n1')!.content).elements[0].text).toMatch(/Más ideas\.$/), { timeout: 3000 })
     await waitFor(() => expect(screen.getByText('Guardado')).toBeInTheDocument())
   })
-
-  it('busca notas y las fijadas van primero', async () => {
-    const user = userEvent.setup()
-    renderApp(<NotesPage />)
-    const items = await screen.findAllByRole('button', { name: /Ideas para el portfolio|Lisboa|Libros/ })
-    expect(items[0]).toHaveTextContent('Ideas para el portfolio')
-    await user.type(screen.getByLabelText('Buscar notas'), 'pachinko')
-    expect(screen.queryByRole('button', { name: /Lisboa/ })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Libros pendientes/ })).toBeInTheDocument()
-  })
-
-  it('crea una nota nueva', async () => {
+  it('crea un cuaderno con el formato nuevo', async () => {
     const user = userEvent.setup()
     const { repo } = renderApp(<NotesPage />)
-    await screen.findByLabelText('Contenido de la nota')
-    await user.click(screen.getByRole('button', { name: /Nueva nota/ }))
+    await screen.findByLabelText('Texto del post-it')
+    await user.click(screen.getByRole('button', { name: /Nuevo cuaderno/ }))
     await waitFor(async () => expect(await repo.listNotes()).toHaveLength(4))
+    expect(screen.getByLabelText('Título de la pizarra')).toHaveValue('Mi pequeño cuaderno')
+  })
+  it('añade stickers al papel y permite deshacerlos', async () => {
+    const user = userEvent.setup()
+    renderApp(<NotesPage />)
+    await screen.findByLabelText('Texto del post-it')
+    await user.click(screen.getByRole('button', { name: 'Abrir stickers' }))
+    await user.click(screen.getByRole('button', { name: 'Añadir Osito rosa', exact: true }))
+    expect(screen.getByRole('group', { name: 'Sticker 2' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Deshacer', exact: true }))
+    expect(screen.queryByRole('group', { name: 'Sticker 2' })).not.toBeInTheDocument()
+  })
+  it('el modo Pencil bloquea los gestos de desplazamiento sobre el papel', async () => {
+    const user = userEvent.setup()
+    renderApp(<NotesPage />)
+    await screen.findByLabelText('Texto del post-it')
+    await user.click(screen.getByRole('button', { name: 'Escribir a mano', exact: true }))
+    expect(screen.getByRole('region', { name: 'Superficie del cuaderno' }).style.touchAction).toBe('none')
+    expect(screen.getByRole('checkbox', { name: /Solo Pencil/ })).toBeChecked()
+  })
+  it('las agendas semanales no aparecen mezcladas con los cuadernos', async () => {
+    const { repo } = renderApp(<NotesPage />)
+    await screen.findByLabelText('Texto del post-it')
+    await repo.createNote({ title: 'Agenda privada', content: JSON.stringify({ kind: 'kawaii-whiteboard', version: 1, background: 'dots', elements: [], calendarKey: '2026-11-16' }) })
+    expect(screen.queryByRole('button', { name: 'Agenda privada' })).not.toBeInTheDocument()
   })
 })
