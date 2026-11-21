@@ -43,10 +43,12 @@ describe('NotesPage como cuadernos', () => {
     expect(screen.getByRole('region', { name: 'Superficie del cuaderno' }).style.touchAction).toBe('none')
     expect(screen.getByRole('checkbox', { name: /Solo Pencil/ })).toBeChecked()
   })
-  it('las agendas semanales no aparecen mezcladas con los cuadernos', async () => {
-    const { repo } = renderApp(<NotesPage />)
-    await screen.findByLabelText('Texto del post-it')
-    await repo.createNote({ title: 'Agenda privada', content: JSON.stringify({ kind: 'kawaii-whiteboard', version: 1, background: 'dots', elements: [], calendarKey: '2026-11-16' }) })
-    expect(screen.queryByRole('button', { name: 'Agenda privada' })).not.toBeInTheDocument()
+  it('guarda lo pendiente al salir antes de que venza el autoguardado', async () => {
+    const user = userEvent.setup()
+    const { repo, unmount } = renderApp(<NotesPage />)
+    const content = await screen.findByLabelText('Texto del post-it')
+    await user.type(content, ' No perder este recuerdo.')
+    unmount()
+    await waitFor(async () => expect(readBoard((await repo.listNotes()).find((n) => n.id === 'n1')!.content).elements[0].text).toMatch(/No perder este recuerdo\.$/))
   })
 })

@@ -25,6 +25,24 @@ test('agenda semanal permite escribir, decorar, pegar fotos y conserva los cambi
   await expect(page.getByRole('button', { name: 'Escribir y decorar esta semana' })).toBeVisible()
   await page.getByRole('button', { name: 'Semana anterior' }).click()
   await expect(page.getByLabel('Notas de la semana')).toHaveValue('Mi semana suave y bonita')
+  await page.screenshot({ path: test.info().outputPath('agenda-semanal.png'), fullPage: true })
+})
+
+test('Notas abre un cuaderno de doble página con fotos y texto manuscrito', async ({ page }) => {
+  await page.goto('/notas')
+  await page.getByRole('button', { name: 'Nuevo cuaderno', exact: true }).click()
+  await expect(page.locator('.kw-paper-page')).toHaveCount(2)
+  await page.getByLabel('Título de la pizarra').fill('Mis pequeños recuerdos')
+  await page.getByRole('button', { name: 'Añadir texto manuscrito', exact: true }).click()
+  await page.getByLabel('Texto manuscrito', { exact: true }).fill('Un día bonito para empezar ♡')
+  await page.getByRole('button', { name: 'Abrir stickers' }).click()
+  await expect(page.getByRole('button', { name: /^Añadir / })).toHaveCount(250)
+  await page.getByRole('button', { name: 'Añadir Osito rosa', exact: true }).click()
+  await page.getByRole('button', { name: 'Cerrar stickers' }).click()
+  await expect(page.getByText('Guardado', { exact: true })).toBeVisible()
+  await page.reload()
+  await expect(page.getByLabel('Texto manuscrito', { exact: true })).toHaveValue('Un día bonito para empezar ♡')
+  await page.screenshot({ path: test.info().outputPath('cuaderno-doble-pagina.png'), fullPage: true })
 })
 
 test('Apple conserva su conexión y la agenda personal queda disponible', async ({ page }) => {

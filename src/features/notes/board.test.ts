@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { emptyBoard, readBoard, screenToBoard, strokeElement, strokePath, zoomAt } from './board'
+import { emptyBoard, readBoard, resizedElement, screenToBoard, strokeElement, strokePath, zoomAt } from './board'
 
 describe('cuaderno: datos y coordenadas', () => {
   it('convierte las notas anteriores en post-its sin perder su texto', () => {
@@ -32,5 +32,9 @@ describe('cuaderno: datos y coordenadas', () => {
   })
   it('los trazos horizontales y verticales siguen teniendo una superficie seleccionable', () => {
     expect(strokeElement('line', 'drawing', [{ x: 5, y: 5 }, { x: 10, y: 5 }], '#fff').height).toBe(1)
+  })
+  it('redimensionar un dibujo escala también su tinta', () => {
+    const stroke = strokeElement('pen', 'drawing', [{ x: 10, y: 20 }, { x: 110, y: 70 }], '#fff')
+    expect(resizedElement(stroke, 200)).toEqual({ width: 200, height: 100, points: [{ x: 0, y: 0 }, { x: 200, y: 100 }] })
   })
 })

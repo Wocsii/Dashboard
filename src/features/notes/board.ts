@@ -52,3 +52,7 @@ export function strokePath(element: BoardElement): string {
   const points = element.points ?? []
   return points.map((p, i) => `${i ? 'L' : 'M'} ${p.x} ${p.y}`).join(' ')
 }
+export function resizedElement(element: BoardElement, width: number): Partial<BoardElement> {
+  const factor = width / element.width
+  return { width, height: Math.max(1, element.height * factor), points: element.points?.map((point) => ({ x: point.x * factor, y: point.y * factor })) }
+}
