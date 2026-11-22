@@ -28,7 +28,7 @@ describe('NotesPage como cuadernos', () => {
     await user.click(screen.getByRole('radio', { name: 'Campo de lavanda' }))
     await user.click(screen.getByRole('button', { name: 'Crear cuaderno' }))
     await waitFor(async () => expect(await repo.listNotes()).toHaveLength(4))
-    expect(screen.getByLabelText('Título de la pizarra')).toHaveValue('Mi pequeño cuaderno')
+    expect(await screen.findByLabelText('Título de la pizarra')).toHaveValue('Mi pequeño cuaderno')
   })
   it('añade stickers al papel y permite deshacerlos', async () => {
     const user = userEvent.setup()

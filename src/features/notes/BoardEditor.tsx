@@ -12,7 +12,9 @@ import { EXTRA_SOURCES } from './extra-stickers'
 import './whiteboard.css'
 import './notebooks.css'
 
-type Snapshot = { title: string; content: string }
+type Snapshot = { title: string; content: string; revision: number }
+const noteRevisions = new Map<string, number>()
+const noteWrites = new Map<string, Promise<unknown>>()
 type Gesture = { pointerId: number; kind: 'move' | 'pan' | 'draw'; start: Point; original: Board; element?: BoardElement; view: Point & { zoom: number }; points: Point[] }
 const uid = () => crypto.randomUUID()
 const PAPER = { width: 1400, height: 1040 }
@@ -25,7 +27,7 @@ export function NotebookPaper() {
 }
 
 function PageThumbnail({ page }: { page: NotebookPage }) {
-  return <div className="kw-page-mini" aria-hidden="true"><div className="kw-page-mini-world"><NotebookPaper />{page.elements.map((element) => <div key={element.id} style={{ position: 'absolute', left: element.x, top: element.y, width: element.width, height: element.height, transform: `rotate(${element.rotation}deg)`, background: element.kind === 'sticky' ? element.color : undefined, font: '26px Caveat', color: element.color, overflow: 'hidden' }}>{element.kind === 'image' ? <img src={element.src} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : element.kind === 'sticker' ? <Sticker id={element.sticker ?? ''} label={false} /> : element.kind === 'drawing' || element.kind === 'arrow' ? <svg width="100%" height="100%" viewBox={`0 0 ${element.width} ${element.height}`}><path d={strokePath(element)} fill="none" stroke={element.color} strokeWidth={element.strokeWidth ?? 3} opacity={element.opacity ?? 1} /></svg> : element.text}</div>)}</div></div>
+  return <div className="kw-page-mini" aria-hidden="true"><div className="kw-page-mini-world"><NotebookPaper />{page.elements.map((element) => <div key={element.id} style={{ position: 'absolute', left: element.x, top: element.y, width: element.width, height: element.height, transform: `rotate(${element.rotation}deg)`, background: element.kind === 'sticky' ? element.color : undefined, font: '26px Caveat', color: element.kind === 'sticky' ? '#493f4e' : element.color, overflow: 'hidden' }}>{element.kind === 'image' ? <img src={element.src} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : element.kind === 'sticker' ? <Sticker id={element.sticker ?? ''} label={false} /> : element.kind === 'drawing' || element.kind === 'arrow' ? <svg width="100%" height="100%" viewBox={`0 0 ${element.width} ${element.height}`}><path d={strokePath(element)} fill="none" stroke={element.color} strokeWidth={element.strokeWidth ?? 3} opacity={element.opacity ?? 1} /></svg> : element.text}</div>)}</div></div>
 }
 
 export function BoardEditor({ note, onDelete, onBack, backdrop, planner = false }: { note: Note; onDelete?: () => void; onBack?: () => void; backdrop?: ReactNode | ((board: Board, change: (next: Board) => void) => ReactNode); planner?: boolean }) {
@@ -56,7 +58,7 @@ export function BoardEditor({ note, onDelete, onBack, backdrop, planner = false 
   const fileInput = useRef<HTMLInputElement>(null)
   const clipboard = useRef<BoardElement | null>(null)
   const queued = useRef<Snapshot | null>(null)
-  const latest = useRef<Snapshot>({ title: note.title, content: note.content })
+  const latest = useRef<Snapshot>({ title: note.title, content: note.content, revision: noteRevisions.get(note.id) ?? 0 })
   const running = useRef(false)
   const alive = useRef(true)
 
@@ -67,23 +69,32 @@ export function BoardEditor({ note, onDelete, onBack, backdrop, planner = false 
     while (queued.current) {
       const snapshot = queued.current
       queued.current = null
+      if (snapshot.revision !== noteRevisions.get(note.id)) continue
       if (alive.current) setStatus('saving')
+      let write: Promise<Note> | undefined
       try {
-        const saved = await repository.updateNote(note.id, snapshot)
-        qc.setQueryData<Note[]>(notesKey, (list = []) => list.map((n) => n.id === note.id ? saved : n))
+        const previous = noteWrites.get(note.id) ?? Promise.resolve()
+        write = previous.catch(() => {}).then(() => repository.updateNote(note.id, { title: snapshot.title, content: snapshot.content }))
+        noteWrites.set(note.id, write)
+        const saved = await write
+        qc.setQueryData<Note[]>(notesKey, (list = []) => list.map((n) => n.id === note.id && n.content === snapshot.content && n.title === snapshot.title ? saved : n))
         if (alive.current && latest.current === snapshot && !queued.current) setStatus('saved')
       } catch {
         if (alive.current) setStatus('error')
         break
+      } finally {
+        if (write && noteWrites.get(note.id) === write) noteWrites.delete(note.id)
       }
     }
     running.current = false
   }
   const [schedule, flush] = useDebouncedCallback((snapshot: Snapshot) => { queued.current = snapshot; void drain() }, 600)
   function persist(next: Board, nextTitle = titleRef.current) {
-    const snapshot = { title: nextTitle, content: JSON.stringify(planner ? next : notebookBoard(next)) }
-    if (snapshot.content.length > 4_000_000) { setMessage('Esta página está llena. Usa otra pizarra para añadir más fotos.'); return false }
+    const snapshot = { title: nextTitle, content: JSON.stringify(planner ? next : notebookBoard(next)), revision: (noteRevisions.get(note.id) ?? 0) + 1 }
+    if (snapshot.content.length > 4_000_000) { setMessage('Este cuaderno tiene muchas fotos. Crea otro para seguir guardando recuerdos.'); return false }
     latest.current = snapshot
+    noteRevisions.set(note.id, snapshot.revision)
+    qc.setQueryData<Note[]>(notesKey, (list = []) => list.map((n) => n.id === note.id ? { ...n, title: snapshot.title, content: snapshot.content, updated_at: new Date().toISOString() } : n))
     setStatus('dirty')
     schedule(snapshot)
     return true
@@ -292,7 +303,7 @@ export function BoardEditor({ note, onDelete, onBack, backdrop, planner = false 
       <div className="kw-tool-group"><button type="button" aria-label="Abrir stickers" title="Stickers soft" aria-expanded={stickersOpen} className={stickersOpen ? 'kw-active' : ''} onClick={() => setStickersOpen(!stickersOpen)}><Smile size={19} /></button><button type="button" aria-label="Insertar imágenes" title="Insertar imágenes" onClick={() => fileInput.current?.click()}><ImagePlus size={19} /></button><input ref={fileInput} type="file" accept="image/*" multiple className="kw-file" aria-label="Seleccionar imágenes" onChange={(e) => { if (e.target.files) void insertImages(e.target.files); e.target.value = '' }} /></div>
       <div className="kw-tool-group"><button type="button" aria-label="Deshacer" title="Deshacer" disabled={!historyCount.past} onClick={() => undo()}><Undo2 size={19} /></button><button type="button" aria-label="Rehacer" title="Rehacer" disabled={!historyCount.future} onClick={() => undo(true)}><Redo2 size={19} /></button></div>
       <div className="kw-palette" aria-label="Color de post-it">{COLORS.map((value) => <button type="button" key={value} aria-label={`Post-it ${value}`} aria-pressed={color === value} style={{ background: value }} onClick={() => { setColor(value); if (selectedElement?.kind === 'sticky') patch(selectedElement.id, { color: value }) }} />)}</div>
-      <label className="kw-ink"><input type="color" aria-label="Color del lápiz" value={tool === 'highlighter' ? markerInk : ink} onChange={(e) => { if (tool === 'highlighter') setMarkerInk(e.target.value); else setInk(e.target.value); if (selectedElement?.kind === 'text' || selectedElement?.kind === 'drawing' || selectedElement?.kind === 'arrow') patch(selectedElement.id, { color: e.target.value }) }} /> tinta</label>
+      <label className="kw-ink"><input type="color" aria-label={tool === 'highlighter' ? 'Color del subrayador' : 'Color del lápiz'} value={tool === 'highlighter' ? markerInk : ink} onChange={(e) => { if (tool === 'highlighter') setMarkerInk(e.target.value); else setInk(e.target.value); if (selectedElement?.kind === 'text' || selectedElement?.kind === 'drawing' || selectedElement?.kind === 'arrow') patch(selectedElement.id, { color: e.target.value }) }} /> tinta</label>
     </div>
     {drawing && <div className="kw-pencil-hint"><Pencil size={15} /><span>Escribe sobre el papel. La página queda quieta mientras trazas.</span><label><input type="checkbox" checked={pencilOnly} onChange={(e) => setPencilOnly(e.target.checked)} /> Solo Pencil o ratón · ignorar dedos</label></div>}
     {message && <div className="kw-message" role="alert">{message}<button type="button" onClick={() => setMessage('')}>Cerrar</button></div>}

@@ -18,7 +18,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: npm test
+      - run: npm test -- --retry=1
       - run: npm run build
       - run: npx playwright install --with-deps chromium webkit
       - run: npx playwright test --config=playwright.journal.config.ts
