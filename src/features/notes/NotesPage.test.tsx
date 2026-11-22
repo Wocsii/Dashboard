@@ -11,6 +11,7 @@ describe('NotesPage como cuadernos', () => {
   it('abre una nota anterior como un post-it y autoguarda el texto', async () => {
     const user = userEvent.setup()
     const { repo } = renderApp(<NotesPage />)
+    await user.click(await screen.findByRole('button', { name: 'Abrir cuaderno Ideas para el portfolio' }))
     const content = await screen.findByLabelText('Texto del post-it')
     await user.type(content, ' Más ideas.')
     expect(screen.getByText('Guardando…')).toBeInTheDocument()
@@ -20,14 +21,19 @@ describe('NotesPage como cuadernos', () => {
   it('crea un cuaderno con el formato nuevo', async () => {
     const user = userEvent.setup()
     const { repo } = renderApp(<NotesPage />)
-    await screen.findByLabelText('Texto del post-it')
+    await screen.findByRole('heading', { name: 'Mis cuadernos' })
     await user.click(screen.getByRole('button', { name: /Nuevo cuaderno/ }))
+    await user.type(screen.getByLabelText('¿Qué nombre quieres ponerle?'), 'Mi pequeño cuaderno')
+    expect(screen.getAllByRole('radio')).toHaveLength(15)
+    await user.click(screen.getByRole('radio', { name: 'Campo de lavanda' }))
+    await user.click(screen.getByRole('button', { name: 'Crear cuaderno' }))
     await waitFor(async () => expect(await repo.listNotes()).toHaveLength(4))
     expect(screen.getByLabelText('Título de la pizarra')).toHaveValue('Mi pequeño cuaderno')
   })
   it('añade stickers al papel y permite deshacerlos', async () => {
     const user = userEvent.setup()
     renderApp(<NotesPage />)
+    await user.click(await screen.findByRole('button', { name: 'Abrir cuaderno Ideas para el portfolio' }))
     await screen.findByLabelText('Texto del post-it')
     await user.click(screen.getByRole('button', { name: 'Abrir stickers' }))
     await user.click(screen.getByRole('button', { name: 'Añadir Osito rosa' }))
@@ -38,6 +44,7 @@ describe('NotesPage como cuadernos', () => {
   it('el modo Pencil bloquea los gestos de desplazamiento sobre el papel', async () => {
     const user = userEvent.setup()
     renderApp(<NotesPage />)
+    await user.click(await screen.findByRole('button', { name: 'Abrir cuaderno Ideas para el portfolio' }))
     await screen.findByLabelText('Texto del post-it')
     await user.click(screen.getByRole('button', { name: 'Escribir a mano' }))
     expect(screen.getByRole('region', { name: 'Superficie del cuaderno' }).style.touchAction).toBe('none')
@@ -46,6 +53,7 @@ describe('NotesPage como cuadernos', () => {
   it('guarda lo pendiente al salir antes de que venza el autoguardado', async () => {
     const user = userEvent.setup()
     const { repo, unmount } = renderApp(<NotesPage />)
+    await user.click(await screen.findByRole('button', { name: 'Abrir cuaderno Ideas para el portfolio' }))
     const content = await screen.findByLabelText('Texto del post-it')
     await user.type(content, ' No perder este recuerdo.')
     unmount()

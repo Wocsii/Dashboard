@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { emptyBoard, readBoard, resizedElement, screenToBoard, strokeElement, strokePath, zoomAt } from './board'
+import { emptyBoard, readBoard, resizedElement, screenToBoard, strokeElement, strokePath, zoomAt, notebookBoard, pageAt, keepOnPaper, pointOnPaper, PAPER_WIDTH, PAPER_HEIGHT } from './board'
 
 describe('cuaderno: datos y coordenadas', () => {
   it('convierte las notas anteriores en post-its sin perder su texto', () => {
@@ -36,5 +36,38 @@ describe('cuaderno: datos y coordenadas', () => {
   it('redimensionar un dibujo escala también su tinta', () => {
     const stroke = strokeElement('pen', 'drawing', [{ x: 10, y: 20 }, { x: 110, y: 70 }], '#fff')
     expect(resizedElement(stroke, 200)).toEqual({ width: 200, height: 100, points: [{ x: 0, y: 0 }, { x: 200, y: 100 }] })
+  })
+  it('mantiene separado el contenido de cada página al navegar y guardar', () => {
+    const first = readBoard('Mi primera página')
+    const book = notebookBoard({ ...first, pages: [{ id: 'one', elements: first.elements }, { id: 'two', elements: [] }], activePage: 0 })
+    const second = pageAt(book, 1)
+    expect(second.elements).toEqual([])
+    const edited = { ...second, elements: [{ ...first.elements[0], text: 'Segunda página' }] }
+    const back = pageAt(edited, 0)
+    expect(back.elements[0].text).toBe('Mi primera página')
+    expect(pageAt(readBoard(JSON.stringify(back)), 1).elements[0].text).toBe('Segunda página')
+  })
+  it('convierte un cuaderno antiguo en una página sin perder su contenido', () => {
+    const old = readBoard('Una nota anterior')
+    const migrated = notebookBoard(old)
+    expect(migrated.pages).toHaveLength(1)
+    expect(migrated.pages?.[0].elements).toEqual(old.elements)
+  })
+  it('mantiene fotos y stickers girados dentro de los límites del papel', () => {
+    const element = { id: 'photo', kind: 'image' as const, x: 2000, y: -500, width: 3000, height: 1500, rotation: 35, color: '#fff' }
+    const placed = keepOnPaper(element)
+    const angle = placed.rotation * Math.PI / 180
+    const dx = (Math.abs(placed.width * Math.cos(angle)) + Math.abs(placed.height * Math.sin(angle)) - placed.width) / 2
+    const dy = (Math.abs(placed.width * Math.sin(angle)) + Math.abs(placed.height * Math.cos(angle)) - placed.height) / 2
+    expect(placed.x - dx).toBeGreaterThanOrEqual(0)
+    expect(placed.y - dy).toBeGreaterThanOrEqual(0)
+    expect(placed.x + placed.width + dx).toBeLessThanOrEqual(PAPER_WIDTH)
+    expect(placed.y + placed.height + dy).toBeLessThanOrEqual(PAPER_HEIGHT)
+    expect(pointOnPaper({ x: -1, y: 500 })).toBe(false)
+    expect(pointOnPaper({ x: 100, y: PAPER_HEIGHT + 1 })).toBe(false)
+  })
+  it('conserva el grosor y la transparencia del subrayador', () => {
+    const element = { ...strokeElement('marker', 'drawing', [{ x: 20, y: 20 }, { x: 300, y: 20 }], '#f2d55c'), strokeWidth: 20, opacity: 0.35 }
+    expect(readBoard(JSON.stringify({ ...emptyBoard(), elements: [element] })).elements[0]).toEqual(element)
   })
 })

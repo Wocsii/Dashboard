@@ -1,5 +1,5 @@
 export type Point = { x: number; y: number }
-export type Tool = 'select' | 'hand' | 'pen' | 'arrow'
+export type Tool = 'select' | 'hand' | 'pen' | 'arrow' | 'highlighter'
 export type BoardElement = {
   id: string
   kind: 'sticky' | 'text' | 'sticker' | 'drawing' | 'arrow' | 'image'
@@ -12,6 +12,8 @@ export type BoardElement = {
   text?: string
   sticker?: string
   src?: string
+  opacity?: number
+  strokeWidth?: number
   points?: Point[]
 }
 export type Board = {
@@ -21,6 +23,37 @@ export type Board = {
   elements: BoardElement[]
   calendarKey?: string
   planner?: { note: string; habits: { id: string; label: string; days: boolean[] }[] }
+  cover?: string
+  pages?: NotebookPage[]
+  activePage?: number
+}
+export type NotebookPage = { id: string; elements: BoardElement[] }
+export const PAPER_WIDTH = 1400
+export const PAPER_HEIGHT = 1040
+export function notebookBoard(board: Board): Board {
+  if (board.calendarKey) return board
+  const pages = board.pages?.length ? board.pages : [{ id: 'page-1', elements: board.elements }]
+  const activePage = Math.max(0, Math.min(pages.length - 1, board.activePage ?? 0))
+  return { ...board, activePage, pages: pages.map((page, i) => i === activePage ? { ...page, elements: board.elements } : page) }
+}
+export function pageAt(board: Board, index: number): Board {
+  const synced = notebookBoard(board)
+  const pages = synced.pages ?? []
+  const activePage = Math.max(0, Math.min(pages.length - 1, index))
+  return { ...synced, activePage, elements: pages[activePage]?.elements ?? [] }
+}
+export function pointOnPaper(point: Point): boolean {
+  return point.x >= 0 && point.y >= 0 && point.x <= PAPER_WIDTH && point.y <= PAPER_HEIGHT
+}
+export function keepOnPaper(element: BoardElement): BoardElement {
+  const angle = element.rotation * Math.PI / 180
+  const boundsWidth = Math.abs(element.width * Math.cos(angle)) + Math.abs(element.height * Math.sin(angle))
+  const boundsHeight = Math.abs(element.width * Math.sin(angle)) + Math.abs(element.height * Math.cos(angle))
+  const factor = Math.min(1, (PAPER_WIDTH - 8) / boundsWidth, (PAPER_HEIGHT - 8) / boundsHeight)
+  const resized = factor < 1 ? { ...element, ...resizedElement(element, element.width * factor) } : element
+  const dx = Math.max(0, (boundsWidth * factor - resized.width) / 2) + 3
+  const dy = Math.max(0, (boundsHeight * factor - resized.height) / 2) + 3
+  return { ...resized, x: Math.max(dx, Math.min(PAPER_WIDTH - resized.width - dx, resized.x)), y: Math.max(dy, Math.min(PAPER_HEIGHT - resized.height - dy, resized.y)) }
 }
 export const BOARD_SIZE = 6000
 export const COLORS = ['#fff0ad', '#ffdce8', '#dcd8ff', '#cff0df', '#d4eaff', '#ffffff']
