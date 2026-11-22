@@ -36,7 +36,7 @@ describe('TasksPage', () => {
       const t = (await repo.listTasks()).find((x) => x.title === 'Regar las plantas')
       expect(t).toMatchObject({ priority: 'high', due_date: '2030-01-02', status: 'todo' })
     })
-    expect(await screen.findByText('Regar las plantas')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText('Regar las plantas')).toBeInTheDocument())
   })
 
   it('completa una tarea desde la lista', async () => {
