@@ -111,6 +111,7 @@ export function BoardEditor({ note, onDelete, backdrop, planner = false }: { not
     const element: BoardElement = { id: uid(), kind, ...center(), width: kind === 'sticker' ? 120 : 240, height: kind === 'sticker' ? 120 : kind === 'text' ? 110 : 210, rotation: kind === 'sticky' ? -2 : 0, color, text: '', ...extra }
     commit({ ...current.current, elements: [...current.current.elements, element] })
     setSelected(element.id); setTool('select')
+    surface.current?.focus({ preventScroll: true })
   }
   function removeSelected() {
     commit({ ...current.current, elements: current.current.elements.filter((e) => e.id !== selected) })
@@ -174,6 +175,7 @@ export function BoardEditor({ note, onDelete, backdrop, planner = false }: { not
     const kind = tool === 'hand' ? 'pan' : tool === 'pen' || tool === 'arrow' ? 'draw' : element ? 'move' : null
     if (!kind) { setSelected(null); return }
     e.preventDefault()
+    e.currentTarget.focus({ preventScroll: true })
     e.currentTarget.setPointerCapture(e.pointerId)
     gesture.current = { pointerId: e.pointerId, kind, start: kind === 'pan' ? { x: e.clientX, y: e.clientY } : point, original: current.current, element, view, points: [point] }
     if (element && kind === 'move') setSelected(element.id)
@@ -205,9 +207,12 @@ export function BoardEditor({ note, onDelete, backdrop, planner = false }: { not
   function pointerEnd(e: ReactPointerEvent<HTMLDivElement>, cancelled = false) {
     const g = gesture.current
     if (!g || g.pointerId !== e.pointerId) return
+    // A fast release may arrive without a final pointermove. Use its coordinates.
+    if (!cancelled) pointerMove(e)
     gesture.current = null
     if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId)
-    if (cancelled) { show(g.original); return }
+    // Losing capture must not snap a moved object back to its starting position.
+    if (cancelled && g.kind === 'draw') { show(g.original); return }
     if (g.kind !== 'pan' && current.current !== g.original) {
       if (persist(current.current)) remember(g.original)
       else show(g.original)
@@ -239,7 +244,13 @@ export function BoardEditor({ note, onDelete, backdrop, planner = false }: { not
   const drawing = tool === 'pen' || tool === 'arrow'
   const toolButton = (value: Tool, label: string, icon: ReactNode) => <button type="button" className={tool === value ? 'kw-active' : ''} aria-label={label} title={label} aria-pressed={tool === value} onClick={() => { setTool(value); setSelected(null) }}>{icon}</button>
 
-  const editor = <section className={`kw-editor ${full ? 'kw-fullscreen' : ''}`} aria-label={planner ? 'Agenda creativa' : 'Pizarra de cuaderno'}>
+  const editor = <section className={`kw-editor ${full ? 'kw-fullscreen' : ''}`} aria-label={planner ? 'Agenda creativa' : 'Pizarra de cuaderno'} onKeyDown={(e) => {
+    if (e.defaultPrevented || e.nativeEvent.isComposing || e.metaKey || e.ctrlKey || e.altKey || drawing || !selected) return
+    if ((e.target as Element).closest('textarea,input,select,[contenteditable="true"],[role="textbox"]')) return
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+      e.preventDefault(); e.stopPropagation(); removeSelected(); surface.current?.focus({ preventScroll: true })
+    }
+  }}>
     <div className="kw-editor-heading">
       {!planner && <input className="kw-title" aria-label="Título de la pizarra" placeholder="Mi pequeño cuaderno" value={title} onChange={(e) => { setTitle(e.target.value); titleRef.current = e.target.value; persist(current.current, e.target.value) }} />}
       {planner && <span className="kw-journal-label">mi agenda, a mi manera ♡</span>}
@@ -260,6 +271,7 @@ export function BoardEditor({ note, onDelete, backdrop, planner = false }: { not
     <div className="kw-stage">
       <div ref={surface} className={`kw-surface kw-tool-${tool}`} tabIndex={0} role="region" aria-label="Superficie del cuaderno" style={{ touchAction: drawing || full || tool === 'hand' ? 'none' : 'pan-y' }}
         onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={(e) => pointerEnd(e)} onPointerCancel={(e) => pointerEnd(e, true)} onLostPointerCapture={(e) => pointerEnd(e, true)}
+        onDragStart={(e) => { if ((e.target as Element).closest('[data-element]')) e.preventDefault() }}
         onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) e.preventDefault() }} onDrop={(e) => { e.preventDefault(); void insertImages(e.dataTransfer.files) }}
         onPaste={(e) => { if (e.clipboardData.files.length) { e.preventDefault(); void insertImages(e.clipboardData.files) } }}
         onKeyDown={(e) => {
@@ -268,7 +280,6 @@ export function BoardEditor({ note, onDelete, backdrop, planner = false }: { not
           if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(e.shiftKey) }
           if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c' && selectedElement) clipboard.current = selectedElement
           if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v' && clipboard.current) { e.preventDefault(); add(clipboard.current.kind, { ...clipboard.current, id: uid(), x: clipboard.current.x + 25, y: clipboard.current.y + 25 }) }
-          if (selected && ['Delete', 'Backspace'].includes(e.key)) { e.preventDefault(); removeSelected() }
           if (selectedElement && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) { e.preventDefault(); const step = e.shiftKey ? 20 : 5; patch(selectedElement.id, { x: Math.max(0, selectedElement.x + (e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0)), y: Math.max(0, selectedElement.y + (e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0)) }) }
         }}>
         <div className="kw-world" style={{ width: 6000, height: 6000, transform: `translate(${view.x}px,${view.y}px) scale(${view.zoom})` }}>

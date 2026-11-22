@@ -54,6 +54,7 @@
 .kw-ring { position:absolute; width:33px; height:13px; left:calc(50% - 16px); border:3px solid #9e9ba2; border-bottom-color:#d3d1d6; border-radius:8px; box-shadow:2px 2px 4px #b1aab3; }
 .kw-ring-top { top:65px; }.kw-ring-middle { top:510px; }.kw-ring-bottom { bottom:65px; }
 .kw-element { position:absolute; outline:1px solid transparent; cursor:move; touch-action:none; }
+.kw-element img,.kw-element svg,.kw-element svg image { -webkit-user-drag:none; user-select:none; }
 .kw-element:focus-visible,.kw-selected { outline:2px solid #b79acb; outline-offset:5px; }
 .kw-element-sticky { padding:10px 17px 17px; box-shadow:2px 5px 11px #72647b1f; border-radius:2px 2px 16px 2px; }
 .kw-element-sticky:before { content:''; position:absolute; top:-10px; left:30%; width:40%; height:24px; background:#ffffff72; transform:rotate(3deg); pointer-events:none; }

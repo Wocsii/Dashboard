@@ -1,7 +1,7 @@
 name: Cuadernos y agenda
 on:
   push:
-    branches: [codex/cuadernos-agenda-kawaii, main]
+    branches: [codex/cuadernos-agenda-kawaii, codex/fix-notebook-drag-delete, main]
   pull_request:
     paths: ['src/features/notes/**', 'src/features/calendar/**', 'tests/e2e/calendar.spec.ts']
 permissions:
