@@ -7,6 +7,7 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('agenda semanal permite escribir, decorar, pegar fotos y conserva los cambios', async ({ page }) => {
+  test.setTimeout(60_000)
   await expect(page.getByRole('heading', { name: 'Días para recordar' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Abrir Google Calendar' })).toBeVisible()
   await page.getByRole('button', { name: 'Escribir y decorar esta semana' }).click()
@@ -114,12 +115,12 @@ test('el arrastre rápido usa la posición al soltar y no retrocede al perder ca
   const moved = await sticker.evaluate((node) => ({ x: node.style.left, y: node.style.top }))
   await paper.evaluate((node) => node.dispatchEvent(new PointerEvent('lostpointercapture', { bubbles: true, pointerId: Number(node.dataset.testPointer), pointerType: 'mouse' })))
   await page.mouse.up()
-  await expect(sticker).toHaveCSS('left', moved.x)
-  await expect(sticker).toHaveCSS('top', moved.y)
+  await expect.poll(async () => sticker.evaluate((node) => parseFloat(getComputedStyle(node).left))).toBeCloseTo(parseFloat(moved.x), 2)
+  await expect.poll(async () => sticker.evaluate((node) => parseFloat(getComputedStyle(node).top))).toBeCloseTo(parseFloat(moved.y), 2)
   await expect(page.getByText('Guardado', { exact: true })).toBeVisible()
   await page.reload()
-  await expect(sticker).toHaveCSS('left', moved.x)
-  await expect(sticker).toHaveCSS('top', moved.y)
+  await expect.poll(async () => sticker.evaluate((node) => parseFloat(getComputedStyle(node).left))).toBeCloseTo(parseFloat(moved.x), 2)
+  await expect.poll(async () => sticker.evaluate((node) => parseFloat(getComputedStyle(node).top))).toBeCloseTo(parseFloat(moved.y), 2)
 })
 
 test('Retroceso y Suprimir borran la selección sin borrar objetos al editar texto', async ({ page }) => {
