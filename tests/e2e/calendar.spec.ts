@@ -129,6 +129,7 @@ test('Retroceso y Suprimir borran la selección sin borrar objetos al editar tex
   await expect(sticker).toHaveCount(0)
   await page.getByRole('button', { name: 'Deshacer', exact: true }).click()
   await expect(sticker).toBeVisible()
+  await sticker.click()
   await page.getByRole('button', { name: 'Girar elemento', exact: true }).click()
   await page.keyboard.press('Delete')
   await expect(sticker).toHaveCount(0)
