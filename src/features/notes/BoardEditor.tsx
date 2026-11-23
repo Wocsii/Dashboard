@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
-import { createPortal } from 'react-dom'
+import { createPortal, flushSync } from 'react-dom'
+import { createPageTurn, animateTurn, SPREAD_HEIGHT, SPREAD_WIDTH } from './pageTurn'
 import { useConfirm } from '@/components/ui/useConfirm'
 import { Hand, MousePointer2, Pencil, Highlighter, Type, StickyNote, ImagePlus, Undo2, Redo2, ZoomIn, ZoomOut, Maximize2, Minimize2, Smile, Trash2, Copy, ArrowUpRight, RotateCw, Download, Check, Grid2X2, ChevronLeft, ChevronRight, Plus, ArrowLeft } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -147,6 +148,38 @@ export function BoardEditor({ note, onDelete, onBack, backdrop, planner = false 
     const next = pageAt(current.current, index)
     persist(next); show(next); setSelected(null); setPagesOpen(false)
     history.current = { past: [], future: [] }; setHistoryCount({ past: 0, future: 0 })
+  }
+  const turning = useRef(false)
+  /** Copia visual del pliego que se ve ahora (sin el zoom del editor) para animarla al pasar de página */
+  function spreadSnapshot() {
+    const world = surface.current?.querySelector<HTMLElement>('.kw-world')
+    const copy = document.createElement('div')
+    Object.assign(copy.style, { position: 'relative', width: `${SPREAD_WIDTH}px`, height: `${SPREAD_HEIGHT}px`, overflow: 'hidden', background: '#fffefa' })
+    if (!world) return copy
+    for (const child of Array.from(world.children)) copy.appendChild(child.cloneNode(true))
+    const from = world.querySelectorAll('textarea'), to = copy.querySelectorAll('textarea')
+    from.forEach((area, i) => { if (to[i]) to[i].value = area.value })
+    return copy
+  }
+  /** Pasa a la página siguiente o anterior viendo cómo se pasa la hoja; el resto de saltos son directos */
+  function turnPage(index: number) {
+    const total = current.current.pages?.length ?? 1
+    const target = Math.max(0, Math.min(total - 1, index))
+    const here = current.current.activePage ?? 0
+    const paper = surface.current?.querySelector('.kw-notebook')
+    const quiet = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (target === here || turning.current) return
+    if (Math.abs(target - here) !== 1 || !paper || planner || quiet) { selectPage(target); return }
+    const rect = paper.getBoundingClientRect()
+    const before = spreadSnapshot()
+    flushSync(() => selectPage(target))
+    const after = spreadSnapshot()
+    const forward = target > here
+    const turn = createPageTurn({ rect, from: forward ? before : after, to: forward ? after : before })
+    turning.current = true
+    const duration = (window as unknown as { kwTurnMs?: number }).kwTurnMs ?? 1000
+    const run = animateTurn(turn, forward ? 0 : 1, forward ? 1 : 0, duration)
+    void run.done.then(() => { turn.destroy(); turning.current = false })
   }
   function addPage() {
     const next = notebookBoard(current.current)
@@ -332,7 +365,7 @@ export function BoardEditor({ note, onDelete, onBack, backdrop, planner = false 
     <div className="kw-editor-heading">
       {!planner && onBack && <button type="button" className="kw-text-button" onClick={onBack}><ArrowLeft size={17} /> Cuadernos</button>}
       {!planner && <input className="kw-title" aria-label="Título de la pizarra" placeholder="Mi pequeño cuaderno" value={title} onChange={(e) => { setTitle(e.target.value); titleRef.current = e.target.value; persist(current.current, e.target.value) }} />}
-      {!planner && <div className="kw-page-navigation"><button type="button" aria-label="Página anterior" disabled={pageIndex === 0} onClick={() => selectPage(pageIndex - 1)}><ChevronLeft size={18} /></button><button type="button" className="kw-page-number" aria-label="Ver todas las páginas" aria-expanded={pagesOpen} onClick={() => setPagesOpen(!pagesOpen)}>{pageIndex + 1} / {pages.length}</button><button type="button" aria-label="Página siguiente" disabled={pageIndex === pages.length - 1} onClick={() => selectPage(pageIndex + 1)}><ChevronRight size={18} /></button><button type="button" aria-label="Añadir página" title="Añadir página" onClick={addPage}><Plus size={17} /></button></div>}
+      {!planner && <div className="kw-page-navigation"><button type="button" aria-label="Página anterior" disabled={pageIndex === 0} onClick={() => turnPage(pageIndex - 1)}><ChevronLeft size={18} /></button><button type="button" className="kw-page-number" aria-label="Ver todas las páginas" aria-expanded={pagesOpen} onClick={() => setPagesOpen(!pagesOpen)}>{pageIndex + 1} / {pages.length}</button><button type="button" aria-label="Página siguiente" disabled={pageIndex === pages.length - 1} onClick={() => turnPage(pageIndex + 1)}><ChevronRight size={18} /></button><button type="button" aria-label="Añadir página" title="Añadir página" onClick={addPage}><Plus size={17} /></button></div>}
       {planner && <span className="kw-journal-label">mi agenda, a mi manera ♡</span>}
       <span className="kw-save" role="status">{status === 'saved' ? <><Check size={14} /> Guardado</> : status === 'error' ? <button type="button" onClick={() => { queued.current = latest.current; void drain() }}>Error al guardar · Reintentar</button> : 'Guardando…'}</span>
       <button type="button" className="kw-text-button" onClick={() => setFull(!full)}>{full ? <Minimize2 size={16} /> : <Maximize2 size={16} />}{full ? 'Salir' : 'Modo iPad'}</button>
