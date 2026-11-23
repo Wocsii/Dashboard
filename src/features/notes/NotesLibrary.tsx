@@ -44,7 +44,7 @@ function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<ty
     const paper = node?.querySelector('.kw-notebook')?.getBoundingClientRect()
     const surface = node?.querySelector<HTMLElement>('.kw-surface')
     const quiet = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    if (!node || !scene || !door || !paper || !surface || typeof door.animate !== 'function' || quiet) return Promise.resolve()
+    if (!node || !scene || !door || !paper || !surface || typeof door.animate !== 'function' || quiet) { node?.setAttribute('data-ready', ''); return Promise.resolve() }
     const library = document.querySelector(`[data-book-id="${CSS.escape(note.id)}"] .kw-book-cover`)?.getBoundingClientRect()
     const half = paper.width / 2
     const from = library ?? { left: paper.left + half, top: paper.top + paper.height * .15, width: half * .6, height: paper.height * .7 }
@@ -71,7 +71,7 @@ function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<ty
     run(surface, [at(0, { opacity: 0, clipPath: `inset(0px 0px 0px ${reveal}px)` }), at(.35, { opacity: 0, clipPath: `inset(0px 0px 0px ${reveal}px)` }), at(.36, { opacity: 1, clipPath: `inset(0px 0px 0px ${reveal}px)` }), at(.62, { opacity: 1, clipPath: `inset(0px 0px 0px ${reveal}px)` }), at(.7, { opacity: 1, clipPath: 'inset(0px 0px 0px 0px)' }), at(1, { opacity: 1, clipPath: 'inset(0px 0px 0px 0px)' })])
     for (const control of Array.from(node.querySelectorAll('.kw-editor-heading,.kw-toolbar,.kw-view-tools,.kw-selection-tools'))) run(control, [at(0, { opacity: 0 }), at(.8, { opacity: 0 }), at(1, { opacity: 1 })])
     return Promise.all(animations.map((a) => a.finished)).then(() => {
-      if (opening) { animations.forEach((a) => a.cancel()); scene.style.display = 'none' }
+      if (opening) { animations.forEach((a) => a.cancel()); scene.style.display = 'none'; node.setAttribute('data-ready', '') }
     }, () => undefined)
   }
   useLayoutEffect(() => {
