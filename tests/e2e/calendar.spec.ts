@@ -6,27 +6,18 @@ test.beforeEach(async ({ page }) => {
   await page.reload()
 })
 
-test('agenda semanal permite escribir, decorar, pegar fotos y conserva los cambios', async ({ page }) => {
-  test.setTimeout(60_000)
-  await expect(page.getByRole('heading', { name: 'Días para recordar' })).toBeVisible()
+test('calendario conserva la lista y sus rangos sin accesos al calendario visual', async ({ page }) => {
+  await expect(page.getByRole('heading', { name: 'Calendario', exact: true })).toBeVisible()
+  await expect(page.getByRole('radiogroup', { name: 'Rango', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Café con Lucía', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Abrir Google Calendar' })).toBeVisible()
-  await page.getByRole('button', { name: 'Escribir y decorar esta semana' }).click()
-  await page.getByLabel('Notas de la semana').fill('Mi semana suave y bonita')
-  await page.getByRole('button', { name: 'Abrir stickers' }).click()
-  await page.getByRole('button', { name: 'Añadir Osito rosa', exact: true }).click()
-  await expect(page.getByRole('group', { name: 'Sticker 1' })).toBeVisible()
-  await page.getByRole('button', { name: 'Cerrar stickers' }).click()
-  await page.getByLabel('Seleccionar imágenes').setInputFiles({ name: 'recuerdo.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAEklEQVR4nGN4ffbhf2TMQLoAAKEtOYHRE0iLAAAAAElFTkSuQmCC', 'base64') })
-  await expect(page.getByRole('group', { name: 'Imagen 2' })).toBeVisible()
-  await expect(page.getByText('Guardado', { exact: true })).toBeVisible()
-  await page.reload()
-  await expect(page.getByLabel('Notas de la semana')).toHaveValue('Mi semana suave y bonita')
-  await expect(page.getByRole('group', { name: 'Imagen 2' })).toBeVisible()
-  await page.getByRole('button', { name: 'Semana siguiente' }).click()
-  await expect(page.getByRole('button', { name: 'Escribir y decorar esta semana' })).toBeVisible()
-  await page.getByRole('button', { name: 'Semana anterior' }).click()
-  await expect(page.getByLabel('Notas de la semana')).toHaveValue('Mi semana suave y bonita')
-  await page.screenshot({ path: test.info().outputPath('agenda-semanal.png'), fullPage: true })
+  await expect(page.locator('a[href*="/calendario/"]')).toHaveCount(0)
+  await page.getByRole('radio', { name: 'Hoy', exact: true }).click()
+  await expect(page.getByRole('radio', { name: 'Hoy', exact: true })).toHaveAttribute('aria-checked', 'true')
+  await page.getByRole('radio', { name: 'Próximos 30 días', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Café con Lucía', exact: true })).toBeVisible()
+  await page.goto('/')
+  await expect(page.getByRole('button', { name: 'Evento', exact: true })).toHaveCount(0)
 })
 
 test('Notas abre un cuaderno de doble página con fotos y texto manuscrito', async ({ page }) => {
@@ -48,15 +39,17 @@ test('Notas abre un cuaderno de doble página con fotos y texto manuscrito', asy
   await page.screenshot({ path: test.info().outputPath('cuaderno-doble-pagina.png'), fullPage: true })
 })
 
-test('Apple conserva su conexión y la agenda personal queda disponible', async ({ page }) => {
+test('seleccionar Apple muestra su conexión sin mezclar los eventos de Google', async ({ page }) => {
+  await expect(page.getByRole('radiogroup', { name: 'Rango', exact: true })).toBeVisible()
   await page.getByRole('radio', { name: 'Apple', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Conecta tu Calendario de Apple' })).toBeVisible()
+  await expect(page.getByText('Café con Lucía', { exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Abrir Apple Calendar' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Escribir y decorar esta semana' })).toBeVisible()
   await page.reload()
   await expect(page.getByRole('radio', { name: 'Apple', exact: true })).toHaveAttribute('aria-checked', 'true')
+  await page.getByRole('radio', { name: 'Google', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Café con Lucía', exact: true })).toBeVisible()
 })
-
 test('Pencil bloquea desplazamiento y los toques de la palma no dibujan', async ({ page }) => {
   await page.getByRole('button', { name: 'Escribir y decorar esta semana' }).click()
   await page.getByRole('button', { name: 'Modo iPad', exact: true }).click()
