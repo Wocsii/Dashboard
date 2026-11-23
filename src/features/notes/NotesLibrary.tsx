@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useSearchParams } from 'react-router'
-import { BookOpen, Plus, Search, Trash2, Check } from 'lucide-react'
+import { BookOpen, Plus, Trash2, Check } from 'lucide-react'
 import { ErrorNote, Spinner } from '@/components/ui/States'
 import { useCreateNote, useDeleteNote, useNotes } from './hooks'
 import { emptyBoard, notebookBoard, readBoard } from './board'
@@ -32,13 +32,11 @@ export function NotesPage() {
   const remove = useDeleteNote()
   const [params, setParams] = useSearchParams()
   const [creating, setCreating] = useState(false)
-  const [search, setSearch] = useState('')
   const quickAction = useRef(false)
   const selectedId = params.get('cuaderno')
   const select = (id: string | null) => setParams(id ? { cuaderno: id } : {}, { replace: true })
   const books = (notes ?? []).map((note) => ({ note, board: readBoard(note.content) })).filter(({ board }) => !board.calendarKey)
   const selected = books.find(({ note }) => note.id === selectedId)
-  const filtered = books.filter(({ note }) => note.title.toLocaleLowerCase('es').includes(search.trim().toLocaleLowerCase('es')))
   useEffect(() => {
     if (params.get('nueva') && !quickAction.current) {
       quickAction.current = true; setParams({}, { replace: true }); setCreating(true)
@@ -54,11 +52,10 @@ export function NotesPage() {
   const deleteBook = (id: string) => { remove.mutate(id); if (selectedId === id) select(null) }
   if (selected) return createPortal(<div className="kw-notebook-reader"><BoardEditor key={selected.note.id} note={selected.note} onBack={() => select(null)} onDelete={() => deleteBook(selected.note.id)} /></div>, document.body)
   return <div className="kw-page kw-notes-library">
-    <header className="kw-library-heading"><div><span className="kw-eyebrow">tu biblioteca personal</span><h1>Mis cuadernos</h1></div><button type="button" className="kw-primary" onClick={() => setCreating(true)}><Plus size={17} /> Nuevo cuaderno</button></header>
-    <div className="kw-library-toolbar"><span>{books.length} {books.length === 1 ? 'cuaderno' : 'cuadernos'}</span><label><Search size={16} /><input aria-label="Buscar cuadernos" placeholder="Buscar un cuaderno…" value={search} onChange={(event) => setSearch(event.target.value)} /></label></div>
+    <header className="kw-library-heading"><div><h1>Mis cuadernos</h1></div><button type="button" className="kw-primary" onClick={() => setCreating(true)}><Plus size={17} /> Nuevo cuaderno</button></header>
     {isLoading && <Spinner />}
     {error && <ErrorNote error={error} onRetry={() => void refetch()} />}
-    <div className="kw-library-grid">{filtered.map(({ note, board }) => {
+    <div className="kw-library-grid">{books.map(({ note, board }) => {
       const fallback = COVERS[Array.from(note.id).reduce((sum, char) => sum + char.charCodeAt(0), 0) % COVERS.length].id
       const cover = coverFor(board.cover ?? fallback)
       return <article key={note.id} className="kw-library-book"><button type="button" className="kw-open-book" aria-label={`Abrir cuaderno ${note.title || 'Sin título'}`} onClick={() => select(note.id)}><div className="kw-book-cover"><img src={cover.image} alt="" /><i className="kw-book-spine" /></div><h2>{note.title || 'Sin título'}</h2><span>{board.pages?.length ?? 1} {(board.pages?.length ?? 1) === 1 ? 'página' : 'páginas'}</span></button><button type="button" className="kw-library-delete" aria-label={`Eliminar cuaderno ${note.title || 'Sin título'}`} onClick={() => { if (window.confirm('¿Eliminar este cuaderno y todas sus páginas?')) deleteBook(note.id) }}><Trash2 size={15} /></button></article>
