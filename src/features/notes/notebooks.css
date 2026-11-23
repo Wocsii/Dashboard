@@ -40,7 +40,7 @@
 .kw-book3d-shade-right { left:50%; background:linear-gradient(90deg,#1c132066,#1c132000 60%); }
 .kw-book3d-shade-left { left:0; background:linear-gradient(270deg,#1c132066,#1c132000 60%); }
 .kw-editor.kw-notebook-mode { position:relative; display:block; height:100%; overflow:visible; border:0; border-radius:0; box-shadow:none; background:transparent; }
-.kw-editor.kw-notebook-mode.kw-fullscreen { height:100dvh; background:#d9eaf6; }
+.kw-editor.kw-notebook-mode.kw-fullscreen { position:fixed; inset:0; z-index:1000; height:100dvh; background:#d9eaf6; }
 .kw-notebook-mode .kw-stage { position:absolute; inset:0; overflow:visible; }
 .kw-notebook-mode .kw-surface { height:100%; min-height:0; overflow:hidden; background:transparent; background-image:none; }
 .kw-notebook-frame { position:absolute; top:0; left:0; transform-origin:0 0; pointer-events:none; border-radius:8px 16px 16px 8px; box-shadow:0 0 0 10px #d5e8ef,0 0 0 13px #bdd6df,0 26px 44px #3b2f4a45; }
@@ -101,3 +101,6 @@ body:has(.kw-notebook-reader) #contenido>div>p { visibility:hidden; }
 .kw-leaf-face::after { content:''; position:absolute; inset:0; pointer-events:none; }
 .kw-leaf-front::after { background:linear-gradient(90deg,#3b2f4a22,#3b2f4a00 12%); }
 .kw-leaf-back::after { background:linear-gradient(270deg,#3b2f4a22,#3b2f4a00 12%); }
+.kw-editor.kw-notebook-mode.kw-fullscreen .kw-editor-heading { top:max(10px,env(safe-area-inset-top)); left:12px; right:12px; }
+.kw-editor.kw-notebook-mode.kw-fullscreen .kw-toolbar { right:12px; }
+.kw-editor.kw-notebook-mode.kw-fullscreen .kw-view-tools { right:12px; bottom:max(12px,env(safe-area-inset-bottom)); }
