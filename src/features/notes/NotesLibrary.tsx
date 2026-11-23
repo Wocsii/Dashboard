@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useSearchParams } from 'react-router'
 import { BookOpen, Plus, Trash2, Check } from 'lucide-react'
+import { useConfirm } from '@/components/ui/useConfirm'
 import { ErrorNote, Spinner } from '@/components/ui/States'
 import { useCreateNote, useDeleteNote, useNotes } from './hooks'
 import { emptyBoard, notebookBoard, readBoard } from './board'
@@ -30,6 +31,7 @@ export function NotesPage() {
   const { data: notes, isLoading, error, refetch } = useNotes()
   const create = useCreateNote()
   const remove = useDeleteNote()
+  const { confirm, dialog } = useConfirm()
   const [params, setParams] = useSearchParams()
   const [creating, setCreating] = useState(false)
   const quickAction = useRef(false)
@@ -58,9 +60,10 @@ export function NotesPage() {
     <div className="kw-library-grid">{books.map(({ note, board }) => {
       const fallback = COVERS[Array.from(note.id).reduce((sum, char) => sum + char.charCodeAt(0), 0) % COVERS.length].id
       const cover = coverFor(board.cover ?? fallback)
-      return <article key={note.id} className="kw-library-book"><button type="button" className="kw-open-book" aria-label={`Abrir cuaderno ${note.title || 'Sin título'}`} onClick={() => select(note.id)}><div className="kw-book-cover"><img src={cover.image} alt="" /><i className="kw-book-spine" /></div><h2>{note.title || 'Sin título'}</h2><span>{board.pages?.length ?? 1} {(board.pages?.length ?? 1) === 1 ? 'página' : 'páginas'}</span></button><button type="button" className="kw-library-delete" aria-label={`Eliminar cuaderno ${note.title || 'Sin título'}`} onClick={() => { if (window.confirm('¿Eliminar este cuaderno y todas sus páginas?')) deleteBook(note.id) }}><Trash2 size={15} /></button></article>
+      return <article key={note.id} className="kw-library-book"><button type="button" className="kw-open-book" aria-label={`Abrir cuaderno ${note.title || 'Sin título'}`} onClick={() => select(note.id)}><div className="kw-book-cover"><img src={cover.image} alt="" /><i className="kw-book-spine" /></div><h2>{note.title || 'Sin título'}</h2><span>{board.pages?.length ?? 1} {(board.pages?.length ?? 1) === 1 ? 'página' : 'páginas'}</span></button><button type="button" className="kw-library-delete" aria-label={`Eliminar cuaderno ${note.title || 'Sin título'}`} onClick={() => { void confirm({ title: 'Eliminar cuaderno', message: `¿Eliminar «${note.title || 'Sin título'}» y todas sus páginas? Esta acción no se puede deshacer.` }).then((ok) => { if (ok) deleteBook(note.id) }) }}><Trash2 size={15} /></button></article>
     })}<button type="button" className="kw-add-book-tile" aria-label="Crear otro cuaderno" onClick={() => setCreating(true)}><span><Plus size={32} /></span><strong>Nuevo cuaderno</strong></button></div>
     {!isLoading && books.length === 0 && <div className="kw-library-empty"><BookOpen size={27} /><h2>Tu próxima historia empieza aquí</h2><p>Elige una tapa, ponle un nombre y llena sus páginas de recuerdos.</p></div>}
+    {dialog}
     {creating && <NewNotebook pending={create.isPending} onCreate={createBook} onClose={() => setCreating(false)} />}
   </div>
 }

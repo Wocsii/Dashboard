@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Field, Input } from '@/components/ui/Field'
+import { useConfirm } from '@/components/ui/useConfirm'
 import { Modal } from '@/components/ui/Modal'
 import { type ProjectColor } from '@/config/theme.config'
 import { useGoogleColumnColors } from '../google-tasks/useGoogleColumnColors'
@@ -28,7 +29,9 @@ function Choices({ userId, google }: { userId: string; google: boolean }) {
   const { selected, save } = useColumnVisibility(userId, google ? 'google' : 'local')
   const columns: { id: string; title: string; color?: ProjectColor; etag?: string }[] = google ? board.data?.columns ?? [] : localDefinitions(config)
   const visible = visibleColumns(columns, selected).map(c => c.id)
+  const { confirm, dialog } = useConfirm()
   return <div className="flex flex-col gap-3">
+    {dialog}
     <p className="text-sm text-ink-soft">Elige hasta seis columnas para mostrar en el tablero. Ocultarlas conserva sus tareas.</p>
     {google && board.isLoading && <Spinner />}
     {google && board.error && <ErrorNote error={board.error} onRetry={() => void board.refetch()} />}
@@ -41,9 +44,11 @@ function Choices({ userId, google }: { userId: string; google: boolean }) {
       setEditing({ id: column.id, title: column.title, originalTitle: column.title, color: google ? colors[column.id] ?? 'sky' : column.color ?? defaults[column.id] ?? 'sky', etag: column.etag })
     }}>Editar</Button><Button size="sm" variant="danger" disabled={google ? !board.data?.canWrite || mutation.isPending : columns.length <= 1} onClick={() => {
       const message = google ? `¿Eliminar «${column.title}» y todas sus tareas de Google Tasks? Esta acción no se puede deshacer.` : `¿Eliminar la columna «${column.title}»? Sus tareas se conservarán y aparecerán en otra columna sin cambiar su estado ni su vínculo con el reloj.`
-      if (!window.confirm(message)) return
-      if (google) mutation.mutate({ action: 'deleteList', list: column.id }, { onSuccess: () => save(visible.filter(id => id !== column.id)) })
-      else { setConfig(removeLocalColumn(config, column.id)); save(visible.filter(id => id !== column.id)) }
+      void confirm({ title: 'Eliminar columna', message }).then(ok => {
+        if (!ok) return
+        if (google) mutation.mutate({ action: 'deleteList', list: column.id }, { onSuccess: () => save(visible.filter(id => id !== column.id)) })
+        else { setConfig(removeLocalColumn(config, column.id)); save(visible.filter(id => id !== column.id)) }
+      })
     }} aria-label={`Eliminar columna ${column.title}`}>Eliminar</Button></div>)}</div>
     {((!editing && mutation.error) || storageError) && <ErrorNote error={mutation.error ?? storageError} />}
     <Modal open={!!editing} onClose={() => { if (!mutation.isPending) setEditing(null) }} title="Editar columna">

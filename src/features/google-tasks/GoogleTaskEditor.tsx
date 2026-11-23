@@ -6,6 +6,7 @@ import { googleTaskKey } from './task-link'
 import { GoogleTaskWorkedTime } from './GoogleTaskWorkedTime'
 import { Button } from '@/components/ui/Button'
 import { Field, Input, Select } from '@/components/ui/Field'
+import { useConfirm } from '@/components/ui/useConfirm'
 import { Modal } from '@/components/ui/Modal'
 import { ErrorNote } from '@/components/ui/States'
 import { useGoogleTasksMutation, type GoogleColumn, type GoogleTask } from './api'
@@ -14,7 +15,9 @@ export function GoogleTaskEditor({ edit, columns, canWrite, onClose }: { edit: {
   const { priorities, setPriority, ready, error } = useGoogleTaskPriorities()
   const [newPriority, setNewPriority] = useState<TaskPriority>('medium')
   const mutation = useGoogleTasksMutation()
+  const { confirm, dialog } = useConfirm()
   return (
+    <>
     <Modal open={!!edit && (canWrite || !!edit.task)} onClose={onClose} title={!canWrite ? 'Tarea de Google Tasks' : edit?.task ? 'Editar tarea de Google Tasks' : 'Nueva tarea de Google Tasks'}>
       {edit.task && <GoogleTaskWorkedTime list={edit.list} task={edit.task.id} />}
       {edit && <form key={`${edit.list}:${edit.task?.id ?? 'new'}`} className="flex flex-col gap-4" onSubmit={e => {
@@ -40,8 +43,10 @@ export function GoogleTaskEditor({ edit, columns, canWrite, onClose }: { edit: {
           } })
         }}>{columns.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}</select>}</Field>}
         {mutation.error && <ErrorNote error={mutation.error} />}
-        {canWrite && <div className="flex justify-end gap-2">{edit.task && <Button type="button" variant="danger" disabled={mutation.isPending} onClick={() => { if (window.confirm('¿Eliminar esta tarea de Google Tasks?')) mutation.mutate({ action: 'delete', list: edit.list, task: edit.task!.id, etag: edit.task!.etag }, { onSuccess: onClose }) }}>Eliminar</Button>}<Button type="submit" disabled={mutation.isPending}>Guardar en Google Tasks</Button></div>}
+        {canWrite && <div className="flex justify-end gap-2">{edit.task && <Button type="button" variant="danger" disabled={mutation.isPending} onClick={() => { void confirm({ title: 'Eliminar tarea', message: '¿Eliminar esta tarea de Google Tasks?' }).then((ok) => { if (ok) mutation.mutate({ action: 'delete', list: edit.list, task: edit.task!.id, etag: edit.task!.etag }, { onSuccess: onClose }) }) }}>Eliminar</Button>}<Button type="submit" disabled={mutation.isPending}>Guardar en Google Tasks</Button></div>}
       </form>}
     </Modal>
+    {dialog}
+    </>
   )
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { useConfirm } from '@/components/ui/useConfirm'
 import { Hand, MousePointer2, Pencil, Highlighter, Type, StickyNote, ImagePlus, Undo2, Redo2, ZoomIn, ZoomOut, Maximize2, Minimize2, Smile, Trash2, Copy, ArrowUpRight, RotateCw, Download, Check, Grid2X2, ChevronLeft, ChevronRight, Plus, ArrowLeft } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { repo } from '@/data'
@@ -32,6 +33,7 @@ function PageThumbnail({ page }: { page: NotebookPage }) {
 
 export function BoardEditor({ note, onDelete, onBack, backdrop, planner = false }: { note: Note; onDelete?: () => void; onBack?: () => void; backdrop?: ReactNode | ((board: Board, change: (next: Board) => void) => ReactNode); planner?: boolean }) {
   const qc = useQueryClient()
+  const { confirm, dialog } = useConfirm()
   const repository = useRef(repo()).current
   const [board, setBoard] = useState<Board>(() => planner ? readBoard(note.content) : notebookBoard(readBoard(note.content)))
   const current = useRef(board)
@@ -294,7 +296,7 @@ export function BoardEditor({ note, onDelete, onBack, backdrop, planner = false 
       {planner && <span className="kw-journal-label">mi agenda, a mi manera ♡</span>}
       <span className="kw-save" role="status">{status === 'saved' ? <><Check size={14} /> Guardado</> : status === 'error' ? <button type="button" onClick={() => { queued.current = latest.current; void drain() }}>Error al guardar · Reintentar</button> : 'Guardando…'}</span>
       <button type="button" className="kw-text-button" onClick={() => setFull(!full)}>{full ? <Minimize2 size={16} /> : <Maximize2 size={16} />}{full ? 'Salir' : 'Modo iPad'}</button>
-      {!planner && onDelete && <button type="button" className="kw-icon-button" aria-label="Eliminar pizarra" onClick={() => { if (window.confirm('¿Eliminar esta pizarra y su contenido?')) { flush(); onDelete() } }}><Trash2 size={16} /></button>}
+      {!planner && onDelete && <button type="button" className="kw-icon-button" aria-label="Eliminar pizarra" onClick={() => { void confirm({ title: 'Eliminar cuaderno', message: '¿Eliminar este cuaderno y todo su contenido? Esta acción no se puede deshacer.' }).then((ok) => { if (ok) { flush(); onDelete() } }) }}><Trash2 size={16} /></button>}
       {!planner && pagesOpen && <div className="kw-pages-menu" role="dialog" aria-label="Páginas del cuaderno"><div className="kw-drawer-heading"><h3>Tus páginas</h3><button type="button" aria-label="Cerrar páginas" onClick={() => setPagesOpen(false)}>×</button></div><div className="kw-pages-grid">{pages.map((page, i) => <button type="button" key={page.id} aria-label={`Abrir página ${i + 1}`} aria-current={i === pageIndex} onClick={() => selectPage(i)}><PageThumbnail page={page} /><span>Página {i + 1}</span></button>)}<button type="button" className="kw-new-page" onClick={addPage}><Plus size={25} /><span>Nueva página</span></button></div></div>}
     </div>
     <div className="kw-toolbar" aria-label="Herramientas de la pizarra">
@@ -337,5 +339,5 @@ export function BoardEditor({ note, onDelete, onBack, backdrop, planner = false 
     </div>
     <div className="kw-editor-footer"><span>{drawing ? '✎ modo escritura · página bloqueada' : 'arrastra tus recuerdos, pega fotos y deja volar tus ideas'}</span><span>{board.elements.length} pequeños recuerdos</span></div>
   </section>
-  return full ? createPortal(editor, document.body) : editor
+  return <>{full ? createPortal(editor, document.body) : editor}{dialog}</>
 }
