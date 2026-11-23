@@ -21,25 +21,35 @@
 .kw-add-book-tile strong { font-size:14px; font-weight:500; margin-top:14px; }
 .kw-library-empty { display:grid; place-items:center; gap:10px; text-align:center; padding:45px 20px; color:var(--color-muted); }
 .kw-library-empty h2 { font:30px 'Caveat',cursive; color:var(--color-ink); }.kw-library-empty p { font-size:14px; }
-/* El cuaderno abierto flota sobre la biblioteca y deja a la vista la barra lateral */
-.kw-notebook-reader { position:fixed; z-index:10; top:12px; right:12px; bottom:84px; left:12px; overflow:hidden; border-radius:20px; background:#fffefa; box-shadow:0 24px 80px #30213755; }
+/* El cuaderno abierto flota sobre el paisaje: solo se ve el cuaderno; todos los controles son paneles flotantes aparte */
+.kw-notebook-reader { position:fixed; z-index:10; top:12px; right:12px; bottom:84px; left:12px; }
 @media(min-width:768px) { .kw-notebook-reader { top:16px; right:16px; bottom:16px; left:80px; } }
-.kw-open-cover { position:absolute; inset:0; z-index:5; pointer-events:none; opacity:0; background:#fffefa; }
+.kw-notebook-reader[data-opening] .kw-editor { opacity:0; }
+.kw-open-cover { position:fixed; z-index:40; pointer-events:none; opacity:0; overflow:hidden; border-radius:3px 9px 9px 3px; box-shadow:0 18px 50px #30213755,5px 0 0 -1px #e5dfd6,7px 0 0 -1px #f9f5ee; }
 .kw-open-cover img { width:100%; height:100%; object-fit:cover; }
-.kw-editor.kw-notebook-mode { height:100%; display:grid; grid-template-columns:auto minmax(0,1fr); grid-template-rows:auto auto auto minmax(0,1fr) auto; border:0; border-radius:0; box-shadow:none; background:#fffefa; }
-.kw-editor.kw-notebook-mode.kw-fullscreen { height:100dvh; }
-.kw-notebook-mode .kw-editor-heading { grid-area:1/1/2/3; position:relative; }
-.kw-notebook-mode .kw-title { font-size:24px; }
-.kw-notebook-mode .kw-toolbar { grid-area:2/1/5/2; flex-direction:column; flex-wrap:nowrap; justify-content:flex-start; align-items:center; gap:6px; padding:10px 8px; border-bottom:0; border-right:1px solid #ece6ed; overflow-y:auto; }
-.kw-notebook-mode .kw-tool-group { flex-direction:column; align-items:center; padding:0 0 8px; border-right:0; border-bottom:1px solid #e9e2ec; }
+.kw-editor.kw-notebook-mode { position:relative; display:block; height:100%; overflow:visible; border:0; border-radius:0; box-shadow:none; background:transparent; }
+.kw-editor.kw-notebook-mode.kw-fullscreen { height:100dvh; background:#d9eaf6; }
+.kw-notebook-mode .kw-stage { position:absolute; inset:0; overflow:visible; }
+.kw-notebook-mode .kw-surface { height:100%; min-height:0; overflow:hidden; background:transparent; background-image:none; }
+.kw-notebook-frame { position:absolute; top:0; left:0; transform-origin:0 0; pointer-events:none; border-radius:8px 16px 16px 8px; box-shadow:0 0 0 10px #d5e8ef,0 0 0 13px #bdd6df,0 26px 44px #3b2f4a45; }
+.kw-notebook-mode .kw-notebook { border:1px solid #d6d0d1; border-radius:8px 16px 16px 8px; box-shadow:none; }
+/* barra superior: cada botón es una pastilla flotante */
+.kw-notebook-mode .kw-editor-heading { position:absolute; z-index:30; top:0; left:0; right:0; min-height:0; padding:0; background:none; border:0; pointer-events:none; align-items:flex-start; }
+.kw-notebook-mode .kw-editor-heading>*:not(.kw-pages-menu) { pointer-events:auto; background:#fffdfdf5; border:1px solid #e5daeb; border-radius:12px; box-shadow:0 4px 16px #6b4c771c; min-height:40px; }
+.kw-notebook-mode .kw-editor-heading>.kw-title { flex:0 1 300px; padding:0 14px; font-size:24px; }
+.kw-notebook-mode .kw-editor-heading>.kw-page-navigation { margin-left:auto; }
+.kw-notebook-mode .kw-editor-heading>.kw-save { padding:0 12px; }
+.kw-notebook-mode .kw-editor-heading>.kw-icon-button { width:40px; }
+/* herramientas de edición: columna flotante a la derecha, sin barra de desplazamiento */
+.kw-notebook-mode .kw-toolbar { position:absolute; z-index:30; right:0; top:50%; transform:translateY(-50%); display:flex; flex-flow:column wrap; align-content:flex-start; justify-content:flex-start; gap:4px 6px; max-height:calc(100% - 150px); padding:10px 8px; overflow:visible; background:#fffdfdf5; border:1px solid #e5daeb; border-radius:16px; box-shadow:0 6px 24px #6b4c7724; }
+.kw-notebook-mode .kw-tool-group { flex-direction:column; align-items:center; padding:0 0 6px; margin-bottom:2px; border-right:0; border-bottom:1px solid #e9e2ec; }
 .kw-notebook-mode .kw-palette { flex-direction:column; padding:2px; }
 .kw-notebook-mode .kw-ink { flex-direction:column; padding-left:0; gap:2px; }
-.kw-notebook-mode .kw-pencil-hint { grid-area:2/2; }
-.kw-notebook-mode .kw-message { grid-area:3/2; }
-.kw-notebook-mode .kw-stage { grid-area:4/2; min-height:0; }
-.kw-notebook-mode .kw-surface { height:100%; min-height:0; background:#fffefa; background-image:none; }
-.kw-notebook-mode .kw-notebook { border-radius:0; box-shadow:none; border:1px solid #e4dfd6; }
-.kw-notebook-mode .kw-editor-footer { grid-area:5/1/6/3; background:#fffefa; }
+.kw-notebook-mode .kw-pencil-hint,.kw-notebook-mode .kw-message { position:absolute; z-index:30; top:58px; left:50%; transform:translateX(-50%); max-width:min(640px,calc(100% - 220px)); border-radius:12px; box-shadow:0 4px 16px #6b4c771c; }
+.kw-notebook-mode .kw-selection-tools { top:60px; }
+.kw-notebook-mode .kw-sticker-drawer { top:60px; right:84px; bottom:70px; }
+.kw-notebook-mode .kw-view-tools { right:84px; bottom:0; }
+.kw-notebook-mode .kw-editor-footer { position:absolute; z-index:30; left:0; bottom:0; width:auto; max-width:calc(100% - 260px); padding:7px 13px; gap:16px; background:#fffdfdf5; border:1px solid #e5daeb; border-radius:12px; box-shadow:0 4px 16px #6b4c771c; }
 .kw-page-navigation { display:flex; align-items:center; gap:3px; padding:3px 6px; background:#f5f0f6; border-radius:10px; }
 .kw-page-navigation>button { display:grid; place-items:center; min-width:30px; height:30px; cursor:pointer; }
 .kw-page-navigation>button:disabled { opacity:.25; cursor:default; }
@@ -70,3 +80,5 @@
 @media(max-width:700px) { .kw-notes-library { padding:20px 15px; }.kw-library-heading h1 { font-size:42px; }.kw-library-toolbar { flex-wrap:wrap; }.kw-library-toolbar label { flex:1; }.kw-library-toolbar input { width:100%; min-width:80px; }.kw-library-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:26px 22px; }.kw-library-delete { opacity:1; }.kw-notebook-mode .kw-title { max-width:45%; }.kw-notebook-mode .kw-editor-heading { justify-content:space-between; }.kw-create-dialog { padding:20px; }.kw-cover-options { grid-template-columns:repeat(3,1fr); max-height:48dvh; }.kw-create-dialog footer { flex-wrap:wrap; }.kw-create-dialog footer>a { width:100%; flex:auto; }.kw-create-dialog footer>button { flex:1; } }
 
 .kw-notebook-mode .kw-surface textarea { touch-action:none; }
+body:has(.kw-notebook-reader) #contenido>div>p { visibility:hidden; }
+.kw-notebook-mode .kw-pages-menu { pointer-events:auto; }

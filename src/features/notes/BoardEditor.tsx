@@ -19,6 +19,7 @@ const noteWrites = new Map<string, Promise<unknown>>()
 type Gesture = { pointerId: number; kind: 'move' | 'pan' | 'draw'; start: Point; original: Board; element?: BoardElement; view: Point & { zoom: number }; points: Point[] }
 const uid = () => crypto.randomUUID()
 const PAPER = { width: 1400, height: 1040 }
+const FIT_X = 110, FIT_Y = 76
 
 export function NotebookPaper() {
   return <div className="kw-notebook" aria-hidden="true">
@@ -159,16 +160,16 @@ export function BoardEditor({ note, onDelete, onBack, backdrop, planner = false 
     const elements = current.current.elements
     const width = Math.max(PAPER.width, ...elements.map((e) => e.x + e.width + 60))
     const height = Math.max(PAPER.height, ...elements.map((e) => e.y + e.height + 60))
-    const zoom = Math.max(0.15, Math.min((rect.width - 48) / width, (rect.height - 48) / height, 1))
-    setView({ x: (rect.width - width * zoom) / 2, y: 24, zoom })
+    const zoom = Math.max(0.15, Math.min((rect.width - (planner ? 48 : FIT_X * 2)) / width, (rect.height - (planner ? 48 : FIT_Y * 2)) / height, 1))
+    setView({ x: (rect.width - width * zoom) / 2, y: planner ? 24 : (rect.height - height * zoom) / 2, zoom })
   }
   useEffect(() => {
     const node = surface.current
     if (!node) return
     const observer = new ResizeObserver(() => {
       const rect = node.getBoundingClientRect()
-      const zoom = Math.max(0.15, Math.min((rect.width - 40) / PAPER.width, (rect.height - 40) / PAPER.height, 1))
-      setView({ x: (rect.width - PAPER.width * zoom) / 2, y: 20, zoom })
+      const zoom = Math.max(0.15, Math.min((rect.width - (planner ? 40 : FIT_X * 2)) / PAPER.width, (rect.height - (planner ? 40 : FIT_Y * 2)) / PAPER.height, 1))
+      setView({ x: (rect.width - PAPER.width * zoom) / 2, y: planner ? 20 : (rect.height - PAPER.height * zoom) / 2, zoom })
     })
     observer.observe(node)
     return () => observer.disconnect()
@@ -362,6 +363,7 @@ export function BoardEditor({ note, onDelete, onBack, backdrop, planner = false 
           if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v' && clipboard.current) { e.preventDefault(); add(clipboard.current.kind, { ...clipboard.current, id: uid(), x: clipboard.current.x + 25, y: clipboard.current.y + 25 }) }
           if (selectedElement && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) { e.preventDefault(); const step = e.shiftKey ? 20 : 5; patch(selectedElement.id, { x: Math.max(0, selectedElement.x + (e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0)), y: Math.max(0, selectedElement.y + (e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0)) }) }
         }}>
+        {!planner && <div className="kw-notebook-frame" aria-hidden="true" style={{ width: PAPER.width, height: PAPER.height, transform: `translate(${view.x}px,${view.y}px) scale(${view.zoom})` }} />}
         <div className="kw-world" style={{ width: planner ? 6000 : PAPER.width, height: planner ? 6000 : PAPER.height, overflow: planner ? undefined : 'hidden', transform: `translate(${view.x}px,${view.y}px) scale(${view.zoom})` }}>
           <div style={{ pointerEvents: drawing || tool === 'hand' ? 'none' : 'auto' }}>{typeof backdrop === 'function' ? backdrop(board, commit) : backdrop ?? <NotebookPaper />}</div>
           {board.elements.map((element, index) => <div key={element.id} data-element={element.id} tabIndex={drawing ? -1 : 0} role="group" aria-label={`${element.kind === 'sticky' ? 'Post-it' : element.kind === 'sticker' ? 'Sticker' : element.kind === 'image' ? 'Imagen' : element.kind === 'text' ? 'Texto' : 'Trazo'} ${index + 1}`} onFocus={() => { if (!drawing) setSelected(element.id) }} className={`kw-element kw-element-${element.kind} ${selected === element.id && !drawing ? 'kw-selected' : ''}`} style={{ left: element.x, top: element.y, width: element.width, height: element.height, transform: `rotate(${element.rotation}deg)`, zIndex: index + 1, pointerEvents: tool === 'hand' || drawing ? 'none' : 'auto', background: element.kind === 'sticky' ? element.color : undefined, color: element.kind === 'text' ? element.color : '#493f4e' }}>

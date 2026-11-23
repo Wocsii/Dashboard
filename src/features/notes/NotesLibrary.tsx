@@ -27,39 +27,47 @@ function NewNotebook({ pending, onCreate, onClose }: { pending: boolean; onCreat
   </dialog>, document.body)
 }
 
-const OPEN_MS = 520
-const CLOSE_MS = 360
-
 function coverOf(id: string, cover?: string) {
   const fallback = COVERS[Array.from(id).reduce((sum, char) => sum + char.charCodeAt(0), 0) % COVERS.length].id
   return coverFor(cover ?? fallback)
 }
 
-/** Abre el cuaderno creciendo desde su tapa en la biblioteca y lo cierra encogiéndolo de vuelta; deja visible la barra lateral */
+/** El cuaderno crece desde su tapa en la biblioteca hasta quedar abierto y se encoge de vuelta al cerrarlo; la barra lateral queda visible */
 function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<typeof BoardEditor>[0]['note']; cover: string; onBack: () => void; onDelete: () => void }) {
   const reader = useRef<HTMLDivElement>(null)
   const veil = useRef<HTMLDivElement>(null)
   const closing = useRef(false)
-  const clipFrom = () => {
-    const node = reader.current
-    const origin = document.querySelector(`[data-book-id="${CSS.escape(note.id)}"] .kw-book-cover`)?.getBoundingClientRect()
-    if (!node || !origin) return null
-    const box = node.getBoundingClientRect()
-    return `inset(${origin.top - box.top}px ${box.right - origin.right}px ${box.bottom - origin.bottom}px ${origin.left - box.left}px round 10px)`
+  const px = (r: { left: number; top: number; width: number; height: number }) => ({ left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` })
+  const rects = () => {
+    const paper = reader.current?.querySelector('.kw-notebook')?.getBoundingClientRect()
+    const book = document.querySelector(`[data-book-id="${CSS.escape(note.id)}"] .kw-book-cover`)?.getBoundingClientRect()
+    if (!paper) return null
+    const small = { left: paper.left + paper.width * .4, top: paper.top + paper.height * .3, width: paper.width * .2, height: paper.height * .4 }
+    return { paper, book: book ?? small }
   }
   const play = (direction: 'open' | 'close') => {
     const node = reader.current, cloth = veil.current
-    const from = clipFrom()
+    const editor = node?.querySelector<HTMLElement>('.kw-editor')
+    const box = rects()
     const quiet = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    if (!node || typeof node.animate !== 'function' || quiet) return Promise.resolve()
+    node?.removeAttribute('data-opening')
+    if (!node || !cloth || !editor || !box || typeof cloth.animate !== 'function' || quiet) return Promise.resolve()
     const open = direction === 'open'
-    const duration = open ? OPEN_MS : CLOSE_MS
-    const clip = [from ?? 'inset(8% 8% 8% 8% round 20px)', 'inset(0px 0px 0px 0px round 20px)']
-    const shape = node.animate({ clipPath: open ? clip : [...clip].reverse() }, { duration, easing: 'cubic-bezier(.22,.8,.24,1)', fill: 'both' })
-    cloth?.animate({ opacity: open ? [1, 1, 0] : [0, 1, 1], offset: open ? [0, .35, 1] : [0, .5, 1] }, { duration, easing: 'ease', fill: 'both' })
+    const duration = open ? 640 : 420
+    const [a, b] = open ? [box.book, box.paper] : [box.paper, box.book]
+    const move = [{ ...px(a), opacity: 1 }, { ...px(b), opacity: 1, offset: .72 }, { ...px(b), opacity: open ? 0 : 1 }]
+    const options = { duration, easing: 'cubic-bezier(.22,.8,.24,1)', fill: 'both' as const }
+    editor.animate({ opacity: open ? [0, 0, 1] : [1, 0, 0], offset: open ? [0, .6, 1] : [0, .3, 1] }, { duration, easing: 'ease', fill: 'both' })
+    const shape = cloth.animate(open ? move : [{ ...px(a), opacity: 1 }, { ...px(b), opacity: 1 }], options)
     return shape.finished.then(() => undefined, () => undefined)
   }
-  useLayoutEffect(() => { void play('open') }, [])
+  useLayoutEffect(() => {
+    reader.current?.setAttribute('data-opening', '')
+    let frame = 0
+    // espera a que el editor ajuste el cuaderno al espacio disponible antes de medirlo
+    frame = requestAnimationFrame(() => { frame = requestAnimationFrame(() => { void play('open') }) })
+    return () => cancelAnimationFrame(frame)
+  }, [])
   const close = () => {
     if (closing.current) return
     closing.current = true
