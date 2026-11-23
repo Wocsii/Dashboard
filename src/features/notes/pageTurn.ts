@@ -1,118 +1,98 @@
 /**
- * Pasar de página como en un cuaderno de verdad.
+ * Pasar de página al estilo de la referencia (animación de un libro en pixel art).
  *
- * La hoja se divide en una rejilla de piezas planas (columnas x filas). Cada pieza es un elemento
- * independiente con su propia transformación 3D, calculada a mano:
- *  - las columnas se encadenan a partir del lomo y la hoja gira sobre él (de 0 a 180 grados) curvándose;
- *  - las filas de abajo se retrasan un poco (la esquina inferior exterior va rezagada);
- *  - la parte baja de la hoja se enrolla hacia el lector y deja ver el reverso del papel, como en la referencia.
+ * Mirando la referencia fotograma a fotograma, la hoja NO gira como una puerta: es una hoja alta y plana que
+ *  1. levanta su esquina superior junto al lomo (sobresale por encima del libro) y se enrolla por abajo,
+ *     dejando ver el reverso del papel en una forma redondeada;
+ *  2. se desliza hacia la izquierda casi sin deformarse, con el rizo agarrado a su esquina inferior izquierda;
+ *  3. estrecha su ancho hasta que su borde derecho llega al lomo;
+ *  4. se abre hacia la izquierda hasta quedar plana sobre la página izquierda.
  *
- * Todo el movimiento es una función pura del progreso `p` (0 = hoja a la derecha, 1 = hoja a la izquierda),
- * por lo que se puede animar hacia delante o hacia atrás y comprobar fotograma a fotograma.
+ * La hoja es una malla de piezas planas. Arriba cada fila es una sola pieza (la hoja es rígida); abajo hay muchas
+ * columnas y filas finas para poder enrollar el papel en una zona que se mueve. Todo es una función pura del
+ * progreso `p` (0 = hoja a la derecha, 1 = hoja a la izquierda), así que se anima hacia delante o hacia atrás.
  */
 
 export const SPREAD_WIDTH = 1400
 export const SPREAD_HEIGHT = 1040
 const PAGE_WIDTH = SPREAD_WIDTH / 2
 
-const COLUMNS = 5
-// Filas finas abajo, donde la hoja se enrolla (cada una abarca menos de 10 grados del rizo), para que sea redondo y no facetado
-const ROW_EDGES = [0, .2, .4, .6, .8, ...Array.from({ length: 19 }, (_, i) => .82 + i * .01)]
-const ROWS = ROW_EDGES.length - 1
+/** La hoja es rígida: cinco piezas anchas, una por fila. El rizo inferior se dibuja aparte como una forma redondeada. */
+const ROW_EDGES = [0, .2, .4, .6, .8, 1]
+const ROWS = ROW_EDGES.slice(0, -1).map((top, i) => ({ top, bottom: ROW_EDGES[i + 1] }))
 
 export type TurnParams = {
-  /** ángulo máximo de retraso de la fila inferior, en grados */
-  lag: number
-  /** doblez extra por columna, en grados */
-  curl: number
-  /** fracción de la altura que se enrolla abajo */
-  roll: number
-  /** radio del rizo como fracción de la altura */
-  radius: number
-  /** cuánto se levanta la hoja hacia el lector, como fracción del ancho de página */
-  lift: number
+  /** cuánto sobresale la hoja por arriba, como fracción de la altura */
+  raise: number
+  /** altura del rizo inferior, como fracción de la altura */
+  curlHeight: number
 }
-
-export const DEFAULT_TURN: TurnParams = { lag: 2, curl: 1.5, roll: .18, radius: .07, lift: .14 }
+export const DEFAULT_TURN: TurnParams = { raise: .05, curlHeight: .09 }
 
 const smooth = (a: number, b: number, x: number) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t) }
-const rad = Math.PI / 180
 
-export type TilePose = {
-  transform: string
-  /** qué cara se ve: la delantera de la hoja, su reverso, o el reverso del papel enrollado */
-  face: 'front' | 'back' | 'curl'
-  /** oscurecimiento de 0 a 1 */
-  shade: number
+/** Interpolación monótona (Fritsch-Carlson): pasa por los puntos medidos en la referencia sin ondulaciones */
+function monotone(xs: number[], ys: number[]) {
+  const n = xs.length
+  const delta = xs.slice(1).map((x, i) => (ys[i + 1] - ys[i]) / (x - xs[i]))
+  const m = ys.map((_, i) => i === 0 ? delta[0] : i === n - 1 ? delta[n - 2] : delta[i - 1] * delta[i] <= 0 ? 0 : (delta[i - 1] + delta[i]) / 2)
+  for (let i = 0; i < n - 1; i++) {
+    if (delta[i] === 0) { m[i] = 0; m[i + 1] = 0; continue }
+    const a = m[i] / delta[i], b = m[i + 1] / delta[i], h = Math.hypot(a, b)
+    if (h > 3) { m[i] = 3 * a * delta[i] / h; m[i + 1] = 3 * b * delta[i] / h }
+  }
+  return (x: number) => {
+    if (x <= xs[0]) return ys[0]
+    if (x >= xs[n - 1]) return ys[n - 1]
+    let i = 0
+    while (x > xs[i + 1]) i++
+    const h = xs[i + 1] - xs[i], t = (x - xs[i]) / h, t2 = t * t, t3 = t2 * t
+    return (2 * t3 - 3 * t2 + 1) * ys[i] + (t3 - 2 * t2 + t) * h * m[i] + (-2 * t3 + 3 * t2) * ys[i + 1] + (t3 - t2) * h * m[i + 1]
+  }
 }
 
-export type TurnPoses = {
-  tiles: TilePose[][]
-  shadowRight: number
-  shadowLeft: number
-}
+// Posición de los bordes de la hoja medida en la referencia (en anchos de página; 0 = lomo, 1 = borde exterior derecho)
+const KNOTS = [0, .12, .22, .34, .45, .52, .62, .70, .76, 1]
+const leftEdge = monotone(KNOTS, [0, 0, 0, -.12, -.23, -.23, -.37, -.39, -.52, -1])
+const rightEdge = monotone(KNOTS, [1, 1, .97, .85, .66, .59, .11, .13, 0, 0])
+/** En este punto la hoja muestra su reverso (la página que llega) en lugar de la que se va */
+const SWAP = .57
 
-/**
- * Cuánto papel se enrolla abajo en cada instante, con signo: primero el borde inferior se enrolla hacia el lector
- * (+) y se desenrolla antes de cruzar el lomo; ya al otro lado, con el reverso hacia el lector, se vuelve a enrollar
- * hacia el lector (-) hasta aterrizar plano. En p = 0, 0.5 y 1 vale cero, así que no hay saltos.
- */
-export function rollAmount(p: number) {
-  const first = smooth(0, .14, p) * (1 - smooth(.3, .5, p))
-  const second = smooth(.5, .66, p) * (1 - smooth(.86, 1, p))
-  return p < .5 ? first : -second
-}
+export type TilePose = { transform: string; front: number; back: number }
+export type CurlPose = { left: number; width: number; height: number; opacity: number }
+export type SheetPose = { left: number; width: number; shadow: number }
+export type TurnPoses = { rows: TilePose[]; sheet: SheetPose; curl: CurlPose }
 
 /** Poses de todas las piezas para un progreso dado. `width` es el ancho de una página en píxeles de pantalla. */
-export function turnPoses(p: number, width: number, params: TurnParams = DEFAULT_TURN): TurnPoses {
+export function turnPoses(progress: number, width: number, params: TurnParams = DEFAULT_TURN): TurnPoses {
+  const p = Math.max(0, Math.min(1, progress))
   const scale = width / PAGE_WIDTH
   const height = SPREAD_HEIGHT
-  const stripWidth = width / COLUMNS
-  const bell = Math.sin(Math.PI * Math.max(0, Math.min(1, p)))
-  const rolling = rollAmount(p)
-  const sign = rolling >= 0 ? 1 : -1
-  const fold = height * (1 - params.roll * Math.abs(rolling))
-  // el giro empieza un poco después de que el borde se enrolle y termina antes del aterrizaje
-  const q = smooth(.08, .95, p)
-  const radius = params.radius * height
-  const lift = params.lift * width * bell
-  const raise = .03 * height * scale * bell
-  const tiles: TilePose[][] = []
-  for (let row = 0; row < ROWS; row++) {
-    const top = ROW_EDGES[row] * height
-    const g = top / height
-    const lag = params.lag * bell * g * g
-    // ángulo de cada columna respecto de la anterior (la primera gira sobre el lomo; las demás se doblan hacia atrás)
-    let angle = 0, x = 0, z = 0
-    // enrollado de la parte baja: la fila se curva alrededor de un cilindro horizontal
-    const s = Math.max(0, top - fold)
-    const alpha = Math.min(Math.PI * 1.15, s / radius)
-    const dy = (radius * Math.sin(alpha) - s) * scale
-    const dz = sign * radius * (1 - Math.cos(alpha)) * scale
-    const rolled = s > 0
-    const rowTiles: TilePose[] = []
-    for (let col = 0; col < COLUMNS; col++) {
-      angle += col === 0 ? -(180 * q - lag) : params.curl * bell
-      const cosA = Math.cos(angle * rad), cosAlpha = Math.cos(alpha)
-      const face: TilePose['face'] = rolled && cosAlpha < 0 ? 'curl' : cosA > 0 ? 'front' : 'back'
-      const side = Math.sin(Math.min(Math.PI, Math.abs(angle) * rad))
-      const shade = .2 * side + (rolled ? .28 * Math.abs(Math.sin(alpha)) : 0)
-      const roll = rolled ? ` translate3d(0,${dy.toFixed(2)}px,${dz.toFixed(2)}px) rotateX(${(sign * alpha / rad).toFixed(2)}deg)` : ''
-      rowTiles.push({
-        transform: `translate3d(${x.toFixed(2)}px,${(-raise).toFixed(2)}px,${(z + lift).toFixed(2)}px) rotateY(${angle.toFixed(2)}deg)${roll}`,
-        face,
-        shade: Math.min(.7, shade),
-      })
-      x += stripWidth * Math.cos(angle * rad)
-      z -= stripWidth * Math.sin(angle * rad)
+  const xL = leftEdge(p) * width, xR = rightEdge(p) * width
+  const sheetWidth = Math.max(1, xR - xL)
+  const raise = params.raise * height * smooth(0, .18, p) * (1 - smooth(.8, 1, p))
+  // La esquina junto al lomo (la del borde izquierdo de la hoja) sube más que la opuesta
+  const rise = (u: number) => raise * (1 - .65 * u) / height
+  const front = 1 - smooth(SWAP - .03, SWAP + .02, p)
+  const rows = ROWS.map((row) => {
+    const top = row.top * height
+    const lifted = (u: number) => (top - (height - top) * rise(u)) * scale
+    const left0 = lifted(0), left1 = lifted(1)
+    const stretch = 1 + rise(.5)
+    const b = (left1 - left0) / width
+    return {
+      transform: `matrix(${(sheetWidth / width).toFixed(4)},${b.toFixed(4)},0,${stretch.toFixed(4)},${xL.toFixed(2)},${left0.toFixed(2)})`,
+      front,
+      back: 1 - front,
     }
-    tiles.push(rowTiles)
-  }
-  return {
-    tiles,
-    shadowRight: p < .5 ? .5 * Math.sin(Math.PI * Math.min(1, p * 2)) : 0,
-    shadowLeft: p > .5 ? .5 * Math.sin(Math.PI * Math.max(0, p * 2 - 1)) : 0,
-  }
+  })
+  // Rizo inferior: nace a lo ancho de la hoja y enseguida se queda en su esquina inferior izquierda
+  const amount = smooth(0, .12, p) * (1 - smooth(.78, .98, p))
+  const settle = smooth(.12, .32, p)
+  const center = .5 - .3 * settle, half = .35 - .13 * settle
+  const from = Math.max(0, center - half), to = Math.min(1, center + half)
+  const curl: CurlPose = { left: xL + from * sheetWidth, width: (to - from) * sheetWidth, height: params.curlHeight * height * scale * amount, opacity: amount > .01 ? 1 : 0 }
+  return { rows, sheet: { left: xL, width: sheetWidth, shadow: .85 * smooth(0, .1, p) * (1 - smooth(.9, 1, p)) }, curl }
 }
 
 const div = (className: string, style?: Partial<CSSStyleDeclaration>) => {
@@ -143,6 +123,8 @@ export type PageTurn = {
   destroy: () => void
 }
 
+type TileElements = { tile: HTMLElement; front: HTMLElement; back: HTMLElement }
+
 /**
  * Prepara el pasar de página de `from` a `to` (pliegos de 1400 x 1040) sobre `rect`.
  * Con `base` la escena incluye las dos mitades fijas; sin ella solo se dibuja la hoja y su sombra.
@@ -152,50 +134,57 @@ export function createPageTurn(options: { rect: DOMRect; from: HTMLElement; to: 
   const params = { ...DEFAULT_TURN, ...options.params }
   const scale = rect.width / SPREAD_WIDTH
   const width = PAGE_WIDTH * scale
-  const stripWidth = width / COLUMNS
   const root = div('kw-turn', { left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px`, perspective: `${rect.width * 1.9}px`, zIndex: String(options.zIndex ?? 45) })
+  root.setAttribute('aria-hidden', 'true')
+  root.setAttribute('inert', '')
   if (base) {
     const left = piece(from, scale, 0, 0, PAGE_WIDTH, SPREAD_HEIGHT), right = piece(to, scale, PAGE_WIDTH, 0, PAGE_WIDTH, SPREAD_HEIGHT)
     left.style.left = '0'; right.style.left = `${width}px`
     root.append(left, right)
   }
-  root.setAttribute('aria-hidden', 'true')
-  root.setAttribute('inert', '')
-  const shadowRight = div('kw-turn-shadow kw-turn-shadow-right'), shadowLeft = div('kw-turn-shadow kw-turn-shadow-left')
-  root.append(shadowRight, shadowLeft)
+  const sheetShadow = div('kw-turn-sheet-shadow', { top: '0', height: `${rect.height}px` })
+  root.appendChild(sheetShadow)
 
-  const elements: { tile: HTMLElement; front: HTMLElement; back: HTMLElement; curl: HTMLElement; dim: HTMLElement }[][] = []
-  for (let row = 0; row < ROWS; row++) {
-    const y = ROW_EDGES[row] * SPREAD_HEIGHT, h = (ROW_EDGES[row + 1] - ROW_EDGES[row]) * SPREAD_HEIGHT
-    const line: (typeof elements)[number] = []
-    for (let col = 0; col < COLUMNS; col++) {
-      const tile = div('kw-turn-tile', { left: `${width}px`, top: `${y * scale}px`, width: `${stripWidth + .9}px`, height: `${h * scale + .9}px` })
-      // cara delantera: derecha de `from`; reverso: izquierda de `to`, volteada para que al girar se lea bien
-      const front = piece(from, scale, PAGE_WIDTH + col * (PAGE_WIDTH / COLUMNS), y, PAGE_WIDTH / COLUMNS + 1, h + 1)
-      const back = piece(to, scale, (COLUMNS - 1 - col) * (PAGE_WIDTH / COLUMNS), y, PAGE_WIDTH / COLUMNS + 1, h + 1)
-      back.style.transform = 'scaleX(-1)'
-      const curl = div('kw-turn-curl')
-      const dim = div('kw-turn-dim')
-      for (const face of [front, back, curl]) face.classList.add('kw-turn-face')
-      tile.append(front, back, curl, dim)
-      root.appendChild(tile)
-      line.push({ tile, front, back, curl, dim })
-    }
-    elements.push(line)
-  }
+  const grid: TileElements[] = ROWS.map((row, rowIndex) => {
+    const y = row.top * SPREAD_HEIGHT, h = (row.bottom - row.top) * SPREAD_HEIGHT
+    // cada pieza mide lo que mide en reposo; su transformación la coloca, la estira y la lleva a su sitio
+    const tile = div('kw-turn-tile', { left: '0px', top: '0px', width: `${width}px`, height: `${h * scale + 1.2}px` })
+    const front = piece(from, scale, PAGE_WIDTH, y, PAGE_WIDTH, h + 1)
+    const back = piece(to, scale, 0, y, PAGE_WIDTH, h + 1)
+    for (const face of [front, back]) face.classList.add('kw-turn-face')
+    // contorno fino en los bordes de la hoja
+    const edge = div('kw-turn-edge')
+    edge.style.boxShadow = [rowIndex === 0 ? 'inset 0 1px 0 #5d4a57' : '', 'inset 1px 0 0 #5d4a57', 'inset -1px 0 0 #5d4a57'].filter(Boolean).join(',')
+    tile.append(front, back, edge)
+    root.appendChild(tile)
+    return { tile, front, back }
+  })
+  // forma del rizo inferior: el reverso del papel, redondeado, con el borde superior ondulado como en la referencia
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  svg.setAttribute('class', 'kw-turn-curl')
+  svg.setAttribute('viewBox', '0 0 100 40')
+  svg.setAttribute('preserveAspectRatio', 'none')
+  svg.innerHTML = '<defs><linearGradient id="kw-curl-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ead8c0"/><stop offset="1" stop-color="#d8b693"/></linearGradient></defs><path d="M0 40 C0 18 6 6 22 6 C42 6 52 14 74 18 C88 21 96 30 100 40 Z" fill="url(#kw-curl-fill)" stroke="#5d4a57" stroke-width="1.2" vector-effect="non-scaling-stroke"/>'
+  root.appendChild(svg)
 
   const render = (p: number) => {
     const poses = turnPoses(p, width, params)
-    poses.tiles.forEach((line, row) => line.forEach((pose, col) => {
-      const el = elements[row][col]
-      el.tile.style.transform = pose.transform
-      el.front.style.opacity = pose.face === 'front' ? '1' : '0'
-      el.back.style.opacity = pose.face === 'back' ? '1' : '0'
-      el.curl.style.opacity = pose.face === 'curl' ? '1' : '0'
-      el.dim.style.opacity = pose.shade.toFixed(3)
-    }))
-    shadowRight.style.opacity = poses.shadowRight.toFixed(3)
-    shadowLeft.style.opacity = poses.shadowLeft.toFixed(3)
+    poses.rows.forEach((pose, r) => {
+      const el = grid[r]
+      // la posición de la hoja se mide desde el lomo (centro del pliego)
+      el.tile.style.transform = `translateX(${width}px) ${pose.transform}`
+      el.front.style.opacity = pose.front.toFixed(3)
+      el.back.style.opacity = pose.back.toFixed(3)
+    })
+    sheetShadow.style.left = `${width + poses.sheet.left}px`
+    sheetShadow.style.width = `${poses.sheet.width}px`
+    sheetShadow.style.opacity = poses.sheet.shadow.toFixed(3)
+    const { curl } = poses
+    svg.style.opacity = String(curl.opacity)
+    svg.style.left = `${width + curl.left}px`
+    svg.style.width = `${curl.width}px`
+    svg.style.height = `${curl.height}px`
+    svg.style.top = `${rect.height - curl.height}px`
   }
   render(0)
   document.body.appendChild(root)

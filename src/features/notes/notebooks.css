@@ -120,8 +120,7 @@ body:has(.kw-notebook-reader) #contenido>div>p { visibility:hidden; }
 .kw-turn-piece { position:absolute; top:0; overflow:hidden; }
 .kw-turn-tile { position:absolute; transform-origin:0 0; will-change:transform; }
 .kw-turn-face { position:absolute; left:0; top:0; opacity:0; }
-.kw-turn-curl { inset:0; background:linear-gradient(180deg,#f1e8d9,#e3d6c0); }
-.kw-turn-dim { position:absolute; inset:0; background:#2a1c36; opacity:0; }
-.kw-turn-shadow { position:absolute; top:0; bottom:0; width:50%; opacity:0; }
-.kw-turn-shadow-right { left:50%; background:linear-gradient(90deg,#1c132070,#1c132000 70%); }
-.kw-turn-shadow-left { left:0; background:linear-gradient(270deg,#1c132070,#1c132000 70%); }
+
+.kw-turn-edge { position:absolute; inset:0; pointer-events:none; }
+.kw-turn-sheet-shadow { position:absolute; opacity:0; border-radius:3px; box-shadow:0 10px 30px #1c132066; }
+.kw-turn-curl { position:absolute; background:none; opacity:0; overflow:visible; filter:drop-shadow(0 2px 4px #1c132055); }
