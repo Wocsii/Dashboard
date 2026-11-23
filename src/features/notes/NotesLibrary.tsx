@@ -37,6 +37,7 @@ function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<ty
   const reader = useRef<HTMLDivElement>(null)
   const veil = useRef<HTMLDivElement>(null)
   const hinge = useRef<HTMLDivElement>(null)
+  const hold = useRef<HTMLDivElement>(null)
   const closing = useRef(false)
   const play = (direction: 'open' | 'close') => {
     const node = reader.current, scene = veil.current, door = hinge.current
@@ -50,6 +51,7 @@ function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<ty
     const from = library ?? { left: paper.left + half, top: paper.top + paper.height * .15, width: half * .6, height: paper.height * .7 }
     const tx = from.left - (paper.left + half), ty = from.top + from.height / 2 - (paper.top + paper.height / 2)
     const sx = from.width / half, sy = from.height / paper.height
+    if (hold.current) hold.current.style.display = 'none'
     Object.assign(scene.style, { display: 'block', left: `${paper.left}px`, top: `${paper.top}px`, width: `${paper.width}px`, height: `${paper.height}px` })
     const opening = direction === 'open'
     const options: KeyframeAnimationOptions = { duration: opening ? 1700 : 1200, fill: 'both', direction: opening ? 'normal' : 'reverse', easing: 'linear' }
@@ -61,14 +63,14 @@ function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<ty
       at(.36, { transform: 'translate(0,0) scale(1,1) rotateY(0deg)', easing: 'cubic-bezier(.5,.02,.3,1)' }),
       at(1, { transform: 'translate(0,0) scale(1,1) rotateY(-180deg)' }),
     ])
-    run(door.querySelector('.kw-cover3d-front .kw-dim'), [at(0, { opacity: 0 }), at(.36, { opacity: 0 }), at(.66, { opacity: .55 }), at(1, { opacity: .55 })])
-    run(door.querySelector('.kw-cover3d-back .kw-dim'), [at(0, { opacity: .5 }), at(.66, { opacity: .5 }), at(1, { opacity: 0 })])
+    run(door.querySelector('.kw-cover3d-front .kw-dim'), [at(0, { opacity: 0 }), at(.36, { opacity: 0 }), at(.66, { opacity: .5 }), at(1, { opacity: .5 })])
+    run(door.querySelector('.kw-cover3d-back .kw-dim'), [at(0, { opacity: .3 }), at(.66, { opacity: .3 }), at(1, { opacity: 0 })])
     run(scene.querySelector('.kw-book3d-shade-right'), [at(0, { opacity: 0 }), at(.36, { opacity: 0 }), at(.55, { opacity: .8 }), at(.75, { opacity: 0 }), at(1, { opacity: 0 })])
-    run(scene.querySelector('.kw-book3d-shade-left'), [at(0, { opacity: 0 }), at(.62, { opacity: 0 }), at(.8, { opacity: .9 }), at(1, { opacity: 0 })])
+    run(scene.querySelector('.kw-book3d-shade-left'), [at(0, { opacity: 0 }), at(.62, { opacity: 0 }), at(.82, { opacity: .8 }), at(1, { opacity: 0 })])
     run(scene, [at(0, { opacity: 1 }), at(.9, { opacity: 1 }), at(1, { opacity: 0 })])
     // el cuaderno real aparece bajo la tapa: primero solo la página derecha y luego las dos
     const reveal = paper.left + half - surface.getBoundingClientRect().left
-    run(surface, [at(0, { opacity: 0, clipPath: `inset(0px 0px 0px ${reveal}px)` }), at(.35, { opacity: 0, clipPath: `inset(0px 0px 0px ${reveal}px)` }), at(.36, { opacity: 1, clipPath: `inset(0px 0px 0px ${reveal}px)` }), at(.62, { opacity: 1, clipPath: `inset(0px 0px 0px ${reveal}px)` }), at(.7, { opacity: 1, clipPath: 'inset(0px 0px 0px 0px)' }), at(1, { opacity: 1, clipPath: 'inset(0px 0px 0px 0px)' })])
+    run(surface, [at(0, { opacity: 0, clipPath: `inset(0px 0px 0px ${reveal}px)` }), at(.35, { opacity: 0, clipPath: `inset(0px 0px 0px ${reveal}px)` }), at(.36, { opacity: 1, clipPath: `inset(0px 0px 0px ${reveal}px)` }), at(.9, { opacity: 1, clipPath: `inset(0px 0px 0px ${reveal}px)` }), at(.91, { opacity: 1, clipPath: 'inset(0px 0px 0px 0px)' }), at(1, { opacity: 1, clipPath: 'inset(0px 0px 0px 0px)' })])
     for (const control of Array.from(node.querySelectorAll('.kw-editor-heading,.kw-toolbar,.kw-view-tools,.kw-selection-tools'))) run(control, [at(0, { opacity: 0 }), at(.8, { opacity: 0 }), at(1, { opacity: 1 })])
     return Promise.all(animations.map((a) => a.finished)).then(() => {
       if (opening) { animations.forEach((a) => a.cancel()); scene.style.display = 'none'; node.setAttribute('data-ready', '') }
@@ -76,9 +78,20 @@ function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<ty
   }
   useLayoutEffect(() => {
     reader.current?.setAttribute('data-opening', '')
-    let frame = 0
-    // espera a que el editor ajuste el cuaderno al espacio disponible antes de medirlo
-    frame = requestAnimationFrame(() => { frame = requestAnimationFrame(() => { void play('open') }) })
+    // la tapa se queda en su sitio desde el primer fotograma, sin hueco antes de la animación
+    const book = document.querySelector(`[data-book-id="${CSS.escape(note.id)}"] .kw-book-cover`)?.getBoundingClientRect()
+    if (hold.current && book) Object.assign(hold.current.style, { display: 'block', left: `${book.left}px`, top: `${book.top}px`, width: `${book.width}px`, height: `${book.height}px` })
+    let frame = 0, last = '', stable = 0, tries = 0
+    // espera a que el editor termine de ajustar el cuaderno al espacio disponible antes de medirlo
+    const settle = () => {
+      const r = reader.current?.querySelector('.kw-notebook')?.getBoundingClientRect()
+      const key = r ? `${Math.round(r.left)}|${Math.round(r.top)}|${Math.round(r.width)}` : ''
+      stable = key && key === last ? stable + 1 : 0
+      last = key
+      if (stable >= 3 || ++tries > 40) void play('open')
+      else frame = requestAnimationFrame(settle)
+    }
+    frame = requestAnimationFrame(settle)
     return () => cancelAnimationFrame(frame)
   }, [])
   const close = () => {
@@ -88,6 +101,7 @@ function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<ty
   }
   return <div ref={reader} className="kw-notebook-reader" role="presentation">
     <BoardEditor key={note.id} note={note} onBack={close} onDelete={onDelete} />
+    <div ref={hold} className="kw-cover-hold" aria-hidden="true"><img src={coverFor(cover).image} alt="" /><i className="kw-book-spine" /></div>
     <div ref={veil} className="kw-book3d" aria-hidden="true">
       <div className="kw-book3d-shade kw-book3d-shade-right" /><div className="kw-book3d-shade kw-book3d-shade-left" />
       <div ref={hinge} className="kw-cover3d">

@@ -28,12 +28,14 @@
 /* Libro 3D: la tapa gira sobre el lomo y deja ver las páginas */
 .kw-book3d { position:fixed; z-index:40; display:none; pointer-events:none; perspective:2600px; perspective-origin:50% 42%; }
 .kw-cover3d { position:absolute; left:50%; top:0; width:50%; height:100%; transform-origin:0 50%; transform-style:preserve-3d; will-change:transform; }
-.kw-cover3d>div { position:absolute; inset:0; overflow:hidden; backface-visibility:hidden; -webkit-backface-visibility:hidden; }
+.kw-cover3d>div { position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden; }
+.kw-cover-hold { position:fixed; z-index:40; display:none; pointer-events:none; border-radius:3px 9px 9px 3px; overflow:hidden; box-shadow:2px 5px 9px #40334926,5px 0 0 -1px #e5dfd6,7px 0 0 -1px #f9f5ee; }
+.kw-cover-hold img { width:100%; height:100%; object-fit:cover; display:block; }
 .kw-cover3d-front { border-radius:3px 12px 12px 3px; box-shadow:0 30px 60px #2a1c3655,4px 0 0 -1px #e5dfd6,7px 0 0 -1px #f9f5ee,10px 0 0 -2px #ece6dc; }
-.kw-cover3d-front img { width:100%; height:100%; object-fit:cover; display:block; }
-.kw-cover3d-back { transform:rotateY(180deg); border-radius:12px 3px 3px 12px; background:linear-gradient(90deg,#e9e1d0,#f8f3e8 14%,#fffefa 60%); box-shadow:inset 0 0 0 1px #e4dccf; }
+.kw-cover3d-front img { width:100%; height:100%; object-fit:cover; display:block; border-radius:inherit; }
+.kw-cover3d-back { transform:rotateY(180deg); border-radius:12px 3px 3px 12px; background:linear-gradient(90deg,#e4dac6,#f6efe1 10%,#fdfaf2 55%,#fffefa); box-shadow:inset 0 0 0 1px #e4dccf,0 0 0 1px #e4dccf; }
 .kw-cover3d-back::after { content:''; position:absolute; inset:34px 30px; border:1px solid #e2d9c8; border-radius:4px; }
-.kw-cover3d .kw-dim { position:absolute; inset:0; background:#1c1320; opacity:0; }
+.kw-cover3d .kw-dim { position:absolute; inset:0; border-radius:inherit; background:#1c1320; opacity:0; }
 .kw-book3d-shade { position:absolute; top:0; bottom:0; width:50%; opacity:0; }
 .kw-book3d-shade-right { left:50%; background:linear-gradient(90deg,#1c132066,#1c132000 60%); }
 .kw-book3d-shade-left { left:0; background:linear-gradient(270deg,#1c132066,#1c132000 60%); }
