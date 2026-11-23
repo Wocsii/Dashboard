@@ -56,6 +56,9 @@ export function BoardEditor({ note, onDelete, onBack, backdrop, planner = false 
   const [historyCount, setHistoryCount] = useState({ past: 0, future: 0 })
   const history = useRef<{ past: Board[]; future: Board[] }>({ past: [], future: [] })
   const gesture = useRef<Gesture | null>(null)
+  const touches = useRef(new Map<number, Point>())
+  const pinch = useRef<{ distance: number; center: Point; view: Point & { zoom: number } } | null>(null)
+  const penDown = useRef(false)
   const surface = useRef<HTMLDivElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const clipboard = useRef<BoardElement | null>(null)
@@ -187,16 +190,51 @@ export function BoardEditor({ note, onDelete, onBack, backdrop, planner = false 
     if (!node) return
     const wheel = (e: WheelEvent) => {
       e.preventDefault()
-      if (tool === 'pen' || tool === 'arrow' || tool === 'highlighter') return
-      if (e.ctrlKey || e.metaKey) {
-        const rect = node.getBoundingClientRect()
-        setView((v) => zoomAt(v, v.zoom * Math.exp(-e.deltaY * 0.005), { x: e.clientX - rect.left, y: e.clientY - rect.top }))
-      } else setView((v) => ({ ...v, x: v.x - e.deltaX, y: v.y - e.deltaY }))
+      // Rueda del ratón (pasos enteros en vertical) y pellizco del trackpad (ctrl) hacen zoom; el desplazamiento con dos dedos del trackpad mueve la página.
+      const trackpadScroll = !e.ctrlKey && !e.metaKey && e.deltaMode === 0 && (e.deltaX !== 0 || !Number.isInteger(e.deltaY))
+      if (trackpadScroll) { setView((v) => ({ ...v, x: v.x - e.deltaX, y: v.y - e.deltaY })); return }
+      const rect = node.getBoundingClientRect()
+      const amount = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY
+      setView((v) => zoomAt(v, v.zoom * Math.exp(-amount * (e.ctrlKey ? 0.01 : 0.0015)), { x: e.clientX - rect.left, y: e.clientY - rect.top }))
     }
     node.addEventListener('wheel', wheel, { passive: false })
     return () => node.removeEventListener('wheel', wheel)
   }, [tool, full])
+  function trackTouch(e: ReactPointerEvent<HTMLDivElement>) {
+    if (e.pointerType === 'pen') penDown.current = true
+    if (e.pointerType !== 'touch' || penDown.current) return false
+    touches.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    if (touches.current.size !== 2) return false
+    const [a, b] = Array.from(touches.current.values())
+    const rect = e.currentTarget.getBoundingClientRect()
+    pinch.current = { distance: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), center: { x: (a.x + b.x) / 2 - rect.left, y: (a.y + b.y) / 2 - rect.top }, view }
+    const g = gesture.current
+    if (g) { gesture.current = null; if (g.kind !== 'pan') show(g.original) }
+    return true
+  }
+  function pinchMove(e: ReactPointerEvent<HTMLDivElement>) {
+    if (e.pointerType !== 'touch' || !touches.current.has(e.pointerId)) return false
+    touches.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    const start = pinch.current
+    if (!start) return false
+    const [a, b] = Array.from(touches.current.values())
+    if (!a || !b) return true
+    const rect = e.currentTarget.getBoundingClientRect()
+    const center = { x: (a.x + b.x) / 2 - rect.left, y: (a.y + b.y) / 2 - rect.top }
+    const zoomed = zoomAt(start.view, start.view.zoom * Math.hypot(a.x - b.x, a.y - b.y) / start.distance, start.center)
+    setView({ ...zoomed, x: zoomed.x + center.x - start.center.x, y: zoomed.y + center.y - start.center.y })
+    return true
+  }
+  function releaseTouch(e: ReactPointerEvent<HTMLDivElement>) {
+    if (e.pointerType === 'pen') penDown.current = false
+    if (!touches.current.delete(e.pointerId)) return false
+    const wasPinching = !!pinch.current
+    if (touches.current.size < 2) pinch.current = null
+    return wasPinching
+  }
   function pointerDown(e: ReactPointerEvent<HTMLDivElement>) {
+    if (trackTouch(e)) { e.preventDefault(); return }
+    if (pinch.current) return
     if (e.button !== 0 || gesture.current) return
     if ((tool === 'pen' || tool === 'arrow' || tool === 'highlighter') && pencilOnly && e.pointerType === 'touch') return
     const target = e.target as HTMLElement
@@ -220,6 +258,7 @@ export function BoardEditor({ note, onDelete, onBack, backdrop, planner = false 
     }
   }
   function pointerMove(e: ReactPointerEvent<HTMLDivElement>) {
+    if (pinchMove(e)) { e.preventDefault(); return }
     const g = gesture.current
     if (!g || g.pointerId !== e.pointerId) return
     e.preventDefault()
@@ -241,6 +280,7 @@ export function BoardEditor({ note, onDelete, onBack, backdrop, planner = false 
     }
   }
   function pointerEnd(e: ReactPointerEvent<HTMLDivElement>, cancelled = false) {
+    if (releaseTouch(e)) return
     const g = gesture.current
     if (!g || g.pointerId !== e.pointerId) return
     // A fast release may arrive without a final pointermove. Use its coordinates.
@@ -310,7 +350,7 @@ export function BoardEditor({ note, onDelete, onBack, backdrop, planner = false 
     {drawing && <div className="kw-pencil-hint"><Pencil size={15} /><span>Escribe sobre el papel. La página queda quieta mientras trazas.</span><label><input type="checkbox" checked={pencilOnly} onChange={(e) => setPencilOnly(e.target.checked)} /> Solo Pencil o ratón · ignorar dedos</label></div>}
     {message && <div className="kw-message" role="alert">{message}<button type="button" onClick={() => setMessage('')}>Cerrar</button></div>}
     <div className="kw-stage">
-      <div ref={surface} className={`kw-surface kw-tool-${tool}`} tabIndex={0} role="region" aria-label="Superficie del cuaderno" style={{ touchAction: drawing || full || tool === 'hand' ? 'none' : 'pan-y' }}
+      <div ref={surface} className={`kw-surface kw-tool-${tool}`} tabIndex={0} role="region" aria-label="Superficie del cuaderno" style={{ touchAction: drawing || full || !planner || tool === 'hand' ? 'none' : 'pan-y' }}
         onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={(e) => pointerEnd(e)} onPointerCancel={(e) => pointerEnd(e, true)} onLostPointerCapture={(e) => pointerEnd(e, true)}
         onDragStart={(e) => { if ((e.target as Element).closest('[data-element]')) e.preventDefault() }}
         onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) e.preventDefault() }} onDrop={(e) => { e.preventDefault(); void insertImages(e.dataTransfer.files) }}
