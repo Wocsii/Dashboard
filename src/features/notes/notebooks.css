@@ -105,3 +105,13 @@ body:has(.kw-notebook-reader) #contenido>div>p { visibility:hidden; }
 .kw-editor.kw-notebook-mode.kw-fullscreen .kw-editor-heading { top:max(10px,env(safe-area-inset-top)); left:12px; right:12px; }
 .kw-editor.kw-notebook-mode.kw-fullscreen .kw-toolbar { right:12px; }
 .kw-editor.kw-notebook-mode.kw-fullscreen .kw-view-tools { right:12px; bottom:max(12px,env(safe-area-inset-bottom)); }
+
+.kw-blank-page .kw-paper-date,.kw-blank-page .kw-paper-topic { visibility:hidden; }
+.kw-underlay { position:absolute; inset:0; border-radius:8px 16px 16px 8px; box-shadow:0 0 0 10px #d5e8ef,0 0 0 13px #bdd6df,0 26px 44px #3b2f4a45; background:#fffefa; }
+.kw-underlay-page { position:absolute; top:0; bottom:0; overflow:hidden; background:#fffefa; }
+.kw-stack-edge { position:absolute; top:3px; bottom:3px; width:12px; background:repeating-linear-gradient(90deg,#e6e0d4 0 1px,#fffefa 1px 3px); box-shadow:0 0 6px #3b2f4a30; }
+.kw-stack-edge-right { left:100%; margin-left:-1px; transform-origin:0 50%; border-radius:0 3px 3px 0; }
+.kw-stack-edge-left { right:100%; margin-right:-1px; transform-origin:100% 50%; border-radius:3px 0 0 3px; }
+.kw-underlay-page::after { content:''; position:absolute; inset:0; pointer-events:none; }
+.kw-underlay-page:first-child::after { background:linear-gradient(270deg,#3b2f4a38,#3b2f4a00 16%); }
+.kw-underlay-page:last-child::after { background:linear-gradient(90deg,#3b2f4a38,#3b2f4a00 16%); }

@@ -41,7 +41,17 @@ function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<ty
   const closing = useRef(false)
   const current = useRef<{ cancel: () => void } | null>(null)
   const leafCount = Math.max(5, Math.min(9, (notebookBoard(readBoard(note.content)).activePage ?? 0) + 4))
-  const play = (direction: 'open' | 'close') => {
+  const play = (direction: 'open' | 'close'): Promise<void> => {
+    try { return animate(direction) } catch (error) {
+      // si la animación falla, el cuaderno debe quedar usable igualmente
+      console.error(error)
+      current.current?.cancel(); current.current = null
+      if (veil.current) veil.current.style.display = 'none'
+      reader.current?.removeAttribute('data-opening'); reader.current?.setAttribute('data-ready', '')
+      return Promise.resolve()
+    }
+  }
+  const animate = (direction: 'open' | 'close'): Promise<void> => {
     const node = reader.current, scene = veil.current, door = hinge.current
     node?.removeAttribute('data-opening')
     if (hold.current) hold.current.style.display = 'none'
@@ -65,7 +75,11 @@ function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<ty
     const at = (ms: number, extra: Keyframe): Keyframe => ({ offset: o(ms), ...extra })
     const animations: Animation[] = []
     const leaves: HTMLElement[] = []
-    const run = (el: Element | null | undefined, frames: Keyframe[]) => { if (el) animations.push(el.animate(frames, options)) }
+    const run = (el: Element | null | undefined, frames: Keyframe[]) => {
+      let last = 0
+      for (const frame of frames) { last = Math.max(last, Number(frame.offset ?? 0)); frame.offset = last }
+      if (el) animations.push(el.animate(frames, options))
+    }
     const clip = (px: number) => `inset(0px 0px 0px ${px}px)`
 
     run(door, [
@@ -82,7 +96,7 @@ function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<ty
     // Hojas que se curvan al pasar de derecha a izquierda. Empiezan en cuanto la tapa se abre y terminan en la página donde estabas.
     const pages = Array.from(node.querySelectorAll<HTMLElement>('.kw-notebook .kw-paper-page'))
     const scale = paper.width / 1400
-    const STRIPS = 8, SAMPLES = 20, CURL = 6.5
+    const STRIPS = 12, SAMPLES = 16, CURL = 4.2
     const stripWidth = half / STRIPS
     const ease = (u: number) => u < .5 ? 2 * u * u : 1 - 2 * (1 - u) * (1 - u)
     const makeFace = (source: HTMLElement | undefined, side: 'front' | 'back', offset: number) => {
@@ -91,6 +105,7 @@ function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<ty
       if (source) {
         const copy = source.cloneNode(true) as HTMLElement
         copy.removeAttribute('aria-hidden')
+        copy.classList.add('kw-blank-page')
         Object.assign(copy.style, { position: 'absolute', left: `${-offset}px`, top: '0', width: '700px', height: '1040px', transformOrigin: '0 0', transform: `scale(${scale})` })
         wrap.appendChild(copy)
       }
@@ -102,6 +117,31 @@ function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<ty
       frames.push(at(to, value(1)), at(total, value(1)))
       return frames
     }
+    // el bloque de hojas que queda debajo: páginas en blanco con el borde del cuaderno, y el grosor de las pilas a ambos lados
+    const underlay = document.createElement('div')
+    underlay.className = 'kw-underlay'
+    for (const side of [0, 1]) {
+      const page = document.createElement('div')
+      page.className = 'kw-underlay-page'
+      page.style.left = `${side * half}px`
+      page.style.width = `${half}px`
+      const copy = pages[side]?.cloneNode(true) as HTMLElement | undefined
+      if (copy) {
+        copy.removeAttribute('aria-hidden'); copy.classList.add('kw-blank-page')
+        Object.assign(copy.style, { position: 'absolute', left: '0', top: '0', width: '700px', height: '1040px', transformOrigin: '0 0', transform: `scale(${scale})` })
+        page.appendChild(copy)
+      }
+      underlay.appendChild(page)
+    }
+    const edgeRight = document.createElement('div'), edgeLeft = document.createElement('div')
+    edgeRight.className = 'kw-stack-edge kw-stack-edge-right'; edgeLeft.className = 'kw-stack-edge kw-stack-edge-left'
+    scene.prepend(edgeLeft, edgeRight, underlay)
+    leaves.push(underlay, edgeLeft, edgeRight)
+    // con el libro cerrado solo hay página derecha; la izquierda aparece cuando la tapa pasa de la vertical
+    const rightOnly = 'inset(-24px -24px -48px 50%)', whole = 'inset(-24px -24px -48px -24px)'
+    run(underlay, [at(0, { opacity: 0, clipPath: rightOnly }), at(FLY, { opacity: 0, clipPath: rightOnly }), at(FLY + 140, { opacity: 1, clipPath: rightOnly }), at(QUARTER - 80, { opacity: 1, clipPath: rightOnly }), at(QUARTER + 60, { opacity: 1, clipPath: whole }), at(total, { opacity: 1, clipPath: whole })])
+    run(edgeRight, [at(0, { opacity: 0, transform: 'scaleX(1)' }), at(FLY, { opacity: 0, transform: 'scaleX(1)' }), at(FLY + 140, { opacity: 1, transform: 'scaleX(1)' }), at(LEAF_START, { opacity: 1, transform: 'scaleX(1)' }), at(LEAF_START + (leafCount - 1) * STEP + LEAF_TIME, { opacity: 1, transform: 'scaleX(.2)' }), at(total, { opacity: 1, transform: 'scaleX(.2)' })])
+    run(edgeLeft, [at(0, { opacity: 0, transform: 'scaleX(.2)' }), at(QUARTER, { opacity: 0, transform: 'scaleX(.2)' }), at(QUARTER + 120, { opacity: 1, transform: 'scaleX(.2)' }), at(LEAF_START + (leafCount - 1) * STEP + LEAF_TIME, { opacity: 1, transform: 'scaleX(1)' }), at(total, { opacity: 1, transform: 'scaleX(1)' })])
     for (let i = 0; i < leafCount; i++) {
       const start = LEAF_START + i * STEP, end = start + LEAF_TIME
       const shadowRight = document.createElement('div'), shadowLeft = document.createElement('div')
@@ -124,12 +164,14 @@ function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<ty
       strips.forEach((strip, k) => {
         const bend = (progress: number) => CURL * Math.sin(Math.PI * progress)
         // la primera tira gira sobre el lomo; cada tira siguiente se dobla un poco hacia atrás, como un papel que se arrastra por el aire
-        const relative = (progress: number) => k === 0 ? -180 * progress : bend(progress)
-        const absolute = (progress: number) => Math.abs(-180 * progress + k * bend(progress))
+        // en reposo las hojas se hunden en el lomo y se levantan hacia fuera, como en un cuaderno abierto de verdad
+        const valley = (progress: number) => (1 - 2 * progress) * (k === 0 ? 3 : -.55)
+        const relative = (progress: number) => (k === 0 ? -180 * progress : bend(progress)) + valley(progress)
+        const absolute = (progress: number) => Math.abs(-180 * progress + k * bend(progress) + (1 - 2 * progress) * (3 - .55 * k))
         run(strip, sample(start, end, (progress) => ({ transform: `rotateY(${relative(progress)}deg)` })))
         run(strip.querySelector(':scope>.kw-leaf-front'), sample(start, end, (progress) => ({ opacity: absolute(progress) < 90 ? 1 : 0 })))
         run(strip.querySelector(':scope>.kw-leaf-back'), sample(start, end, (progress) => ({ opacity: absolute(progress) < 90 ? 0 : 1 })))
-        run(strip.querySelector(':scope>.kw-strip-dim'), sample(start, end, (progress) => ({ opacity: .42 * Math.sin(Math.min(180, absolute(progress)) * Math.PI / 180) })))
+        run(strip.querySelector(':scope>.kw-strip-dim'), sample(start, end, (progress) => ({ opacity: .22 * Math.sin(Math.min(180, absolute(progress)) * Math.PI / 180) })))
       })
       run(shadowRight, sample(start, end, (progress) => ({ opacity: .55 * Math.sin(Math.PI * Math.min(1, progress * 2)) * (progress < .5 ? 1 : 0) })))
       run(shadowLeft, sample(start, end, (progress) => ({ opacity: .55 * Math.sin(Math.PI * Math.max(0, progress * 2 - 1)) * (progress > .5 ? 1 : 0) })))
@@ -138,7 +180,9 @@ function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<ty
     run(scene, [at(0, { opacity: 1 }), at(total - TAIL, { opacity: 1 }), at(total, { opacity: 0 })])
     // el cuaderno real aparece bajo la tapa: primero solo la página derecha y luego las dos
     const reveal = paper.left + half - surface.getBoundingClientRect().left
-    run(surface, [at(0, { opacity: 0, clipPath: clip(reveal) }), at(FLY - 17, { opacity: 0, clipPath: clip(reveal) }), at(FLY, { opacity: 1, clipPath: clip(reveal) }), at(total - TAIL, { opacity: 1, clipPath: clip(reveal) }), at(total - TAIL + 16, { opacity: 1, clipPath: clip(0) }), at(total, { opacity: 1, clipPath: clip(0) })])
+    // la página real aparece cuando la última hoja ya se ha levantado; la izquierda, al final
+    const lastLift = LEAF_START + (leafCount - 1) * STEP + LEAF_TIME * .5
+    run(surface, [at(0, { opacity: 0, clipPath: clip(reveal) }), at(lastLift, { opacity: 0, clipPath: clip(reveal) }), at(lastLift + 140, { opacity: 1, clipPath: clip(reveal) }), at(total - TAIL, { opacity: 1, clipPath: clip(reveal) }), at(total - TAIL + 16, { opacity: 1, clipPath: clip(0) }), at(total, { opacity: 1, clipPath: clip(0) })])
     for (const control of Array.from(node.querySelectorAll('.kw-editor-heading,.kw-toolbar,.kw-view-tools,.kw-selection-tools'))) run(control, [at(0, { opacity: 0 }), at(total - 520, { opacity: 0 }), at(total - 120, { opacity: 1 }), at(total, { opacity: 1 })])
 
     let stale = false

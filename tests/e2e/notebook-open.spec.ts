@@ -12,6 +12,7 @@ test('cerrar durante la apertura sin errores', async ({ page }) => {
   expect(errors).toEqual([])
 })
 test('abrir y cerrar repetido deja el DOM limpio', async ({ page }) => {
+  const errors: string[] = []; page.on('pageerror', (e) => errors.push(e.message)); page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
   for (let i = 0; i < 3; i++) {
     await page.getByRole('button', { name: book }).click()
     await expect(page.locator('.kw-notebook-reader[data-ready]')).toBeVisible({ timeout: 8000 })
@@ -19,6 +20,7 @@ test('abrir y cerrar repetido deja el DOM limpio', async ({ page }) => {
     await page.getByRole('button', { name: 'Cuadernos', exact: true }).click()
     await expect(page.locator('.kw-notebook-reader')).toHaveCount(0, { timeout: 6000 })
   }
+  expect(errors).toEqual([])
 })
 test('movimiento reducido y Modo iPad', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
