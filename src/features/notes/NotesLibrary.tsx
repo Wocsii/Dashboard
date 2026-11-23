@@ -39,9 +39,12 @@ function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<ty
   const hinge = useRef<HTMLDivElement>(null)
   const hold = useRef<HTMLDivElement>(null)
   const closing = useRef(false)
+  const current = useRef<{ cancel: () => void } | null>(null)
+  const leafCount = Math.max(2, Math.min(8, (notebookBoard(readBoard(note.content)).activePage ?? 0) + 2))
   const play = (direction: 'open' | 'close') => {
     const node = reader.current, scene = veil.current, door = hinge.current
     node?.removeAttribute('data-opening')
+    if (hold.current) hold.current.style.display = 'none'
     const paper = node?.querySelector('.kw-notebook')?.getBoundingClientRect()
     const surface = node?.querySelector<HTMLElement>('.kw-surface')
     const quiet = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -51,29 +54,79 @@ function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<ty
     const from = library ?? { left: paper.left + half, top: paper.top + paper.height * .15, width: half * .6, height: paper.height * .7 }
     const tx = from.left - (paper.left + half), ty = from.top + from.height / 2 - (paper.top + paper.height / 2)
     const sx = from.width / half, sy = from.height / paper.height
-    if (hold.current) hold.current.style.display = 'none'
     Object.assign(scene.style, { display: 'block', left: `${paper.left}px`, top: `${paper.top}px`, width: `${paper.width}px`, height: `${paper.height}px` })
+
+    // Cronología en milisegundos: vuelo de la tapa, giro de la tapa, páginas que pasan una a una y fundido final
+    const FLY = 612, QUARTER = 1122, COVER_END = 1700, LEAF_START = 1500, STEP = 120, LEAF_TIME = 560, TAIL = 320
+    const total = LEAF_START + (leafCount - 1) * STEP + LEAF_TIME + TAIL
     const opening = direction === 'open'
-    const options: KeyframeAnimationOptions = { duration: opening ? 1700 : 1200, fill: 'both', direction: opening ? 'normal' : 'reverse', easing: 'linear' }
-    const at = (offset: number, extra: Keyframe): Keyframe => ({ offset, ...extra })
+    const options: KeyframeAnimationOptions = { duration: opening ? total : total * .6, fill: 'both', direction: opening ? 'normal' : 'reverse', easing: 'linear' }
+    const o = (ms: number) => Math.max(0, Math.min(1, ms / total))
+    const at = (ms: number, extra: Keyframe): Keyframe => ({ offset: o(ms), ...extra })
     const animations: Animation[] = []
+    const leaves: HTMLElement[] = []
     const run = (el: Element | null | undefined, frames: Keyframe[]) => { if (el) animations.push(el.animate(frames, options)) }
+    const clip = (px: number) => `inset(0px 0px 0px ${px}px)`
+
     run(door, [
       at(0, { transform: `translate(${tx}px,${ty}px) scale(${sx},${sy}) rotateY(0deg)`, easing: 'cubic-bezier(.3,.7,.25,1)' }),
-      at(.36, { transform: 'translate(0,0) scale(1,1) rotateY(0deg)', easing: 'cubic-bezier(.5,.02,.3,1)' }),
-      at(1, { transform: 'translate(0,0) scale(1,1) rotateY(-180deg)' }),
+      at(FLY, { transform: 'translate(0,0) scale(1,1) rotateY(0deg)', easing: 'cubic-bezier(.5,.02,.3,1)' }),
+      at(COVER_END, { transform: 'translate(0,0) scale(1,1) rotateY(-180deg)' }),
+      at(total, { transform: 'translate(0,0) scale(1,1) rotateY(-180deg)' }),
     ])
-    run(door.querySelector('.kw-cover3d-front .kw-dim'), [at(0, { opacity: 0 }), at(.36, { opacity: 0 }), at(.66, { opacity: .5 }), at(1, { opacity: .5 })])
-    run(door.querySelector('.kw-cover3d-back .kw-dim'), [at(0, { opacity: .3 }), at(.66, { opacity: .3 }), at(1, { opacity: 0 })])
-    run(scene.querySelector('.kw-book3d-shade-right'), [at(0, { opacity: 0 }), at(.36, { opacity: 0 }), at(.55, { opacity: .8 }), at(.75, { opacity: 0 }), at(1, { opacity: 0 })])
-    run(scene.querySelector('.kw-book3d-shade-left'), [at(0, { opacity: 0 }), at(.62, { opacity: 0 }), at(.82, { opacity: .8 }), at(1, { opacity: 0 })])
-    run(scene, [at(0, { opacity: 1 }), at(.9, { opacity: 1 }), at(1, { opacity: 0 })])
+    run(door.querySelector('.kw-cover3d-front .kw-dim'), [at(0, { opacity: 0 }), at(FLY, { opacity: 0 }), at(QUARTER, { opacity: .5 }), at(total, { opacity: .5 })])
+    run(door.querySelector('.kw-cover3d-back .kw-dim'), [at(0, { opacity: .3 }), at(QUARTER, { opacity: .3 }), at(COVER_END, { opacity: 0 }), at(total, { opacity: 0 })])
+    run(scene.querySelector('.kw-book3d-shade-right'), [at(0, { opacity: 0 }), at(FLY, { opacity: 0 }), at(935, { opacity: .8 }), at(1275, { opacity: 0 }), at(total, { opacity: 0 })])
+    run(scene.querySelector('.kw-book3d-shade-left'), [at(0, { opacity: 0 }), at(1054, { opacity: 0 }), at(1394, { opacity: .8 }), at(COVER_END, { opacity: 0 }), at(total, { opacity: 0 })])
+
+    // hojas del cuaderno que pasan de derecha a izquierda hasta llegar a la página donde estabas
+    const pages = Array.from(node.querySelectorAll<HTMLElement>('.kw-notebook .kw-paper-page'))
+    const scale = paper.width / 1400
+    const face = (source: HTMLElement | undefined, side: 'front' | 'back') => {
+      const wrap = document.createElement('div')
+      wrap.className = `kw-leaf-face kw-leaf-${side}`
+      if (source) {
+        const copy = source.cloneNode(true) as HTMLElement
+        copy.removeAttribute('aria-hidden')
+        Object.assign(copy.style, { position: 'absolute', left: '0', top: '0', width: '700px', height: '1040px', transformOrigin: '0 0', transform: `scale(${scale})` })
+        wrap.appendChild(copy)
+      }
+      const dim = document.createElement('b')
+      dim.className = 'kw-dim'
+      wrap.appendChild(dim)
+      return wrap
+    }
+    for (let i = 0; i < leafCount; i++) {
+      const start = LEAF_START + i * STEP, end = start + LEAF_TIME, mid = start + LEAF_TIME * .5
+      const leaf = document.createElement('div')
+      leaf.className = 'kw-leaf3d'
+      leaf.append(face(pages[1], 'front'), face(pages[0], 'back'))
+      scene.appendChild(leaf)
+      leaves.push(leaf)
+      run(leaf, [
+        at(0, { opacity: 0, transform: 'rotateY(0deg)' }), at(start, { opacity: 0, transform: 'rotateY(0deg)' }),
+        at(start, { opacity: 1, transform: 'rotateY(0deg)', easing: 'cubic-bezier(.42,.08,.3,1)' }),
+        at(end, { opacity: 1, transform: 'rotateY(-180deg)' }), at(total, { opacity: 1, transform: 'rotateY(-180deg)' }),
+      ])
+      // cada cara solo se ve en su mitad del giro (sin depender de backface-visibility, que falla con contenido clonado)
+      run(leaf.querySelector('.kw-leaf-front'), [at(0, { opacity: 1 }), at(mid, { opacity: 1 }), at(mid, { opacity: 0 }), at(total, { opacity: 0 })])
+      run(leaf.querySelector('.kw-leaf-back'), [at(0, { opacity: 0 }), at(mid, { opacity: 0 }), at(mid, { opacity: 1 }), at(total, { opacity: 1 })])
+      run(leaf.querySelector('.kw-leaf-front .kw-dim'), [at(0, { opacity: 0 }), at(start, { opacity: 0 }), at(mid, { opacity: .32 }), at(total, { opacity: .32 })])
+      run(leaf.querySelector('.kw-leaf-back .kw-dim'), [at(0, { opacity: .32 }), at(mid, { opacity: .32 }), at(end, { opacity: 0 }), at(total, { opacity: 0 })])
+    }
+
+    run(scene, [at(0, { opacity: 1 }), at(total - TAIL, { opacity: 1 }), at(total, { opacity: 0 })])
     // el cuaderno real aparece bajo la tapa: primero solo la página derecha y luego las dos
     const reveal = paper.left + half - surface.getBoundingClientRect().left
-    run(surface, [at(0, { opacity: 0, clipPath: `inset(0px 0px 0px ${reveal}px)` }), at(.35, { opacity: 0, clipPath: `inset(0px 0px 0px ${reveal}px)` }), at(.36, { opacity: 1, clipPath: `inset(0px 0px 0px ${reveal}px)` }), at(.9, { opacity: 1, clipPath: `inset(0px 0px 0px ${reveal}px)` }), at(.91, { opacity: 1, clipPath: 'inset(0px 0px 0px 0px)' }), at(1, { opacity: 1, clipPath: 'inset(0px 0px 0px 0px)' })])
-    for (const control of Array.from(node.querySelectorAll('.kw-editor-heading,.kw-toolbar,.kw-view-tools,.kw-selection-tools'))) run(control, [at(0, { opacity: 0 }), at(.8, { opacity: 0 }), at(1, { opacity: 1 })])
+    run(surface, [at(0, { opacity: 0, clipPath: clip(reveal) }), at(FLY - 17, { opacity: 0, clipPath: clip(reveal) }), at(FLY, { opacity: 1, clipPath: clip(reveal) }), at(total - TAIL, { opacity: 1, clipPath: clip(reveal) }), at(total - TAIL + 16, { opacity: 1, clipPath: clip(0) }), at(total, { opacity: 1, clipPath: clip(0) })])
+    for (const control of Array.from(node.querySelectorAll('.kw-editor-heading,.kw-toolbar,.kw-view-tools,.kw-selection-tools'))) run(control, [at(0, { opacity: 0 }), at(total - 520, { opacity: 0 }), at(total - 120, { opacity: 1 }), at(total, { opacity: 1 })])
+
+    let stale = false
+    const cleanup = () => { animations.forEach((a) => a.cancel()); leaves.forEach((leaf) => leaf.remove()); scene.style.display = 'none' }
+    if (opening) current.current = { cancel: () => { stale = true; cleanup() } }
     return Promise.all(animations.map((a) => a.finished)).then(() => {
-      if (opening) { animations.forEach((a) => a.cancel()); scene.style.display = 'none'; node.setAttribute('data-ready', '') }
+      if (!opening || stale) return
+      cleanup(); current.current = null; node.setAttribute('data-ready', '')
     }, () => undefined)
   }
   useLayoutEffect(() => {
@@ -97,6 +150,7 @@ function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<ty
   const close = () => {
     if (closing.current) return
     closing.current = true
+    current.current?.cancel(); current.current = null
     void play('close').then(onBack)
   }
   return <div ref={reader} className="kw-notebook-reader" role="presentation">

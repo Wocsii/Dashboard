@@ -35,7 +35,7 @@
 .kw-cover3d-front img { width:100%; height:100%; object-fit:cover; display:block; border-radius:inherit; }
 .kw-cover3d-back { transform:rotateY(180deg); border-radius:12px 3px 3px 12px; background:linear-gradient(90deg,#e4dac6,#f6efe1 10%,#fdfaf2 55%,#fffefa); box-shadow:inset 0 0 0 1px #e4dccf,0 0 0 1px #e4dccf; }
 .kw-cover3d-back::after { content:''; position:absolute; inset:34px 30px; border:1px solid #e2d9c8; border-radius:4px; }
-.kw-cover3d .kw-dim { position:absolute; inset:0; border-radius:inherit; background:#1c1320; opacity:0; }
+.kw-dim { position:absolute; inset:0; border-radius:inherit; background:#1c1320; opacity:0; }
 .kw-book3d-shade { position:absolute; top:0; bottom:0; width:50%; opacity:0; }
 .kw-book3d-shade-right { left:50%; background:linear-gradient(90deg,#1c132066,#1c132000 60%); }
 .kw-book3d-shade-left { left:0; background:linear-gradient(270deg,#1c132066,#1c132000 60%); }
@@ -93,3 +93,11 @@
 .kw-notebook-mode .kw-surface textarea { touch-action:none; }
 body:has(.kw-notebook-reader) #contenido>div>p { visibility:hidden; }
 .kw-notebook-mode .kw-pages-menu { pointer-events:auto; }
+
+.kw-leaf3d { position:absolute; left:50%; top:0; width:50%; height:100%; transform-origin:0 50%; transform-style:preserve-3d; opacity:0; }
+.kw-leaf3d>.kw-leaf-face { position:absolute; inset:0; background:#fffefa; }
+.kw-leaf-front { box-shadow:2px 0 0 #ece7dd; }
+.kw-leaf-back { transform:rotateY(180deg); }
+.kw-leaf-face::after { content:''; position:absolute; inset:0; pointer-events:none; }
+.kw-leaf-front::after { background:linear-gradient(90deg,#3b2f4a22,#3b2f4a00 12%); }
+.kw-leaf-back::after { background:linear-gradient(270deg,#3b2f4a22,#3b2f4a00 12%); }
