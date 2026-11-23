@@ -72,7 +72,7 @@ export function screenToBoard(point: Point, rect: { left: number; top: number },
   return { x: (point.x - rect.left - view.x) / view.zoom, y: (point.y - rect.top - view.y) / view.zoom }
 }
 export function zoomAt(view: Point & { zoom: number }, zoom: number, point: Point) {
-  const next = Math.min(2, Math.max(0.15, zoom))
+  const next = Math.min(4, Math.max(0.15, zoom))
   return { x: point.x - (point.x - view.x) * next / view.zoom, y: point.y - (point.y - view.y) * next / view.zoom, zoom: next }
 }
 export function strokeElement(id: string, kind: 'drawing' | 'arrow', points: Point[], color: string): BoardElement {

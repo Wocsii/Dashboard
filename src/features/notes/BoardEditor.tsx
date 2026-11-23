@@ -190,12 +190,11 @@ export function BoardEditor({ note, onDelete, onBack, backdrop, planner = false 
     if (!node) return
     const wheel = (e: WheelEvent) => {
       e.preventDefault()
-      // Rueda del ratón (pasos enteros en vertical) y pellizco del trackpad (ctrl) hacen zoom; el desplazamiento con dos dedos del trackpad mueve la página.
-      const trackpadScroll = !e.ctrlKey && !e.metaKey && e.deltaMode === 0 && (e.deltaX !== 0 || !Number.isInteger(e.deltaY))
-      if (trackpadScroll) { setView((v) => ({ ...v, x: v.x - e.deltaX, y: v.y - e.deltaY })); return }
+      // La rueda (o el pellizco del trackpad) hace zoom; con Mayús la rueda desplaza la hoja.
+      if (e.shiftKey && !e.ctrlKey && !e.metaKey) { setView((v) => ({ ...v, x: v.x - (e.deltaX || e.deltaY), y: v.y })); return }
       const rect = node.getBoundingClientRect()
       const amount = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY
-      setView((v) => zoomAt(v, v.zoom * Math.exp(-amount * (e.ctrlKey ? 0.01 : 0.0015)), { x: e.clientX - rect.left, y: e.clientY - rect.top }))
+      setView((v) => zoomAt(v, v.zoom * Math.exp(-amount * (e.ctrlKey ? 0.01 : 0.002)), { x: e.clientX - rect.left, y: e.clientY - rect.top }))
     }
     node.addEventListener('wheel', wheel, { passive: false })
     return () => node.removeEventListener('wheel', wheel)

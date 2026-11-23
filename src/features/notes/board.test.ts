@@ -22,7 +22,7 @@ describe('cuaderno: datos y coordenadas', () => {
     const before = screenToBoard(point, { left: 0, top: 0 }, view)
     const next = zoomAt(view, 1.5, point)
     expect(screenToBoard(point, { left: 0, top: 0 }, next)).toEqual(before)
-    expect(zoomAt(view, 99, point).zoom).toBe(2)
+    expect(zoomAt(view, 99, point).zoom).toBe(4)
     expect(zoomAt(view, 0.01, point).zoom).toBe(0.15)
   })
   it('conserva la dirección de las flechas y normaliza trazos hacia atrás', () => {
