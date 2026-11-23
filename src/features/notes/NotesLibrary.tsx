@@ -96,7 +96,7 @@ function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<ty
     // Hojas que se curvan al pasar de derecha a izquierda. Empiezan en cuanto la tapa se abre y terminan en la página donde estabas.
     const pages = Array.from(node.querySelectorAll<HTMLElement>('.kw-notebook .kw-paper-page'))
     const scale = paper.width / 1400
-    const STRIPS = 12, SAMPLES = 16, CURL = 4.2
+    const STRIPS = 8, SAMPLES = 14, CURL = 6
     const stripWidth = half / STRIPS
     const ease = (u: number) => u < .5 ? 2 * u * u : 1 - 2 * (1 - u) * (1 - u)
     const makeFace = (source: HTMLElement | undefined, side: 'front' | 'back', offset: number) => {
@@ -142,37 +142,48 @@ function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<ty
     run(underlay, [at(0, { opacity: 0, clipPath: rightOnly }), at(FLY, { opacity: 0, clipPath: rightOnly }), at(FLY + 140, { opacity: 1, clipPath: rightOnly }), at(QUARTER - 80, { opacity: 1, clipPath: rightOnly }), at(QUARTER + 60, { opacity: 1, clipPath: whole }), at(total, { opacity: 1, clipPath: whole })])
     run(edgeRight, [at(0, { opacity: 0, transform: 'scaleX(1)' }), at(FLY, { opacity: 0, transform: 'scaleX(1)' }), at(FLY + 140, { opacity: 1, transform: 'scaleX(1)' }), at(LEAF_START, { opacity: 1, transform: 'scaleX(1)' }), at(LEAF_START + (leafCount - 1) * STEP + LEAF_TIME, { opacity: 1, transform: 'scaleX(.2)' }), at(total, { opacity: 1, transform: 'scaleX(.2)' })])
     run(edgeLeft, [at(0, { opacity: 0, transform: 'scaleX(.2)' }), at(QUARTER, { opacity: 0, transform: 'scaleX(.2)' }), at(QUARTER + 120, { opacity: 1, transform: 'scaleX(.2)' }), at(LEAF_START + (leafCount - 1) * STEP + LEAF_TIME, { opacity: 1, transform: 'scaleX(1)' }), at(total, { opacity: 1, transform: 'scaleX(1)' })])
+    const TONES = ['#fffefa', '#fcf9f1', '#f9f5ea']
     for (let i = 0; i < leafCount; i++) {
       const start = LEAF_START + i * STEP, end = start + LEAF_TIME
       const shadowRight = document.createElement('div'), shadowLeft = document.createElement('div')
       shadowRight.className = 'kw-leaf-shadow kw-leaf-shadow-right'; shadowLeft.className = 'kw-leaf-shadow kw-leaf-shadow-left'
       scene.append(shadowRight, shadowLeft)
-      const strips: HTMLElement[] = []
-      let parent: HTMLElement = scene
+      leaves.push(shadowRight, shadowLeft)
+      const bend = (progress: number) => CURL * Math.sin(Math.PI * progress)
+      // ángulo de cada tira respecto a la anterior: la primera gira sobre el lomo y las demás se doblan hacia atrás
+      // (como un papel que se arrastra por el aire); en reposo las hojas se hunden en el lomo y se levantan hacia fuera
+      const relative = (k: number, progress: number) => (k === 0 ? -180 * progress : bend(progress)) + (1 - 2 * progress) * (k === 0 ? 3 : -.55)
+      // Cada tira es una pieza plana e independiente (sin anidar capas 3D, que es lo que más pesa): su posición se calcula encadenando las anteriores
+      const pose = (progress: number) => {
+        let angle = 0, x = 0, z = 0
+        return Array.from({ length: STRIPS }, (_, k) => {
+          angle += relative(k, progress)
+          const placed = { x, z, angle }
+          x += stripWidth * Math.cos(angle * Math.PI / 180); z -= stripWidth * Math.sin(angle * Math.PI / 180)
+          return placed
+        })
+      }
       for (let k = 0; k < STRIPS; k++) {
         const strip = document.createElement('div')
-        strip.className = k === 0 ? 'kw-leaf3d' : 'kw-strip'
-        Object.assign(strip.style, { width: `${stripWidth + 1}px`, left: k === 0 ? '50%' : `${stripWidth}px` })
-        // cara delantera: página derecha; cara trasera: página izquierda vista desde atrás
+        strip.className = 'kw-strip'
+        Object.assign(strip.style, { width: `${stripWidth + 1}px`, left: '50%' })
+        const front = makeFace(pages[1], 'front', k * stripWidth), back = makeFace(pages[0], 'back', (STRIPS - 1 - k) * stripWidth)
+        front.style.background = TONES[i % TONES.length]
         const dim = document.createElement('b'); dim.className = 'kw-dim kw-strip-dim'
-        strip.append(makeFace(pages[1], 'front', k * stripWidth), makeFace(pages[0], 'back', (STRIPS - 1 - k) * stripWidth), dim)
-        parent.appendChild(strip)
-        strips.push(strip); parent = strip
+        strip.append(front, back, dim)
+        scene.appendChild(strip)
+        leaves.push(strip)
+        const frames = (value: (p: ReturnType<typeof pose>[number], progress: number) => Keyframe, outside: Keyframe) => {
+          const list: Keyframe[] = [at(0, outside), at(start, outside)]
+          for (let n = 0; n <= SAMPLES; n++) { const progress = ease(n / SAMPLES); list.push(at(start + LEAF_TIME * n / SAMPLES, value(pose(progress)[k], progress))) }
+          list.push(at(end, outside), at(total, outside))
+          return list
+        }
+        run(strip, frames((placed) => ({ transform: `translate3d(${placed.x}px,0,${placed.z}px) rotateY(${placed.angle}deg)` }), { transform: `translate3d(0,0,0) rotateY(0deg)` }))
+        run(front, frames((placed) => ({ opacity: Math.abs(placed.angle) < 90 ? 1 : 0 }), { opacity: 0 }))
+        run(back, frames((placed) => ({ opacity: Math.abs(placed.angle) < 90 ? 0 : 1 }), { opacity: 0 }))
+        run(dim, frames((placed) => ({ opacity: .22 * Math.sin(Math.min(180, Math.abs(placed.angle)) * Math.PI / 180) }), { opacity: 0 }))
       }
-      leaves.push(shadowRight, shadowLeft, strips[0])
-      run(strips[0], [at(0, { visibility: 'hidden' }), at(start, { visibility: 'hidden' }), at(start, { visibility: 'visible' }), at(total, { visibility: 'visible' })])
-      strips.forEach((strip, k) => {
-        const bend = (progress: number) => CURL * Math.sin(Math.PI * progress)
-        // la primera tira gira sobre el lomo; cada tira siguiente se dobla un poco hacia atrás, como un papel que se arrastra por el aire
-        // en reposo las hojas se hunden en el lomo y se levantan hacia fuera, como en un cuaderno abierto de verdad
-        const valley = (progress: number) => (1 - 2 * progress) * (k === 0 ? 3 : -.55)
-        const relative = (progress: number) => (k === 0 ? -180 * progress : bend(progress)) + valley(progress)
-        const absolute = (progress: number) => Math.abs(-180 * progress + k * bend(progress) + (1 - 2 * progress) * (3 - .55 * k))
-        run(strip, sample(start, end, (progress) => ({ transform: `rotateY(${relative(progress)}deg)` })))
-        run(strip.querySelector(':scope>.kw-leaf-front'), sample(start, end, (progress) => ({ opacity: absolute(progress) < 90 ? 1 : 0 })))
-        run(strip.querySelector(':scope>.kw-leaf-back'), sample(start, end, (progress) => ({ opacity: absolute(progress) < 90 ? 0 : 1 })))
-        run(strip.querySelector(':scope>.kw-strip-dim'), sample(start, end, (progress) => ({ opacity: .22 * Math.sin(Math.min(180, absolute(progress)) * Math.PI / 180) })))
-      })
       run(shadowRight, sample(start, end, (progress) => ({ opacity: .55 * Math.sin(Math.PI * Math.min(1, progress * 2)) * (progress < .5 ? 1 : 0) })))
       run(shadowLeft, sample(start, end, (progress) => ({ opacity: .55 * Math.sin(Math.PI * Math.max(0, progress * 2 - 1)) * (progress > .5 ? 1 : 0) })))
     }
