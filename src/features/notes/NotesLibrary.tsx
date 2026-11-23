@@ -32,34 +32,47 @@ function coverOf(id: string, cover?: string) {
   return coverFor(cover ?? fallback)
 }
 
-/** El cuaderno crece desde su tapa en la biblioteca hasta quedar abierto y se encoge de vuelta al cerrarlo; la barra lateral queda visible */
+/** Libro en 3D: la tapa vuela desde la biblioteca, gira sobre el lomo y deja ver las dos páginas. Al cerrar hace lo mismo al revés. */
 function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<typeof BoardEditor>[0]['note']; cover: string; onBack: () => void; onDelete: () => void }) {
   const reader = useRef<HTMLDivElement>(null)
   const veil = useRef<HTMLDivElement>(null)
+  const hinge = useRef<HTMLDivElement>(null)
   const closing = useRef(false)
-  const px = (r: { left: number; top: number; width: number; height: number }) => ({ left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` })
-  const rects = () => {
-    const paper = reader.current?.querySelector('.kw-notebook')?.getBoundingClientRect()
-    const book = document.querySelector(`[data-book-id="${CSS.escape(note.id)}"] .kw-book-cover`)?.getBoundingClientRect()
-    if (!paper) return null
-    const small = { left: paper.left + paper.width * .4, top: paper.top + paper.height * .3, width: paper.width * .2, height: paper.height * .4 }
-    return { paper, book: book ?? small }
-  }
   const play = (direction: 'open' | 'close') => {
-    const node = reader.current, cloth = veil.current
-    const editor = node?.querySelector<HTMLElement>('.kw-editor')
-    const box = rects()
-    const quiet = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    const node = reader.current, scene = veil.current, door = hinge.current
     node?.removeAttribute('data-opening')
-    if (!node || !cloth || !editor || !box || typeof cloth.animate !== 'function' || quiet) return Promise.resolve()
-    const open = direction === 'open'
-    const duration = open ? 640 : 420
-    const [a, b] = open ? [box.book, box.paper] : [box.paper, box.book]
-    const move = [{ ...px(a), opacity: 1 }, { ...px(b), opacity: 1, offset: .72 }, { ...px(b), opacity: open ? 0 : 1 }]
-    const options = { duration, easing: 'cubic-bezier(.22,.8,.24,1)', fill: 'both' as const }
-    editor.animate({ opacity: open ? [0, 0, 1] : [1, 0, 0], offset: open ? [0, .6, 1] : [0, .3, 1] }, { duration, easing: 'ease', fill: 'both' })
-    const shape = cloth.animate(open ? move : [{ ...px(a), opacity: 1 }, { ...px(b), opacity: 1 }], options)
-    return shape.finished.then(() => undefined, () => undefined)
+    const paper = node?.querySelector('.kw-notebook')?.getBoundingClientRect()
+    const surface = node?.querySelector<HTMLElement>('.kw-surface')
+    const quiet = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (!node || !scene || !door || !paper || !surface || typeof door.animate !== 'function' || quiet) return Promise.resolve()
+    const library = document.querySelector(`[data-book-id="${CSS.escape(note.id)}"] .kw-book-cover`)?.getBoundingClientRect()
+    const half = paper.width / 2
+    const from = library ?? { left: paper.left + half, top: paper.top + paper.height * .15, width: half * .6, height: paper.height * .7 }
+    const tx = from.left - (paper.left + half), ty = from.top + from.height / 2 - (paper.top + paper.height / 2)
+    const sx = from.width / half, sy = from.height / paper.height
+    Object.assign(scene.style, { display: 'block', left: `${paper.left}px`, top: `${paper.top}px`, width: `${paper.width}px`, height: `${paper.height}px` })
+    const opening = direction === 'open'
+    const options: KeyframeAnimationOptions = { duration: opening ? 1700 : 1200, fill: 'both', direction: opening ? 'normal' : 'reverse', easing: 'linear' }
+    const at = (offset: number, extra: Keyframe): Keyframe => ({ offset, ...extra })
+    const animations: Animation[] = []
+    const run = (el: Element | null | undefined, frames: Keyframe[]) => { if (el) animations.push(el.animate(frames, options)) }
+    run(door, [
+      at(0, { transform: `translate(${tx}px,${ty}px) scale(${sx},${sy}) rotateY(0deg)`, easing: 'cubic-bezier(.3,.7,.25,1)' }),
+      at(.36, { transform: 'translate(0,0) scale(1,1) rotateY(0deg)', easing: 'cubic-bezier(.5,.02,.3,1)' }),
+      at(1, { transform: 'translate(0,0) scale(1,1) rotateY(-180deg)' }),
+    ])
+    run(door.querySelector('.kw-cover3d-front .kw-dim'), [at(0, { opacity: 0 }), at(.36, { opacity: 0 }), at(.66, { opacity: .55 }), at(1, { opacity: .55 })])
+    run(door.querySelector('.kw-cover3d-back .kw-dim'), [at(0, { opacity: .5 }), at(.66, { opacity: .5 }), at(1, { opacity: 0 })])
+    run(scene.querySelector('.kw-book3d-shade-right'), [at(0, { opacity: 0 }), at(.36, { opacity: 0 }), at(.55, { opacity: .8 }), at(.75, { opacity: 0 }), at(1, { opacity: 0 })])
+    run(scene.querySelector('.kw-book3d-shade-left'), [at(0, { opacity: 0 }), at(.62, { opacity: 0 }), at(.8, { opacity: .9 }), at(1, { opacity: 0 })])
+    run(scene, [at(0, { opacity: 1 }), at(.9, { opacity: 1 }), at(1, { opacity: 0 })])
+    // el cuaderno real aparece bajo la tapa: primero solo la página derecha y luego las dos
+    const reveal = paper.left + half - surface.getBoundingClientRect().left
+    run(surface, [at(0, { opacity: 0, clipPath: `inset(0px 0px 0px ${reveal}px)` }), at(.35, { opacity: 0, clipPath: `inset(0px 0px 0px ${reveal}px)` }), at(.36, { opacity: 1, clipPath: `inset(0px 0px 0px ${reveal}px)` }), at(.62, { opacity: 1, clipPath: `inset(0px 0px 0px ${reveal}px)` }), at(.7, { opacity: 1, clipPath: 'inset(0px 0px 0px 0px)' }), at(1, { opacity: 1, clipPath: 'inset(0px 0px 0px 0px)' })])
+    for (const control of Array.from(node.querySelectorAll('.kw-editor-heading,.kw-toolbar,.kw-view-tools,.kw-selection-tools'))) run(control, [at(0, { opacity: 0 }), at(.8, { opacity: 0 }), at(1, { opacity: 1 })])
+    return Promise.all(animations.map((a) => a.finished)).then(() => {
+      if (opening) { animations.forEach((a) => a.cancel()); scene.style.display = 'none' }
+    }, () => undefined)
   }
   useLayoutEffect(() => {
     reader.current?.setAttribute('data-opening', '')
@@ -75,7 +88,13 @@ function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<ty
   }
   return <div ref={reader} className="kw-notebook-reader" role="presentation">
     <BoardEditor key={note.id} note={note} onBack={close} onDelete={onDelete} />
-    <div ref={veil} className="kw-open-cover" aria-hidden="true"><img src={coverFor(cover).image} alt="" /><i className="kw-book-spine" /></div>
+    <div ref={veil} className="kw-book3d" aria-hidden="true">
+      <div className="kw-book3d-shade kw-book3d-shade-right" /><div className="kw-book3d-shade kw-book3d-shade-left" />
+      <div ref={hinge} className="kw-cover3d">
+        <div className="kw-cover3d-front"><img src={coverFor(cover).image} alt="" /><i className="kw-book-spine" /><b className="kw-dim" /></div>
+        <div className="kw-cover3d-back"><b className="kw-dim" /></div>
+      </div>
+    </div>
   </div>
 }
 
