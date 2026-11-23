@@ -40,7 +40,7 @@ function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<ty
   const hold = useRef<HTMLDivElement>(null)
   const closing = useRef(false)
   const current = useRef<{ cancel: () => void } | null>(null)
-  const leafCount = Math.max(2, Math.min(8, (notebookBoard(readBoard(note.content)).activePage ?? 0) + 2))
+  const leafCount = Math.max(5, Math.min(9, (notebookBoard(readBoard(note.content)).activePage ?? 0) + 4))
   const play = (direction: 'open' | 'close') => {
     const node = reader.current, scene = veil.current, door = hinge.current
     node?.removeAttribute('data-opening')
@@ -57,7 +57,7 @@ function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<ty
     Object.assign(scene.style, { display: 'block', left: `${paper.left}px`, top: `${paper.top}px`, width: `${paper.width}px`, height: `${paper.height}px` })
 
     // Cronología en milisegundos: vuelo de la tapa, giro de la tapa, páginas que pasan una a una y fundido final
-    const FLY = 612, QUARTER = 1122, COVER_END = 1700, LEAF_START = 1500, STEP = 120, LEAF_TIME = 560, TAIL = 320
+    const FLY = 612, QUARTER = 1122, COVER_END = 1700, LEAF_START = 1140, STEP = 130, LEAF_TIME = 660, TAIL = 340
     const total = LEAF_START + (leafCount - 1) * STEP + LEAF_TIME + TAIL
     const opening = direction === 'open'
     const options: KeyframeAnimationOptions = { duration: opening ? total : total * .6, fill: 'both', direction: opening ? 'normal' : 'reverse', easing: 'linear' }
@@ -79,40 +79,60 @@ function NotebookReader({ note, cover, onBack, onDelete }: { note: Parameters<ty
     run(scene.querySelector('.kw-book3d-shade-right'), [at(0, { opacity: 0 }), at(FLY, { opacity: 0 }), at(935, { opacity: .8 }), at(1275, { opacity: 0 }), at(total, { opacity: 0 })])
     run(scene.querySelector('.kw-book3d-shade-left'), [at(0, { opacity: 0 }), at(1054, { opacity: 0 }), at(1394, { opacity: .8 }), at(COVER_END, { opacity: 0 }), at(total, { opacity: 0 })])
 
-    // hojas del cuaderno que pasan de derecha a izquierda hasta llegar a la página donde estabas
+    // Hojas que se curvan al pasar de derecha a izquierda. Empiezan en cuanto la tapa se abre y terminan en la página donde estabas.
     const pages = Array.from(node.querySelectorAll<HTMLElement>('.kw-notebook .kw-paper-page'))
     const scale = paper.width / 1400
-    const face = (source: HTMLElement | undefined, side: 'front' | 'back') => {
+    const STRIPS = 8, SAMPLES = 20, CURL = 6.5
+    const stripWidth = half / STRIPS
+    const ease = (u: number) => u < .5 ? 2 * u * u : 1 - 2 * (1 - u) * (1 - u)
+    const makeFace = (source: HTMLElement | undefined, side: 'front' | 'back', offset: number) => {
       const wrap = document.createElement('div')
       wrap.className = `kw-leaf-face kw-leaf-${side}`
       if (source) {
         const copy = source.cloneNode(true) as HTMLElement
         copy.removeAttribute('aria-hidden')
-        Object.assign(copy.style, { position: 'absolute', left: '0', top: '0', width: '700px', height: '1040px', transformOrigin: '0 0', transform: `scale(${scale})` })
+        Object.assign(copy.style, { position: 'absolute', left: `${-offset}px`, top: '0', width: '700px', height: '1040px', transformOrigin: '0 0', transform: `scale(${scale})` })
         wrap.appendChild(copy)
       }
-      const dim = document.createElement('b')
-      dim.className = 'kw-dim'
-      wrap.appendChild(dim)
       return wrap
     }
+    const sample = (from: number, to: number, value: (progress: number) => Keyframe): Keyframe[] => {
+      const frames: Keyframe[] = [at(0, value(0)), at(from, value(0))]
+      for (let n = 1; n < SAMPLES; n++) frames.push(at(from + (to - from) * n / SAMPLES, value(ease(n / SAMPLES))))
+      frames.push(at(to, value(1)), at(total, value(1)))
+      return frames
+    }
     for (let i = 0; i < leafCount; i++) {
-      const start = LEAF_START + i * STEP, end = start + LEAF_TIME, mid = start + LEAF_TIME * .5
-      const leaf = document.createElement('div')
-      leaf.className = 'kw-leaf3d'
-      leaf.append(face(pages[1], 'front'), face(pages[0], 'back'))
-      scene.appendChild(leaf)
-      leaves.push(leaf)
-      run(leaf, [
-        at(0, { opacity: 0, transform: 'rotateY(0deg)' }), at(start, { opacity: 0, transform: 'rotateY(0deg)' }),
-        at(start, { opacity: 1, transform: 'rotateY(0deg)', easing: 'cubic-bezier(.42,.08,.3,1)' }),
-        at(end, { opacity: 1, transform: 'rotateY(-180deg)' }), at(total, { opacity: 1, transform: 'rotateY(-180deg)' }),
-      ])
-      // cada cara solo se ve en su mitad del giro (sin depender de backface-visibility, que falla con contenido clonado)
-      run(leaf.querySelector('.kw-leaf-front'), [at(0, { opacity: 1 }), at(mid, { opacity: 1 }), at(mid, { opacity: 0 }), at(total, { opacity: 0 })])
-      run(leaf.querySelector('.kw-leaf-back'), [at(0, { opacity: 0 }), at(mid, { opacity: 0 }), at(mid, { opacity: 1 }), at(total, { opacity: 1 })])
-      run(leaf.querySelector('.kw-leaf-front .kw-dim'), [at(0, { opacity: 0 }), at(start, { opacity: 0 }), at(mid, { opacity: .32 }), at(total, { opacity: .32 })])
-      run(leaf.querySelector('.kw-leaf-back .kw-dim'), [at(0, { opacity: .32 }), at(mid, { opacity: .32 }), at(end, { opacity: 0 }), at(total, { opacity: 0 })])
+      const start = LEAF_START + i * STEP, end = start + LEAF_TIME
+      const shadowRight = document.createElement('div'), shadowLeft = document.createElement('div')
+      shadowRight.className = 'kw-leaf-shadow kw-leaf-shadow-right'; shadowLeft.className = 'kw-leaf-shadow kw-leaf-shadow-left'
+      scene.append(shadowRight, shadowLeft)
+      const strips: HTMLElement[] = []
+      let parent: HTMLElement = scene
+      for (let k = 0; k < STRIPS; k++) {
+        const strip = document.createElement('div')
+        strip.className = k === 0 ? 'kw-leaf3d' : 'kw-strip'
+        Object.assign(strip.style, { width: `${stripWidth + 1}px`, left: k === 0 ? '50%' : `${stripWidth}px` })
+        // cara delantera: página derecha; cara trasera: página izquierda vista desde atrás
+        const dim = document.createElement('b'); dim.className = 'kw-dim kw-strip-dim'
+        strip.append(makeFace(pages[1], 'front', k * stripWidth), makeFace(pages[0], 'back', (STRIPS - 1 - k) * stripWidth), dim)
+        parent.appendChild(strip)
+        strips.push(strip); parent = strip
+      }
+      leaves.push(shadowRight, shadowLeft, strips[0])
+      run(strips[0], [at(0, { visibility: 'hidden' }), at(start, { visibility: 'hidden' }), at(start, { visibility: 'visible' }), at(total, { visibility: 'visible' })])
+      strips.forEach((strip, k) => {
+        const bend = (progress: number) => CURL * Math.sin(Math.PI * progress)
+        // la primera tira gira sobre el lomo; cada tira siguiente se dobla un poco hacia atrás, como un papel que se arrastra por el aire
+        const relative = (progress: number) => k === 0 ? -180 * progress : bend(progress)
+        const absolute = (progress: number) => Math.abs(-180 * progress + k * bend(progress))
+        run(strip, sample(start, end, (progress) => ({ transform: `rotateY(${relative(progress)}deg)` })))
+        run(strip.querySelector(':scope>.kw-leaf-front'), sample(start, end, (progress) => ({ opacity: absolute(progress) < 90 ? 1 : 0 })))
+        run(strip.querySelector(':scope>.kw-leaf-back'), sample(start, end, (progress) => ({ opacity: absolute(progress) < 90 ? 0 : 1 })))
+        run(strip.querySelector(':scope>.kw-strip-dim'), sample(start, end, (progress) => ({ opacity: .42 * Math.sin(Math.min(180, absolute(progress)) * Math.PI / 180) })))
+      })
+      run(shadowRight, sample(start, end, (progress) => ({ opacity: .55 * Math.sin(Math.PI * Math.min(1, progress * 2)) * (progress < .5 ? 1 : 0) })))
+      run(shadowLeft, sample(start, end, (progress) => ({ opacity: .55 * Math.sin(Math.PI * Math.max(0, progress * 2 - 1)) * (progress > .5 ? 1 : 0) })))
     }
 
     run(scene, [at(0, { opacity: 1 }), at(total - TAIL, { opacity: 1 }), at(total, { opacity: 0 })])
