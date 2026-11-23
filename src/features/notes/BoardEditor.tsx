@@ -19,7 +19,7 @@ const noteWrites = new Map<string, Promise<unknown>>()
 type Gesture = { pointerId: number; kind: 'move' | 'pan' | 'draw'; start: Point; original: Board; element?: BoardElement; view: Point & { zoom: number }; points: Point[] }
 const uid = () => crypto.randomUUID()
 const PAPER = { width: 1400, height: 1040 }
-const FIT_X = 110, FIT_Y = 76
+const FIT_X = 58, FIT_Y = 22
 
 export function NotebookPaper() {
   return <div className="kw-notebook" aria-hidden="true">
@@ -160,7 +160,7 @@ export function BoardEditor({ note, onDelete, onBack, backdrop, planner = false 
     const elements = current.current.elements
     const width = Math.max(PAPER.width, ...elements.map((e) => e.x + e.width + 60))
     const height = Math.max(PAPER.height, ...elements.map((e) => e.y + e.height + 60))
-    const zoom = Math.max(0.15, Math.min((rect.width - (planner ? 48 : FIT_X * 2)) / width, (rect.height - (planner ? 48 : FIT_Y * 2)) / height, 1))
+    const zoom = Math.max(0.15, Math.min((rect.width - (planner ? 48 : FIT_X * 2)) / width, (rect.height - (planner ? 48 : FIT_Y * 2)) / height, planner ? 1 : 2))
     setView({ x: (rect.width - width * zoom) / 2, y: planner ? 24 : (rect.height - height * zoom) / 2, zoom })
   }
   useEffect(() => {
@@ -168,7 +168,7 @@ export function BoardEditor({ note, onDelete, onBack, backdrop, planner = false 
     if (!node) return
     const observer = new ResizeObserver(() => {
       const rect = node.getBoundingClientRect()
-      const zoom = Math.max(0.15, Math.min((rect.width - (planner ? 40 : FIT_X * 2)) / PAPER.width, (rect.height - (planner ? 40 : FIT_Y * 2)) / PAPER.height, 1))
+      const zoom = Math.max(0.15, Math.min((rect.width - (planner ? 40 : FIT_X * 2)) / PAPER.width, (rect.height - (planner ? 40 : FIT_Y * 2)) / PAPER.height, planner ? 1 : 2))
       setView({ x: (rect.width - PAPER.width * zoom) / 2, y: planner ? 20 : (rect.height - PAPER.height * zoom) / 2, zoom })
     })
     observer.observe(node)

@@ -22,8 +22,8 @@
 .kw-library-empty { display:grid; place-items:center; gap:10px; text-align:center; padding:45px 20px; color:var(--color-muted); }
 .kw-library-empty h2 { font:30px 'Caveat',cursive; color:var(--color-ink); }.kw-library-empty p { font-size:14px; }
 /* El cuaderno abierto flota sobre el paisaje: solo se ve el cuaderno; todos los controles son paneles flotantes aparte */
-.kw-notebook-reader { position:fixed; z-index:10; top:12px; right:12px; bottom:84px; left:12px; }
-@media(min-width:768px) { .kw-notebook-reader { top:16px; right:16px; bottom:16px; left:80px; } }
+.kw-notebook-reader { position:fixed; z-index:10; top:8px; right:8px; bottom:80px; left:8px; }
+@media(min-width:768px) { .kw-notebook-reader { top:8px; right:8px; bottom:8px; left:76px; } }
 .kw-notebook-reader[data-opening] :is(.kw-surface,.kw-editor-heading,.kw-toolbar,.kw-view-tools,.kw-selection-tools) { opacity:0; }
 /* Libro 3D: la tapa gira sobre el lomo y deja ver las páginas */
 .kw-book3d { position:fixed; z-index:40; display:none; pointer-events:none; perspective:2600px; perspective-origin:50% 42%; }
