@@ -125,3 +125,12 @@ body:has(.kw-notebook-reader) #contenido>div>p { visibility:hidden; }
 .kw-turn-shadow { position:absolute; top:0; bottom:0; width:50%; opacity:0; }
 .kw-turn-shadow-right { left:50%; background:linear-gradient(90deg,#1c132070,#1c132000 70%); }
 .kw-turn-shadow-left { left:0; background:linear-gradient(270deg,#1c132070,#1c132000 70%); }
+
+/* Los colores de los post-it aparecen solo al pulsar el post-it */
+.kw-pop-anchor { position:relative; display:flex; }
+.kw-palette-pop { position:absolute; right:calc(100% + 14px); top:50%; transform:translateY(-50%); flex-direction:row !important; gap:8px; padding:9px 11px !important; background:#fffdfdf8; border:1px solid #e5daeb; border-radius:14px; box-shadow:0 6px 24px #6b4c7733; z-index:40; }
+.kw-palette-pop button { width:26px !important; height:26px !important; }
+
+/* Cuadrícula opcional para escribir y dibujar con más precisión */
+.kw-grid-overlay { position:absolute; inset:0; pointer-events:none; background-image:linear-gradient(#7d6a9a40 1px,transparent 1px),linear-gradient(90deg,#7d6a9a40 1px,transparent 1px); background-size:28px 28px; }
+.kw-view-tools button.kw-active { background:#e9dcef; color:#76538d; box-shadow:inset 0 0 0 1px #d6bedf; }
