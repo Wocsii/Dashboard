@@ -58,12 +58,9 @@
 .kw-element:focus-visible,.kw-selected { outline:2px solid #b79acb; outline-offset:5px; }
 .kw-element-sticky { padding:10px 17px 17px; box-shadow:2px 5px 11px #72647b1f; border-radius:2px 2px 16px 2px; }
 .kw-element-sticky:before { content:''; position:absolute; top:-10px; left:30%; width:40%; height:24px; background:#ffffff72; transform:rotate(3deg); pointer-events:none; }
-.kw-element-handle { display:block; height:20px; line-height:10px; text-align:center; color:#7e668457; font-size:24px; }
 .kw-element textarea { display:block; width:100%; height:calc(100% - 20px); resize:none; border:0; outline:0; background:transparent; color:inherit; font-family:'Caveat',cursive; line-height:1.35; -webkit-user-select:text; user-select:text; touch-action:manipulation; }
 .kw-element textarea::placeholder { color:#806b8b99; }
 .kw-element-text { padding:0 7px; }
-.kw-element-text .kw-element-handle { color:transparent; }
-.kw-element-text:hover .kw-element-handle,.kw-element-text.kw-selected .kw-element-handle { color:#7e668457; }
 .kw-element-sticker { mix-blend-mode:multiply; }
 .kw-sticker-image { display:block; width:100%; height:100%; overflow:hidden; }
 .kw-element-image { background:#fff; padding:8px 8px 22px; box-shadow:2px 4px 10px #76657d30; border:1px solid #ece7e9; }
@@ -102,3 +99,8 @@
   .kw-surface { min-height:480px; }.kw-sticker-drawer { width:min(300px,calc(100% - 20px)); }.kw-selection-tools { left:7px; gap:0; padding:3px; }.kw-selection-tools label { padding:0 4px; }.kw-selection-tools input { width:60px; }
   .kw-editor-footer span:first-child { max-width:65%; }.kw-pencil-hint { font-size:11px; }.kw-pencil-hint label { margin-left:0; }.kw-eyebrow { font-size:10px; }
 }
+
+/* Zona para seleccionar sin entrar a escribir: siempre visible arriba de post-its y textos */
+.kw-element-handle { display:flex; align-items:center; justify-content:center; height:20px; color:#7e6684b0; background:linear-gradient(#5b46741a,#5b467400); border-radius:inherit; cursor:grab; }
+.kw-element-handle:hover { color:#5b4674; background:linear-gradient(#5b467430,#5b467400); }
+.kw-element-text .kw-element-handle { border-bottom:1px dashed #b9a6c866; border-radius:6px 6px 0 0; }
